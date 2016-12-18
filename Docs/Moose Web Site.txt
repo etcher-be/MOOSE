@@ -1,4 +1,4 @@
-# Context
+﻿# Context 
 
 MOOSE is a **M**ission **O**bject **O**riented **S**cripting **E**nvironment, and is meant for mission designers and mission hosters.
 It allows to quickly setup complex missions using pre-scripted scenarios using the available classes within the MOOSE Framework.
