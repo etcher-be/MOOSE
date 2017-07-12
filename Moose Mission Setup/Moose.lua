@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170712_1610' )
+env.info( 'Moose Generation Timestamp: 20170712_2102' )
 
 --- Various routines
 -- @module routines
@@ -3184,25 +3184,26 @@ end
 --    * ZONE:New( 'some zone' ):IsInstanceOf( 'BASE' ) will return true
 --
 --    * ZONE:New( 'some zone' ):IsInstanceOf( 'GROUP' ) will return false
---
--- @param ClassName is the name of the class or the class itself  to run the check against
+-- 
+-- @param #BASE self
+-- @param ClassName is the name of the class or the class itself to run the check against
 -- @return #boolean
-function BASE:IsInstanceOf( className )
+function BASE:IsInstanceOf( ClassName )
 
   -- Is className NOT a string ?
-  if type( className ) ~= 'string' then
+  if type( ClassName ) ~= 'string' then
   
     -- Is className a Moose class ?
-    if type( className ) == 'table' and className.ClassName ~= nil then
+    if type( ClassName ) == 'table' and ClassName.ClassName ~= nil then
     
       -- Get the name of the Moose class as a string
-      className = className.ClassName
+      ClassName = ClassName.ClassName
       
     -- className is neither a string nor a Moose class, throw an error
     else
     
       -- I'm not sure if this should take advantage of MOOSE logging function, or throw an error for pcall
-      local err_str = 'className parameter should be a string; parameter received: '..type( className )
+      local err_str = 'className parameter should be a string; parameter received: '..type( ClassName )
       self:E( err_str )
       -- error( err_str )
       return false
@@ -3210,9 +3211,9 @@ function BASE:IsInstanceOf( className )
     end
   end
   
-  className = string.upper( className )
+  ClassName = string.upper( ClassName )
 
-  if string.upper( self.ClassName ) == className then
+  if string.upper( self.ClassName ) == ClassName then
     return true
   end
 
@@ -3220,7 +3221,7 @@ function BASE:IsInstanceOf( className )
 
   while Parent do
 
-    if string.upper( Parent.ClassName ) == className then
+    if string.upper( Parent.ClassName ) == ClassName then
       return true
     end
 
@@ -32632,15 +32633,20 @@ do -- DETECTION_BASE
     
     --- Accept detections if within the specified zone(s).
     -- @param #DETECTION_BASE self
-    -- @param AcceptZones Can be a list or ZONE_BASE objects, or a single ZONE_BASE object.
+    -- @param Core.Zone#ZONE_BASE AcceptZones Can be a list or ZONE_BASE objects, or a single ZONE_BASE object.
     -- @return #DETECTION_BASE self
     function DETECTION_BASE:SetAcceptZones( AcceptZones )
       self:F2()
     
       if type( AcceptZones ) == "table" then
-        self.AcceptZones = AcceptZones
+        if AcceptZones.ClassName and AcceptZones:IsInstanceOf( ZONE_BASE ) then
+          self.AcceptZones = { AcceptZones }
+        else
+          self.AcceptZones = AcceptZones
+        end
       else
-        self.AcceptZones = { AcceptZones }
+        self:E( { "AcceptZones must be a list of ZONE_BASE derived objects or one ZONE_BASE derived object", AcceptZones } )
+        error()
       end
       
       return self
@@ -32648,15 +32654,20 @@ do -- DETECTION_BASE
     
     --- Reject detections if within the specified zone(s).
     -- @param #DETECTION_BASE self
-    -- @param RejectZones Can be a list or ZONE_BASE objects, or a single ZONE_BASE object.
+    -- @param Core.Zone#ZONE_BASE RejectZones Can be a list or ZONE_BASE objects, or a single ZONE_BASE object.
     -- @return #DETECTION_BASE self
     function DETECTION_BASE:SetRejectZones( RejectZones )
       self:F2()
     
       if type( RejectZones ) == "table" then
-        self.RejectZones = RejectZones
+        if RejectZones.ClassName and RejectZones:IsInstanceOf( ZONE_BASE ) then
+          self.RejectZones = { RejectZones }
+        else
+          self.RejectZones = RejectZones
+        end
       else
-        self.RejectZones = { RejectZones }
+        self:E( { "RejectZones must be a list of ZONE_BASE derived objects or one ZONE_BASE derived object", RejectZones } )
+        error()
       end
       
       return self
@@ -37816,7 +37827,7 @@ do -- AI_A2A_DISPATCHER
   --        -- which takes the waypoints of a late activated group with the name CCCP Border as the boundaries of the border area.
   --        -- Any enemy crossing this border will be engaged.
   --        CCCPBorderZone = ZONE_POLYGON:New( "CCCP Border", GROUP:FindByName( "CCCP Border" ) )
-  --        A2ADispatcher:SetBorderZone( { CCCPBorderZone } )
+  --        A2ADispatcher:SetBorderZone( CCCPBorderZone )
   --        
   --        -- Initialize the dispatcher, setting up a radius of 100km where any airborne friendly 
   --        -- without an assignment within 100km radius from a detected target, will engage that target.
@@ -38208,13 +38219,21 @@ do -- AI_A2A_DISPATCHER
   -- If it’s a cold war then the **borders of red and blue territory** need to be defined using a @{zone} object derived from @{Zone#ZONE_BASE}. This method needs to be used for this.
   -- If a hot war is chosen then **no borders** actually need to be defined using the helicopter units other than it makes it easier sometimes for the mission maker to envisage where the red and blue territories roughly are. In a hot war the borders are effectively defined by the ground based radar coverage of a coalition. Set the noborders parameter to 1
   -- @param #AI_A2A_DISPATCHER self
-  -- @param Core.Zone#ZONE_BASE BorderZone An object derived from ZONE_BASE, that defines a zone between
+  -- @param Core.Zone#ZONE_BASE BorderZone An object derived from ZONE_BASE, or a list of objects derived from ZONE_BASE.
   -- @return #AI_A2A_DISPATCHER
   -- @usage
   -- 
-  --   -- Set a polygon zone as the border for the A2A dispatcher.
+  --   -- Set one ZONE_POLYGON object as the border for the A2A dispatcher.
   --   local BorderZone = ZONE_POLYGON( "CCCP Border", GROUP:FindByName( "CCCP Border" ) ) -- The GROUP object is a late activate helicopter unit.
   --   Dispatcher:SetBorderZone( BorderZone )
+  --   
+  --   or
+  --   
+  --   -- Set two ZONE_POLYGON objects as the border for the A2A dispatcher.
+  --   local BorderZone1 = ZONE_POLYGON( "CCCP Border1", GROUP:FindByName( "CCCP Border1" ) ) -- The GROUP object is a late activate helicopter unit.
+  --   local BorderZone2 = ZONE_POLYGON( "CCCP Border2", GROUP:FindByName( "CCCP Border2" ) ) -- The GROUP object is a late activate helicopter unit.
+  --   Dispatcher:SetBorderZone( { BorderZone1, BorderZone2 } )
+  --   
   --   
   function AI_A2A_DISPATCHER:SetBorderZone( BorderZone )
 
