@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170712_2236' )
+env.info( 'Moose Generation Timestamp: 20170713_2214' )
 
 --- Various routines
 -- @module routines
@@ -12951,16 +12951,39 @@ do -- COORDINATE
   -- @param #COORDINATE self
   -- @param Wrapper.Controllable#CONTROLLABLE Controllable
   -- @param Core.Settings#SETTINGS Settings
+  -- @param Tasking.Task#TASK Task The task for which coordinates need to be calculated.
   -- @return #string The coordinate Text in the configured coordinate system.
-  function COORDINATE:ToString( Controllable, Settings ) -- R2.2
+  function COORDINATE:ToString( Controllable, Settings, Task ) -- R2.2
   
     self:E( { Controllable = Controllable } )
 
     local Settings = Settings or ( Controllable and _DATABASE:GetPlayerSettings( Controllable:GetPlayerName() ) ) or _SETTINGS
-    
-    local IsAir = Controllable and Controllable:IsAirPlane() or false
 
-    if IsAir then
+    local ModeA2A = true
+    
+    if Task then
+      if Task:IsInstanceOf( TASK_A2A ) then
+        ModeA2A = true
+      else
+        if Task:IsInstanceOf( TASK_A2G ) then
+          ModeA2A = false
+        else
+          if Task:IsInstanceOf( TASK_CARGO ) then
+            ModeA2A = false
+          end
+        end
+      end
+    else
+      local IsAir = Controllable and Controllable:IsAirPlane() or false
+      if IsAir  then
+        ModeA2A = true
+      else
+        ModeA2A = false
+      end
+    end
+    
+
+    if ModeA2A then
       if Settings:IsA2A_BRAA()  then
         local Coordinate = Controllable:GetCoordinate()
         return self:ToStringBRA( Coordinate, Settings ) 
@@ -33013,19 +33036,23 @@ do -- DETECTION_BASE
   -- @param #DETECTION_BASE.DetectedObject DetectedObject
   -- @return #boolean true if already identified.
   function DETECTION_BASE:IsDetectedObjectIdentified( DetectedObject )
-    self:F3( DetectedObject.Name )
+    --self:F3( DetectedObject.Name )
   
     local DetectedObjectName = DetectedObject.Name
-    local DetectedObjectIdentified = self.DetectedObjectsIdentified[DetectedObjectName] == true
-    self:T3( DetectedObjectIdentified )
-    return DetectedObjectIdentified
+    if DetectedObjectName then
+      local DetectedObjectIdentified = self.DetectedObjectsIdentified[DetectedObjectName] == true
+      self:T3( DetectedObjectIdentified )
+      return DetectedObjectIdentified
+    else
+      return nil
+    end
   end
   
   --- Identifies a detected object during detection processing.
   -- @param #DETECTION_BASE self
   -- @param #DETECTION_BASE.DetectedObject DetectedObject
   function DETECTION_BASE:IdentifyDetectedObject( DetectedObject )
-    self:F( { "Identified:", DetectedObject.Name } )
+    --self:F( { "Identified:", DetectedObject.Name } )
   
     local DetectedObjectName = DetectedObject.Name
     self.DetectedObjectsIdentified[DetectedObjectName] = true
@@ -33052,16 +33079,18 @@ do -- DETECTION_BASE
   -- @param #string ObjectName
   -- @return #DETECTION_BASE.DetectedObject
   function DETECTION_BASE:GetDetectedObject( ObjectName )
-  	self:F2( ObjectName )
+  	--self:F2( ObjectName )
     
     if ObjectName then
       local DetectedObject = self.DetectedObjects[ObjectName]
-  
-      -- Only return detected objects that are alive!
-      local DetectedUnit = UNIT:FindByName( ObjectName )
-      if DetectedUnit and DetectedUnit:IsAlive() then
-        if self:IsDetectedObjectIdentified( DetectedObject ) == false then
-          return DetectedObject
+      
+      if DetectedObject then
+        -- Only return detected objects that are alive!
+        local DetectedUnit = UNIT:FindByName( ObjectName )
+        if DetectedUnit and DetectedUnit:IsAlive() then
+          if self:IsDetectedObjectIdentified( DetectedObject ) == false then
+            return DetectedObject
+          end
         end
       end
     end
@@ -44179,6 +44208,7 @@ do -- ACT_ROUTE
     end
     
 
+    local Task = self:GetTask() -- This is to dermine that the coordinates are for a specific task mode (A2A or A2G).
     local CC = self:GetTask():GetMission():GetCommandCenter()
     if CC then
       if CC:IsModeWWII() then
@@ -44203,7 +44233,7 @@ do -- ACT_ROUTE
           RouteText = Coordinate:ToStringFromRP( ShortestReferencePoint, ShortestReferenceName, Controllable )
         end
       else
-        RouteText = Coordinate:ToString( Controllable )
+        RouteText = Coordinate:ToString( Controllable, nil, Task )
       end
     end
 
@@ -47891,7 +47921,7 @@ function TASK:ReportOverview( ReportGroup ) --R2.1 fixed report. Now nicely form
         local FromCoordinate = ReportGroup:GetUnit(1):GetCoordinate()
         local ToCoordinate = TaskInfo.TaskInfoText -- Core.Point#COORDINATE
         --Report:Add( TaskInfoIDText )
-        LineReport:Add( ToCoordinate:ToString( ReportGroup ) )
+        LineReport:Add( ToCoordinate:ToString( ReportGroup, nil, self ) )
         --Report:AddIndent( ToCoordinate:ToStringBULLS( ReportGroup:GetCoalition() ) )
       else
       end
