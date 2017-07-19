@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170719_0958' )
+env.info( 'Moose Generation Timestamp: 20170719_1853' )
 
 --- Various routines
 -- @module routines
@@ -34588,7 +34588,12 @@ do -- DESIGNATE
   --     
   -- The example will activate the threat level prioritization for this the Designate object. Threats will be marked based on the threat level of the Target.
   -- 
-  -- ## 6. Status Report
+  -- ## 6. Designate Menu Location for a Mission
+  -- 
+  -- You can make DESIGNATE work for a MISSION object. In this way, the Designate menu will not appear in the root of the radio menu, but in the menu of the Mission.
+  -- Use the method @{#DESIGNATE.SetMission}() to set the MISSION object for the designate function.
+  -- 
+  -- ## 7. Status Report
   -- 
   -- A status report is available that displays the current Targets detected, grouped per DetectionItem, and a list of which Targets are currently being marked.
   -- 
@@ -34922,6 +34927,17 @@ do -- DESIGNATE
     return self
   end
   
+  --- Set the MISSION object for which designate will function.
+  -- When a MISSION object is assigned, the menu for the designation will be located at the Mission Menu.
+  -- @param #DESIGNATE self
+  -- @param Tasking.Mission#MISSION Mission The MISSION object.
+  -- @return #DESIGNATE
+  function DESIGNATE:SetMission( Mission ) --R2.2
+
+    self.Mission = Mission
+
+    return self
+  end
   
 
   --- 
@@ -35033,8 +35049,15 @@ do -- DESIGNATE
           DesignateMenu = nil
           self:E("Remove Menu")
         end
-        DesignateMenu = MENU_GROUP:New( AttackGroup, "Designate" )
-        self:E(DesignateMenu)
+        
+        local MissionMenu = nil
+        
+        if self.Mission then
+          MissionMenu = self.Mission:GetRootMenu( AttackGroup )
+        end
+        
+        DesignateMenu = MENU_GROUP:New( AttackGroup, "Designate", MissionMenu )
+        self:E( DesignateMenu )
         AttackGroup:SetState( AttackGroup, "DesignateMenu", DesignateMenu )
         
         -- Set Menu option for auto lase
@@ -46000,7 +46023,28 @@ function MISSION:RemoveTaskMenu( Task )
 end
 
 
---- Gets the mission menu for the coalition.
+--- Gets the root mission menu for the TaskGroup.
+-- @param #MISSION self
+-- @return Core.Menu#MENU_COALITION self
+function MISSION:GetRootMenu( TaskGroup ) -- R2.2
+
+  local CommandCenter = self:GetCommandCenter()
+  local CommandCenterMenu = CommandCenter:GetMenu()
+
+  local MissionName = self:GetName()
+  --local MissionMenu = CommandCenterMenu:GetMenu( MissionName )
+  
+  self.MissionMenu = self.MissionMenu or {}
+  self.MissionMenu[TaskGroup] = self.MissionMenu[TaskGroup] or {}
+  
+  local Menu = self.MissionMenu[TaskGroup]
+  
+  Menu.MainMenu = Menu.MainMenu or MENU_GROUP:New( TaskGroup, self:GetName(), CommandCenterMenu )
+
+  return Menu.MainMenu
+end
+
+--- Gets the mission menu for the TaskGroup.
 -- @param #MISSION self
 -- @return Core.Menu#MENU_COALITION self
 function MISSION:GetMenu( TaskGroup ) -- R2.1 -- Changed Menu Structure
