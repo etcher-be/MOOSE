@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170726_1516' )
+env.info( 'Moose Generation Timestamp: 20170726_2219' )
 
 --- Various routines
 -- @module routines
@@ -6124,8 +6124,9 @@ do -- MENU_COMMAND_BASE
   	local self = BASE:Inherit( self, MENU_BASE:New( MenuText, ParentMenu ) )
   
     self.CommandMenuFunction = CommandMenuFunction
-    self.MenuCallHandler = function( CommandMenuArguments )
-      self.CommandMenuFunction( unpack( CommandMenuArguments ) )
+    self.CommandMenuArguments = CommandMenuArguments
+    self.MenuCallHandler = function()
+      self.CommandMenuFunction( unpack( self.CommandMenuArguments ) )
     end
   	
   	return self
@@ -6877,28 +6878,30 @@ do
     if MenuGroup._Menus[Path] then
       self = MenuGroup._Menus[Path]
       self:F2( { "Re-using Group Command Menu:", MenuGroup:GetName(), MenuText } )
-    else
-      self = BASE:Inherit( self, MENU_COMMAND_BASE:New( MenuText, ParentMenu, CommandMenuFunction, arg ) )
+      missionCommands.removeItemForGroup( self.MenuGroupID, self.MenuPath )
       
-      --if MenuGroup:IsAlive() then
-        MenuGroup._Menus[Path] = self
-      --end
-
-      self.Path = Path
-      self.MenuGroup = MenuGroup
-      self.MenuGroupID = MenuGroup:GetID()
-      self.MenuText = MenuText
-      self.ParentMenu = ParentMenu
-
-      self:F( { "Adding Group Command Menu:", MenuGroup = MenuGroup:GetName(), MenuText = MenuText, MenuPath = self.MenuParentPath } )
-      self.MenuPath = missionCommands.addCommandForGroup( self.MenuGroupID, MenuText, self.MenuParentPath, self.MenuCallHandler, arg )
-
-      if self.ParentMenu and self.ParentMenu.Menus then
-        self.ParentMenu.Menus[MenuText] = self
-        self.ParentMenu.MenuCount = self.ParentMenu.MenuCount + 1
-        self:F2( { ParentMenu.Menus, MenuText } )
-      end
     end
+    self = BASE:Inherit( self, MENU_COMMAND_BASE:New( MenuText, ParentMenu, CommandMenuFunction, arg ) )
+    
+    --if MenuGroup:IsAlive() then
+      MenuGroup._Menus[Path] = self
+    --end
+
+    self.Path = Path
+    self.MenuGroup = MenuGroup
+    self.MenuGroupID = MenuGroup:GetID()
+    self.MenuText = MenuText
+    self.ParentMenu = ParentMenu
+
+    self:F( { "Adding Group Command Menu:", MenuGroup = MenuGroup:GetName(), MenuText = MenuText, MenuPath = self.MenuParentPath } )
+    self.MenuPath = missionCommands.addCommandForGroup( self.MenuGroupID, MenuText, self.MenuParentPath, self.MenuCallHandler, arg )
+
+    if self.ParentMenu and self.ParentMenu.Menus then
+      self.ParentMenu.Menus[MenuText] = self
+      self.ParentMenu.MenuCount = self.ParentMenu.MenuCount + 1
+      self:F2( { ParentMenu.Menus, MenuText } )
+    end
+--    end
 
     return self
   end
@@ -47650,6 +47653,7 @@ function TASK:SetPlannedMenuForGroup( TaskGroup, MenuTime )
   local ReportTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Report Task Status" ), TaskTypeMenu, self.MenuTaskStatus, self, TaskGroup ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
   
   if not Mission:IsGroupAssigned( TaskGroup ) then
+    self:F( { "Replacing Join Task menu" } )
     local JoinTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Join Task" ), TaskTypeMenu, self.MenuAssignToGroup, self, TaskGroup  ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
   end
       
