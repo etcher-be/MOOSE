@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170725_1639' )
+env.info( 'Moose Generation Timestamp: 20170726_0817' )
 
 --- Various routines
 -- @module routines
@@ -6087,6 +6087,15 @@ do -- MENU_BASE
     return self
   end
   
+  --- Sets a tag for later selection of menu refresh.
+  -- @param #MENU_BASE self
+  -- @param #string MenuTag A Tag or Key that will filter only menu items set with this key.
+  -- @return #MENU_BASE
+  function MENU_BASE:SetTag( MenuTag )
+    self.MenuTag = MenuTag
+    return self
+  end
+  
 end
 
 do -- MENU_COMMAND_BASE
@@ -6789,13 +6798,14 @@ do
   --- Removes the sub menus recursively of this MENU_GROUP.
   -- @param #MENU_GROUP self
   -- @param MenuTime
+  -- @param MenuTag A Tag or Key to filter the menus to be refreshed with the Tag set.
   -- @return #MENU_GROUP self
-  function MENU_GROUP:RemoveSubMenus( MenuTime )
+  function MENU_GROUP:RemoveSubMenus( MenuTime, Menutag )
     --self:F2( { self.MenuPath, MenuTime, self.MenuTime } )
   
-    self:T( { "Removing Group SubMenus:", MenuTime, self.MenuGroup:GetName(), self.MenuPath } )
+    self:T( { "Removing Group SubMenus:", MenuTime, MenuTag, self.MenuGroup:GetName(), self.MenuPath } )
     for MenuText, Menu in pairs( self.Menus ) do
-      Menu:Remove( MenuTime )
+      Menu:Remove( MenuTime, MenuTag )
     end
   
   end
@@ -6804,24 +6814,27 @@ do
   --- Removes the main menu and sub menus recursively of this MENU_GROUP.
   -- @param #MENU_GROUP self
   -- @param MenuTime
+  -- @param MenuTag A Tag or Key to filter the menus to be refreshed with the Tag set.
   -- @return #nil
-  function MENU_GROUP:Remove( MenuTime )
+  function MENU_GROUP:Remove( MenuTime, MenuTag )
     --self:F2( { self.MenuGroupID, self.MenuPath, MenuTime, self.MenuTime } )
   
-    self:RemoveSubMenus( MenuTime )
+    self:RemoveSubMenus( MenuTime, MenuTag )
     
     if not MenuTime or self.MenuTime ~= MenuTime then
-      if self.MenuGroup._Menus[self.Path] then
-        self = self.MenuGroup._Menus[self.Path]
-      
-        missionCommands.removeItemForGroup( self.MenuGroupID, self.MenuPath )
-        if self.ParentMenu then
-          self.ParentMenu.Menus[self.MenuText] = nil
-          self.ParentMenu.MenuCount = self.ParentMenu.MenuCount - 1
-          if self.ParentMenu.MenuCount == 0 then
-            if self.MenuRemoveParent == true then
-              self:T2( "Removing Parent Menu " )
-              self.ParentMenu:Remove()
+      if ( not MenuTag ) or ( MenuTag and self.MenuTag and MenuTag == self.MenuTag ) then
+        if self.MenuGroup._Menus[self.Path] then
+          self = self.MenuGroup._Menus[self.Path]
+        
+          missionCommands.removeItemForGroup( self.MenuGroupID, self.MenuPath )
+          if self.ParentMenu then
+            self.ParentMenu.Menus[self.MenuText] = nil
+            self.ParentMenu.MenuCount = self.ParentMenu.MenuCount - 1
+            if self.ParentMenu.MenuCount == 0 then
+              if self.MenuRemoveParent == true then
+                self:T2( "Removing Parent Menu " )
+                self.ParentMenu:Remove()
+              end
             end
           end
         end
@@ -6893,28 +6906,31 @@ do
   --- Removes a menu structure for a group.
   -- @param #MENU_GROUP_COMMAND self
   -- @param MenuTime
+  -- @param MenuTag A Tag or Key to filter the menus to be refreshed with the Tag set.
   -- @return #nil
-  function MENU_GROUP_COMMAND:Remove( MenuTime )
+  function MENU_GROUP_COMMAND:Remove( MenuTime, MenuTag )
     --self:F2( { self.MenuGroupID, self.MenuPath, MenuTime, self.MenuTime } )
 
     if not MenuTime or self.MenuTime ~= MenuTime then
-      if self.MenuGroup._Menus[self.Path] then
-        self = self.MenuGroup._Menus[self.Path]
-    
-        missionCommands.removeItemForGroup( self.MenuGroupID, self.MenuPath )
-        self:T( { "Removing Group Command Menu:", MenuGroup = self.MenuGroup:GetName(), MenuText = self.MenuText, MenuPath = self.Path } )
-
-        self.ParentMenu.Menus[self.MenuText] = nil
-        self.ParentMenu.MenuCount = self.ParentMenu.MenuCount - 1
-        if self.ParentMenu.MenuCount == 0 then
-          if self.MenuRemoveParent == true then
-            self:T2( "Removing Parent Menu " )
-            self.ParentMenu:Remove()
+      if ( not MenuTag ) or ( MenuTag and self.MenuTag and MenuTag == self.MenuTag ) then
+        if self.MenuGroup._Menus[self.Path] then
+          self = self.MenuGroup._Menus[self.Path]
+      
+          missionCommands.removeItemForGroup( self.MenuGroupID, self.MenuPath )
+          self:T( { "Removing Group Command Menu:", MenuGroup = self.MenuGroup:GetName(), MenuText = self.MenuText, MenuPath = self.Path } )
+  
+          self.ParentMenu.Menus[self.MenuText] = nil
+          self.ParentMenu.MenuCount = self.ParentMenu.MenuCount - 1
+          if self.ParentMenu.MenuCount == 0 then
+            if self.MenuRemoveParent == true then
+              self:T2( "Removing Parent Menu " )
+              self.ParentMenu:Remove()
+            end
           end
+  
+          self.MenuGroup._Menus[self.Path] = nil
+          self = nil
         end
-
-        self.MenuGroup._Menus[self.Path] = nil
-        self = nil
       end
     end
     
@@ -35044,12 +35060,7 @@ do -- DESIGNATE
     
       --- @param Wrapper.Group#GROUP GroupReport
       function( AttackGroup )
-        local DesignateMenu = AttackGroup:GetState( AttackGroup, "DesignateMenu" ) -- Core.Menu#MENU_GROUP
-        if DesignateMenu then
-          DesignateMenu:Remove()
-          DesignateMenu = nil
-          self:E("Remove Menu")
-        end
+        self.MenuDesignate = self.MenuDesignate or {}
         
         local MissionMenu = nil
         
@@ -35057,27 +35068,27 @@ do -- DESIGNATE
           MissionMenu = self.Mission:GetRootMenu( AttackGroup )
         end
         
-        DesignateMenu = MENU_GROUP:New( AttackGroup, "Designate", MissionMenu )
-        self:E( DesignateMenu )
-        AttackGroup:SetState( AttackGroup, "DesignateMenu", DesignateMenu )
-        
+        local MenuTime = timer.getTime()
+        self.MenuDesignate[AttackGroup] = MENU_GROUP:New( AttackGroup, "Designate", MissionMenu ):SetTime( MenuTime ):SetTag( "Designate" ) 
+        local MenuDesignate = self.MenuDesignate[AttackGroup] -- Core.Menu#MENU_GROUP
+
         -- Set Menu option for auto lase
 
         if self.AutoLase then        
-          MENU_GROUP_COMMAND:New( AttackGroup, "Auto Lase Off", DesignateMenu, self.MenuAutoLase, self, false )
+          MENU_GROUP_COMMAND:New( AttackGroup, "Auto Lase Off", MenuDesignate, self.MenuAutoLase, self, false ):SetTime( MenuTime ):SetTag( "Designate" )
         else
-          MENU_GROUP_COMMAND:New( AttackGroup, "Auto Lase On", DesignateMenu, self.MenuAutoLase, self, true )
+          MENU_GROUP_COMMAND:New( AttackGroup, "Auto Lase On", MenuDesignate, self.MenuAutoLase, self, true ):SetTime( MenuTime ):SetTag( "Designate" )
         end        
 
-        local StatusMenu = MENU_GROUP:New( AttackGroup, "Status", DesignateMenu )
-        MENU_GROUP_COMMAND:New( AttackGroup, "Report Status 15s", StatusMenu, self.MenuStatus, self, AttackGroup, 15 )
-        MENU_GROUP_COMMAND:New( AttackGroup, "Report Status 30s", StatusMenu, self.MenuStatus, self, AttackGroup, 30 )
-        MENU_GROUP_COMMAND:New( AttackGroup, "Report Status 60s", StatusMenu, self.MenuStatus, self, AttackGroup, 60 )
+        local StatusMenu = MENU_GROUP:New( AttackGroup, "Status", MenuDesignate ):SetTime( MenuTime ):SetTag( "Designate" )
+        MENU_GROUP_COMMAND:New( AttackGroup, "Report Status 15s", StatusMenu, self.MenuStatus, self, AttackGroup, 15 ):SetTime( MenuTime ):SetTag( "Designate" )
+        MENU_GROUP_COMMAND:New( AttackGroup, "Report Status 30s", StatusMenu, self.MenuStatus, self, AttackGroup, 30 ):SetTime( MenuTime ):SetTag( "Designate" )
+        MENU_GROUP_COMMAND:New( AttackGroup, "Report Status 60s", StatusMenu, self.MenuStatus, self, AttackGroup, 60 ):SetTime( MenuTime ):SetTag( "Designate" )
         
         if self.FlashStatusMenu[AttackGroup] then
-          MENU_GROUP_COMMAND:New( AttackGroup, "Flash Status Report Off", StatusMenu, self.MenuFlashStatus, self, AttackGroup, false )
+          MENU_GROUP_COMMAND:New( AttackGroup, "Flash Status Report Off", StatusMenu, self.MenuFlashStatus, self, AttackGroup, false ):SetTime( MenuTime ):SetTag( "Designate" )
         else
-           MENU_GROUP_COMMAND:New( AttackGroup, "Flash Status Report On", StatusMenu, self.MenuFlashStatus, self, AttackGroup, true )
+           MENU_GROUP_COMMAND:New( AttackGroup, "Flash Status Report On", StatusMenu, self.MenuFlashStatus, self, AttackGroup, true ):SetTime( MenuTime ):SetTag( "Designate" )
         end        
       
         local DetectedItems = self.Detection:GetDetectedItems()
@@ -35087,15 +35098,15 @@ do -- DESIGNATE
           local Report = self.Detection:DetectedItemMenu( Index, AttackGroup )
           
           if not self.Designating[Index] then
-            local DetectedMenu = MENU_GROUP:New( AttackGroup, Report, DesignateMenu )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 60 secs", DetectedMenu, self.MenuLaseOn, self, Index, 60 )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 120 secs", DetectedMenu, self.MenuLaseOn, self, Index, 120 )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke red", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Red )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke blue", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Blue )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke green", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Green )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke white", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.White )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke orange", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Orange )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Illuminate", DetectedMenu, self.MenuIlluminate, self, Index )
+            local DetectedMenu = MENU_GROUP:New( AttackGroup, Report, MenuDesignate )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 60 secs", DetectedMenu, self.MenuLaseOn, self, Index, 60 ):SetTime( MenuTime ):SetTag( "Designate" )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 120 secs", DetectedMenu, self.MenuLaseOn, self, Index, 120 ):SetTime( MenuTime ):SetTag( "Designate" )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke red", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Red ):SetTime( MenuTime ):SetTag( "Designate" )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke blue", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Blue ):SetTime( MenuTime ):SetTag( "Designate" )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke green", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Green ):SetTime( MenuTime ):SetTag( "Designate" )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke white", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.White ):SetTime( MenuTime ):SetTag( "Designate" )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke orange", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Orange ):SetTime( MenuTime ):SetTag( "Designate" )
+            MENU_GROUP_COMMAND:New( AttackGroup, "Illuminate", DetectedMenu, self.MenuIlluminate, self, Index ):SetTime( MenuTime ):SetTag( "Designate" )
           else
             if self.Designating[Index] == "Laser" then
               Report = "Lasing " .. Report
@@ -35104,13 +35115,14 @@ do -- DESIGNATE
             elseif self.Designating[Index] == "Illuminate" then
               Report = "Illuminating " .. Report
             end
-            local DetectedMenu = MENU_GROUP:New( AttackGroup, Report, DesignateMenu )
+            local DetectedMenu = MENU_GROUP:New( AttackGroup, Report, MenuDesignate ):SetTime( MenuTime ):SetTag( "Designate" )
             if self.Designating[Index] == "Laser" then
-              MENU_GROUP_COMMAND:New( AttackGroup, "Stop lasing", DetectedMenu, self.MenuLaseOff, self, Index )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Stop lasing", DetectedMenu, self.MenuLaseOff, self, Index ):SetTime( MenuTime ):SetTag( "Designate" )
             else
             end
           end
         end
+        MenuDesignate:Remove( MenuTime, "Designate" )
       end
     )
     
@@ -47401,13 +47413,13 @@ function TASK:SetPlannedMenuForGroup( TaskGroup, MenuTime )
   --local MissionMenu = Mission:GetMenu( TaskGroup )
 
   self.MenuPlanned = self.MenuPlanned or {}
-  self.MenuPlanned[TaskGroup] = MENU_GROUP:New( TaskGroup, "Join Planned Task", MissionMenu, Mission.MenuReportTasksPerStatus, Mission, TaskGroup, "Planned" ):SetTime( MenuTime )
-  local TaskTypeMenu = MENU_GROUP:New( TaskGroup, TaskType, self.MenuPlanned[TaskGroup] ):SetTime( MenuTime ):SetRemoveParent( true )
-  local TaskTypeMenu = MENU_GROUP:New( TaskGroup, TaskText, TaskTypeMenu ):SetTime( MenuTime ):SetRemoveParent( true )
-  local ReportTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Report Task Status" ), TaskTypeMenu, self.MenuTaskStatus, self, TaskGroup ):SetTime( MenuTime ):SetRemoveParent( true )
+  self.MenuPlanned[TaskGroup] = MENU_GROUP:New( TaskGroup, "Join Planned Task", MissionMenu, Mission.MenuReportTasksPerStatus, Mission, TaskGroup, "Planned" ):SetTime( MenuTime ):SetTag( "Tasking" )
+  local TaskTypeMenu = MENU_GROUP:New( TaskGroup, TaskType, self.MenuPlanned[TaskGroup] ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
+  local TaskTypeMenu = MENU_GROUP:New( TaskGroup, TaskText, TaskTypeMenu ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
+  local ReportTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Report Task Status" ), TaskTypeMenu, self.MenuTaskStatus, self, TaskGroup ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
   
   if not Mission:IsGroupAssigned( TaskGroup ) then
-    local JoinTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Join Task" ), TaskTypeMenu, self.MenuAssignToGroup, self, TaskGroup  ):SetTime( MenuTime ):SetRemoveParent( true )
+    local JoinTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Join Task" ), TaskTypeMenu, self.MenuAssignToGroup, self, TaskGroup  ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
   end
       
   return self
@@ -47439,9 +47451,9 @@ function TASK:SetAssignedMenuForGroup( TaskGroup, MenuTime )
 --  local MissionMenu = Mission:GetMenu( TaskGroup )
 
   self.MenuAssigned = self.MenuAssigned or {}
-  self.MenuAssigned[TaskGroup] = MENU_GROUP:New( TaskGroup, string.format( "Assigned Task %s", TaskName ), MissionMenu ):SetTime( MenuTime )
-  local TaskTypeMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Report Task Status" ), self.MenuAssigned[TaskGroup], self.MenuTaskStatus, self, TaskGroup ):SetTime( MenuTime ):SetRemoveParent( true )
-  local TaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Abort Group from Task" ), self.MenuAssigned[TaskGroup], self.MenuTaskAbort, self, TaskGroup ):SetTime( MenuTime ):SetRemoveParent( true )
+  self.MenuAssigned[TaskGroup] = MENU_GROUP:New( TaskGroup, string.format( "Assigned Task %s", TaskName ), MissionMenu ):SetTime( MenuTime ):SetTag( "Tasking" )
+  local TaskTypeMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Report Task Status" ), self.MenuAssigned[TaskGroup], self.MenuTaskStatus, self, TaskGroup ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
+  local TaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Abort Group from Task" ), self.MenuAssigned[TaskGroup], self.MenuTaskAbort, self, TaskGroup ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
 
   return self
 end
@@ -47483,11 +47495,11 @@ function TASK:RefreshMenus( TaskGroup, MenuTime )
   local AssignedMenu = self.MenuAssigned[TaskGroup]
   
   if PlannedMenu then
-    PlannedMenu:Remove( MenuTime )
+    PlannedMenu:Remove( MenuTime , "Tasking")
   end
   
   if AssignedMenu then
-    AssignedMenu:Remove( MenuTime )
+    AssignedMenu:Remove( MenuTime, "Tasking" )
   end
   
 end
