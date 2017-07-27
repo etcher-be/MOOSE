@@ -113,13 +113,6 @@
 
 <hr/>
 
-<h3>Authors: <strong>Sven Van de Velde (FlightControl)</strong> rework of GCICAP + introduction of new concepts (squadrons).</h3>
-<h3>Authors: <strong>Stonehouse</strong>, <strong>SNAFU</strong> in terms of the advice, documentation, and the original GCICAP script.</h3>
-
-<h3>Contributions:</h3>
-
-<hr/>
-
 <h1>QUICK START GUIDE</h1>
 
 <p>There are basically two classes available to model an A2A defense system.</p>
@@ -127,7 +120,7 @@
 <p>AI_A2A_DISPATCHER is the main A2A defense class that models the A2A defense system.
 AI_A2A_GCICAP derives or inherits from AI_A2A_DISPATCHER and is a more <strong>noob</strong> user friendly class, but is less flexible.</p>
 
-<p>Before you start using the AI_A2A_DISPATCHER or AI_A2A_GCICAP ask youself the following questions:</p>
+<p>Before you start using the AI_A2A_DISPATCHER or AI_A2A_GCICAP ask youself the following questions.</p>
 
 <h2>0. Do I need AI_A2A_DISPATCHER or do I need AI_A2A_GCICAP?</h2>
 
@@ -238,21 +231,25 @@ Not all Squadrons need to perform GCI.</p>
 <p>For each Squadron, evaluate which takeoff method will be used:</p>
 
 <ul>
-    <li>Straight from the air (default)</li>
+    <li>Straight from the air</li>
     <li>From the runway</li>
     <li>From a parking spot with running engines</li>
     <li>From a parking spot with cold engines</li>
 </ul>
+
+<p><strong>The default takeoff method is staight in the air.</strong></p>
 
 <h2>17. For each Squadron, which landing method will I use?</h2>
 
 <p>For each Squadron, evaluate which landing method will be used:</p>
 
 <ul>
-    <li>Near the airbase when returning (default)</li>
-    <li>After landing on the runway</li>
-    <li>After engine shutdown after landing</li>
+    <li>Despawn near the airbase when returning</li>
+    <li>Despawn after landing on the runway</li>
+    <li>Despawn after engine shutdown after landing</li>
 </ul>
+
+<p><strong>The default landing method is despawn when near the airbase when returning.</strong></p>
 
 <h2>18. For each Squadron, which overhead will I use?</h2>
 
@@ -261,10 +258,19 @@ In other words, if <strong>X</strong> attacker airplanes are detected, how many 
 The <strong>Y</strong> is dependent on the type of airplane (era), payload, fuel levels, skills etc.
 The overhead is a <strong>factor</strong> that will calculate dynamically how many <strong>Y</strong> defenses will be required based on <strong>X</strong> attackers detected.</p>
 
+<p><strong>The default overhead is 1. A value greater than 1, like 1.5 will increase the overhead with 50%, a value smaller than 1, like 0.5 will decrease the overhead with 50%.</strong></p>
+
 <h2>19. For each Squadron, which grouping will I use?</h2>
 
 <p>When multiple targets are detected, how will defense airplanes be grouped when multiple defense airplanes are spawned for multiple attackers?
 Per one, two, three, four?</p>
+
+<p><strong>The default grouping is 1. That means, that each spawned defender will act individually.</strong></p>
+
+<hr/>
+
+<h3>Authors: <strong>Sven Van de Velde (FlightControl)</strong> rework of GCICAP + introduction of new concepts (squadrons).</h3>
+<h3>Authors: <strong>Stonehouse</strong>, <strong>SNAFU</strong> in terms of the advice, documentation, and the original GCICAP script.</h3>
 
 
 	<h2>Global(s)</h2>
@@ -347,6 +353,12 @@ Per one, two, three, four?</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).DefenderDefault">AI_A2A_DISPATCHER.DefenderDefault</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).DefenderSpawns">AI_A2A_DISPATCHER.DefenderSpawns</a></td>
 		<td class="summary">
 
@@ -422,6 +434,18 @@ Per one, two, three, four?</p>
 		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).GetCAPDelay">AI_A2A_DISPATCHER:GetCAPDelay(SquadronName)</a></td>
 		<td class="summary">
 
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).GetDefaultLanding">AI_A2A_DISPATCHER:GetDefaultLanding()</a></td>
+		<td class="summary">
+<p>Gets the default method at which flights will land and despawn as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).GetDefaultTakeoff">AI_A2A_DISPATCHER:GetDefaultTakeoff()</a></td>
+		<td class="summary">
+<p>Gets the default method at which new flights will spawn and take-off as part of the defense system.</p>
 </td>
 		</tr>
 		<tr>
@@ -581,6 +605,72 @@ Per one, two, three, four?</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultGrouping">AI_A2A_DISPATCHER:SetDefaultGrouping(Grouping)</a></td>
+		<td class="summary">
+<p>Sets the default grouping of new airplanes spawned.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultLanding">AI_A2A_DISPATCHER:SetDefaultLanding(Landing)</a></td>
+		<td class="summary">
+<p>Defines the default method at which flights will land and despawn as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultLandingAtEngineShutdown">AI_A2A_DISPATCHER:SetDefaultLandingAtEngineShutdown()</a></td>
+		<td class="summary">
+<p>Sets flights by default to land and despawn at engine shutdown, as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultLandingAtRunway">AI_A2A_DISPATCHER:SetDefaultLandingAtRunway()</a></td>
+		<td class="summary">
+<p>Sets flights by default to land and despawn at the runway, as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultLandingNearAirbase">AI_A2A_DISPATCHER:SetDefaultLandingNearAirbase()</a></td>
+		<td class="summary">
+<p>Sets flights by default to land and despawn near the airbase in the air, as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultOverhead">AI_A2A_DISPATCHER:SetDefaultOverhead(Overhead)</a></td>
+		<td class="summary">
+<p>Defines the default amount of extra planes that will take-off as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoff">AI_A2A_DISPATCHER:SetDefaultTakeoff(Takeoff)</a></td>
+		<td class="summary">
+<p>Defines the default method at which new flights will spawn and take-off as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffFromParkingCold">AI_A2A_DISPATCHER:SetDefaultTakeoffFromParkingCold()</a></td>
+		<td class="summary">
+<p>Sets flights to by default take-off from the airbase at a cold location, as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffFromParkingHot">AI_A2A_DISPATCHER:SetDefaultTakeoffFromParkingHot()</a></td>
+		<td class="summary">
+<p>Sets flights by default to take-off from the airbase at a hot location, as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffFromRunway">AI_A2A_DISPATCHER:SetDefaultTakeoffFromRunway()</a></td>
+		<td class="summary">
+<p>Sets flights by default to take-off from the runway, as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffInAir">AI_A2A_DISPATCHER:SetDefaultTakeoffInAir()</a></td>
+		<td class="summary">
+<p>Sets flights to default take-off in the air, as part of the defense system.</p>
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefenderTask">AI_A2A_DISPATCHER:SetDefenderTask(Defender, Type, Fsm, Target)</a></td>
 		<td class="summary">
 
@@ -631,7 +721,7 @@ Per one, two, three, four?</p>
 		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetSquadronGrouping">AI_A2A_DISPATCHER:SetSquadronGrouping(SquadronName, Grouping)</a></td>
 		<td class="summary">
-
+<p>Sets the grouping of new airplanes spawned.</p>
 </td>
 		</tr>
 		<tr>
@@ -832,11 +922,14 @@ This is a good implementation, because maybe in the future, more coalitions may 
 
 <h2>1. AI_A2A_DISPATCHER constructor:</h2>
 
+<p><img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_1.JPG" alt="Banner Image"/></p>
+
+
 <p>The <a href="##(AI_A2A_DISPATCHER).New">AI<em>A2A</em>DISPATCHER.New</a>() method creates a new AI_A2A_DISPATCHER instance.</p>
 
 <h3>1.1. Define the <strong>EWR network</strong>:</h3>
 
-<p>As part of the AI_A2A_DISPATCHER constructor, an EWR network must be given as the first parameter.
+<p>As part of the AI_A2A_DISPATCHER :New() constructor, an EWR network must be given as the first parameter.
 An EWR network, or, Early Warning Radar network, is used to early detect potential airborne targets and to understand the position of patrolling targets of the enemy.</p>
 
 <p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia5.JPG" alt="Banner Image"/></p>
@@ -862,6 +955,9 @@ increasing or decreasing the radar coverage of the Early Warning System.</p>
 
 <p>See the following example to setup an EWR network containing EWR stations and AWACS.</p>
 
+<p><img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_2.JPG" alt="Banner Image"/>
+<img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_3.JPG" alt="Banner Image"/></p>
+
 <pre><code>-- Define a SET_GROUP object that builds a collection of groups that define the EWR network.
 -- Here we build the network with all the groups that have a name starting with DF CCCP AWACS and DF CCCP EWR.
 DetectionSetGroup = SET_GROUP:New()
@@ -875,11 +971,11 @@ Detection = DETECTION_AREAS:New( DetectionSetGroup, 30000 )
 A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )
 </code></pre>
 
-
 <p>The above example creates a SET_GROUP instance, and stores this in the variable (object) <strong>DetectionSetGroup</strong>.
 <strong>DetectionSetGroup</strong> is then being configured to filter all active groups with a group name starting with <strong>DF CCCP AWACS</strong> or <strong>DF CCCP EWR</strong> to be included in the Set.
-<strong>DetectionSetGroup</strong> is then being ordered to start the dynamic filtering. Note that any destroy or new spawn of a group with the above names will be removed or added to the Set.
-Then a new Detection object is created from the class DETECTION_AREAS. A grouping radius of 30000 is choosen, which is 30km.
+<strong>DetectionSetGroup</strong> is then being ordered to start the dynamic filtering. Note that any destroy or new spawn of a group with the above names will be removed or added to the Set.</p>
+
+<p>Then a new Detection object is created from the class DETECTION_AREAS. A grouping radius of 30000 is choosen, which is 30km.
 The <strong>Detection</strong> object is then passed to the <a href="##(AI_A2A_DISPATCHER).New">AI<em>A2A</em>DISPATCHER.New</a>() method to indicate the EWR network configuration and setup the A2A defense detection mechanism.</p>
 
 <p>You could build a <strong>mutual defense system</strong> like this:</p>
@@ -913,6 +1009,13 @@ You need to evaluate the value of this parameter carefully.
 If too small, more intercept missions may be triggered upon detected target areas.
 If too large, any airborne cap may not be able to reach the detected target area in time, because it is too far.</p>
 
+<p>In this example an engage radius is set to 80 km.</p>
+
+<pre><code>-- Initialize the dispatcher, setting up a radius of 80km where any airborne friendly 
+-- without an assignment within 80km radius from a detected target, will engage that target.
+A2ADispatcher:SetEngageRadius( 80000 )
+</code></pre>
+
 <h2>4. Set the <strong>Intercept radius</strong> or <strong>Gci radius</strong>:</h2>
 
 <p>When targets are detected that are still really far off, you don't want the AI<em>A2A</em>DISPATCHER to launch intercepts just yet.
@@ -920,6 +1023,12 @@ You want it to wait until a certain intercept range is reached, which is the dis
 The Gci radius is by default defined as 200km. This value can be overridden using the method <a href="##(AI_A2A_DISPATCHER).SetGciRadius">AI<em>A2A</em>DISPATCHER.SetGciRadius</a>().
 Override the default Gci radius when the era of the warfare is early, or, when you don't want to let the AI<em>A2A</em>DISPATCHER react immediately when
 a certain border or area is not being crossed.</p>
+
+<p>In this example, the GCI radius is setto 150 km:</p>
+
+<pre><code>-- Initialize the dispatcher, setting up a GCI radius of 150km where no GCI will be started if the target is further than 150 km from the closest airabse.
+A2ADispatcher:SetGciRadius( 80000 )
+</code></pre>
 
 <h2>5. Set the <strong>borders</strong>:</h2>
 
@@ -939,6 +1048,22 @@ A <strong>hot war</strong> is one where CAP aircraft will intercept any detected
 If a hot war is chosen then <strong>no borders</strong> actually need to be defined using the helicopter units other than 
 it makes it easier sometimes for the mission maker to envisage where the red and blue territories roughly are. 
 In a hot war the borders are effectively defined by the ground based radar coverage of a coalition.</p>
+
+<p>In this example a border is set for the CCCP A2A dispatcher:</p>
+
+<p><img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_4.JPG" alt="Banner Image"/></p>
+
+<pre><code>-- Setup the A2A dispatcher, and initialize it.
+A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )
+
+-- Setup the border.
+-- Initialize the dispatcher, setting up a border zone. This is a polygon, 
+-- which takes the waypoints of a late activated group with the name CCCP Border as the boundaries of the border area.
+-- Any enemy crossing this border will be engaged.
+
+CCCPBorderZone = ZONE_POLYGON:New( "CCCP Border", GROUP:FindByName( "CCCP Border" ) )
+A2ADispatcher:SetBorderZone( CCCPBorderZone )
+</code></pre>
 
 <h2>6. Squadrons:</h2>
 
@@ -969,6 +1094,18 @@ while defining which plane types are being used by the squadron and how many res
 
 <p>For performance and bug workaround reasons within DCS, squadrons have different methods to spawn new aircraft or land returning or damaged aircraft.</p>
 
+<p>This example defines a couple of squadrons. Note the templates defined within the Mission Editor.</p>
+
+<p><img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_5.JPG" alt="Banner Image"/>
+<img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_6.JPG" alt="Banner Image"/></p>
+
+<pre><code> -- Setup the squadrons.
+ A2ADispatcher:SetSquadron( "Mineralnye", AIRBASE.Caucasus.Mineralnye_Vody, { "SQ CCCP SU-27" }, 20 )
+ A2ADispatcher:SetSquadron( "Maykop", AIRBASE.Caucasus.Maykop_Khanskaya, { "SQ CCCP MIG-31" }, 20 )
+ A2ADispatcher:SetSquadron( "Mozdok", AIRBASE.Caucasus.Mozdok, { "SQ CCCP MIG-31" }, 20 )
+ A2ADispatcher:SetSquadron( "Sochi", AIRBASE.Caucasus.Sochi_Adler, { "SQ CCCP SU-27" }, 20 )
+ A2ADispatcher:SetSquadron( "Novo", AIRBASE.Caucasus.Novorossiysk, { "SQ CCCP SU-27" }, 20 )
+</code></pre>
 
 <h3>6.1. Set squadron take-off methods</h3>
 
@@ -980,6 +1117,17 @@ while defining which plane types are being used by the squadron and how many res
     <li><a href="##(AI_A2A_DISPATCHER).SetSquadronTakeoffFromParkingCold">AI<em>A2A</em>DISPATCHER.SetSquadronTakeoffFromParkingCold</a>() will spawn new aircraft in without running engines at a parking spot at the airfield.</li>
     <li><a href="##(AI_A2A_DISPATCHER).SetSquadronTakeoffFromParkingHot">AI<em>A2A</em>DISPATCHER.SetSquadronTakeoffFromParkingHot</a>() will spawn new aircraft in with running engines at a parking spot at the airfield.</li>
     <li><a href="##(AI_A2A_DISPATCHER).SetSquadronTakeoffFromRunway">AI<em>A2A</em>DISPATCHER.SetSquadronTakeoffFromRunway</a>() will spawn new aircraft at the runway at the airfield.</li>
+</ul>
+
+<p><strong>The default landing method is to spawn new aircraft directly in the air.</strong>
+<strong>The default takeoff method can be set for ALL squadrons that don't have an individual takeoff method configured.</strong></p>
+
+<ul>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoff">AI<em>A2A</em>DISPATCHER.SetDefaultTakeoff</a>() is the generic configuration method to control takeoff by default from the air, hot, cold or from the runway. See the method for further details.</li>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffInAir">AI<em>A2A</em>DISPATCHER.SetDefaultTakeoffInAir</a>() will spawn by default new aircraft from the squadron directly in the air.</li>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffFromParkingCold">AI<em>A2A</em>DISPATCHER.SetDefaultTakeoffFromParkingCold</a>() will spawn by default new aircraft in without running engines at a parking spot at the airfield.</li>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffFromParkingHot">AI<em>A2A</em>DISPATCHER.SetDefaultTakeoffFromParkingHot</a>() will spawn by default new aircraft in with running engines at a parking spot at the airfield.</li>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultTakeoffFromRunway">AI<em>A2A</em>DISPATCHER.SetDefaultTakeoffFromRunway</a>() will spawn by default new aircraft at the runway at the airfield.</li>
 </ul>
 
 <p>Use these methods to fine-tune for specific airfields that are known to create bottlenecks, or have reduced airbase efficiency.
@@ -995,6 +1143,23 @@ The more and the longer aircraft need to taxi at an airfield, the more risk ther
 <p>Currently within the DCS engine, the airfield traffic coordination is erroneous and contains a lot of bugs.
 If you experience while testing problems with aircraft take-off or landing, please use one of the above methods as a solution to workaround these issues!</p>
 
+<p>This example sets the default takeoff method to be from the runway.
+And for a couple of squadrons overrides this default method.</p>
+
+<pre><code> -- Setup the Takeoff methods
+
+ -- The default takeoff
+ A2ADispatcher:SetDefaultTakeOffFromRunway()
+
+ -- The individual takeoff per squadron
+ A2ADispatcher:SetSquadronTakeoff( "Mineralnye", AI_A2A_DISPATCHER.Takeoff.Air )
+ A2ADispatcher:SetSquadronTakeoffInAir( "Sochi" )
+ A2ADispatcher:SetSquadronTakeoffFromRunway( "Mozdok" )
+ A2ADispatcher:SetSquadronTakeoffFromParkingCold( "Maykop" )
+ A2ADispatcher:SetSquadronTakeoffFromParkingHot( "Novo" )  
+</code></pre>
+
+
 <h3>6.2. Set squadron landing methods</h3>
 
 <p>In analogy with takeoff, the landing methods are to control how squadrons land at the airfield:</p>
@@ -1006,15 +1171,41 @@ If you experience while testing problems with aircraft take-off or landing, plea
     <li><a href="##(AI_A2A_DISPATCHER).SetSquadronLandingAtEngineShutdown">AI<em>A2A</em>DISPATCHER.SetSquadronLandingAtEngineShutdown</a>() will despawn the returning aircraft when the aircraft has returned to its parking spot and has turned off its engines.</li>
 </ul>
 
+<p><strong>The default landing method can be set for ALL squadrons that don't have an individual landing method configured.</strong></p>
+
+<ul>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultLanding">AI<em>A2A</em>DISPATCHER.SetDefaultLanding</a>() is the generic configuration method to control by default landing, namely despawn the aircraft near the airfield in the air, right after landing, or at engine shutdown.</li>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultLandingNearAirbase">AI<em>A2A</em>DISPATCHER.SetDefaultLandingNearAirbase</a>() will despawn by default the returning aircraft in the air when near the airfield.</li>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultLandingAtRunway">AI<em>A2A</em>DISPATCHER.SetDefaultLandingAtRunway</a>() will despawn by default the returning aircraft directly after landing at the runway.</li>
+    <li><a href="##(AI_A2A_DISPATCHER).SetDefaultLandingAtEngineShutdown">AI<em>A2A</em>DISPATCHER.SetDefaultLandingAtEngineShutdown</a>() will despawn by default the returning aircraft when the aircraft has returned to its parking spot and has turned off its engines.</li>
+</ul>
+
 <p>You can use these methods to minimize the airbase coodination overhead and to increase the airbase efficiency.
 When there are lots of aircraft returning for landing, at the same airbase, the takeoff process will be halted, which can cause a complete failure of the
 A2A defense system, as no new CAP or GCI planes can takeoff.
 Note that the method <a href="##(AI_A2A_DISPATCHER).SetSquadronLandingNearAirbase">AI<em>A2A</em>DISPATCHER.SetSquadronLandingNearAirbase</a>() will only work for returning aircraft, not for damaged or out of fuel aircraft.
 Damaged or out-of-fuel aircraft are returning to the nearest friendly airbase and will land, and are out of control from ground control.</p>
 
+<p>This example defines the default landing method to be at the runway.
+And for a couple of squadrons overrides this default method.</p>
+
+<pre><code> -- Setup the Landing methods
+
+ -- The default landing method
+ A2ADispatcher:SetDefaultLandingAtRunway()
+
+ -- The individual landing per squadron
+ A2ADispatcher:SetSquadronLandingAtRunway( "Mineralnye" )
+ A2ADispatcher:SetSquadronLandingNearAirbase( "Sochi" )
+ A2ADispatcher:SetSquadronLandingAtEngineShutdown( "Mozdok" )
+ A2ADispatcher:SetSquadronLandingNearAirbase( "Maykop" )
+ A2ADispatcher:SetSquadronLanding( "Novo", AI_A2A_DISPATCHER.Landing.AtRunway )
+</code></pre>
+
+
 <h3>6.3. Set squadron grouping</h3>
 
-<p>Use the method <a href="##(AI_A2A_DISPATCHER).SetSquadronGrouping">AI<em>A2A</em>DISPATCHER.SetSquadronGrouping</a>() to set the amount of CAP or GCI flights that will take-off when spawned.</p>
+<p>Use the method <a href="##(AI_A2A_DISPATCHER).SetSquadronGrouping">AI<em>A2A</em>DISPATCHER.SetSquadronGrouping</a>() to set the grouping of CAP or GCI flights that will take-off when spawned.</p>
 
 <p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia12.JPG" alt="Banner Image"/></p>
 
@@ -1025,6 +1216,10 @@ a GCI needs to be started, the GCI flights will be grouped as follows: Group 1 o
 
 <p>The <strong>grouping value is set for a Squadron</strong>, and can be <strong>dynamically adjusted</strong> during mission execution, so to adjust the defense flights grouping when the tactical situation changes.</p>
 
+<p><strong>The default grouping value can be set for ALL squadrons that don't have an individual grouping value configured.</strong></p>
+
+<p>Use the method <a href="##(AI_A2A_DISPATCHER).SetDefaultGrouping">AI<em>A2A</em>DISPATCHER.SetDefaultGrouping</a>() to set the <strong>default grouping</strong> of spawned airplanes for all squadrons.</p>
+
 <h3>6.4. Balance or setup effectiveness of the air defenses in case of GCI</h3>
 
 <p>The effectiveness can be set with the <strong>overhead parameter</strong>. This is a number that is used to calculate the amount of Units that dispatching command will allocate to GCI in surplus of detected amount of units.
@@ -1034,7 +1229,7 @@ The <strong>default value</strong> of the overhead parameter is 1.0, which means
 
 <p>However, depending on the (type of) aircraft (strength and payload) in the squadron and the amount of resources available, this parameter can be changed.</p>
 
-<p>The <a href="##(AI_A2A_DISPATCHER).SetOverhead">AI<em>A2A</em>DISPATCHER.SetOverhead</a>() method can be used to tweak the defense strength,
+<p>The <a href="##(AI_A2A_DISPATCHER).SetSquadronOverhead">AI<em>A2A</em>DISPATCHER.SetSquadronOverhead</a>() method can be used to tweak the defense strength,
 taking into account the plane types of the squadron. </p>
 
 <p>For example, a MIG-31 with full long-distance A2A missiles payload, may still be less effective than a F-15C with short missiles...
@@ -1050,6 +1245,10 @@ The overhead must be given as a decimal value with 1 as the neutral value, which
 multiplied by the Overhead and rounded up to the smallest integer. </p>
 
 <p>The <strong>overhead value is set for a Squadron</strong>, and can be <strong>dynamically adjusted</strong> during mission execution, so to adjust the defense overhead when the tactical situation changes.</p>
+
+<p><strong>The default overhead value can be set for ALL squadrons that don't have an individual overhead value configured.</strong></p>
+
+<p>Use the <a href="##(AI_A2A_DISPATCHER).SetDefaultOverhead">AI<em>A2A</em>DISPATCHER.SetDefaultOverhead</a>() method can be used to set the default the defense strength for ALL squadrons.</p>
 
 <h2>7. Setup a squadron for CAP</h2>
 
@@ -1078,16 +1277,24 @@ multiplied by the Overhead and rounded up to the smallest integer. </p>
 
 <p>The following example illustrates how CAP zones are coded:</p>
 
+<p><img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_8.JPG" alt="Banner Image"/> </p>
+
 <pre><code> -- CAP Squadron execution.
  CAPZoneEast = ZONE_POLYGON:New( "CAP Zone East", GROUP:FindByName( "CAP Zone East" ) )
  A2ADispatcher:SetSquadronCap( "Mineralnye", CAPZoneEast, 4000, 10000, 500, 600, 800, 900 )
  A2ADispatcher:SetSquadronCapInterval( "Mineralnye", 2, 30, 60, 1 )
+</code></pre>
 
- CAPZoneWest = ZONE_POLYGON:New( "CAP Zone West", GROUP:FindByName( "CAP Zone West" ) )
+<p><img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_7.JPG" alt="Banner Image"/> </p>
+
+<pre><code> CAPZoneWest = ZONE_POLYGON:New( "CAP Zone West", GROUP:FindByName( "CAP Zone West" ) )
  A2ADispatcher:SetSquadronCap( "Sochi", CAPZoneWest, 4000, 8000, 600, 800, 800, 1200, "BARO" )
  A2ADispatcher:SetSquadronCapInterval( "Sochi", 2, 30, 120, 1 )
+</code></pre>
 
- CAPZoneMiddle = ZONE:New( "CAP Zone Middle")
+<p><img src="..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_9.JPG" alt="Banner Image"/> </p>
+
+<pre><code> CAPZoneMiddle = ZONE:New( "CAP Zone Middle")
  A2ADispatcher:SetSquadronCap( "Maykop", CAPZoneMiddle, 4000, 8000, 600, 800, 800, 1200, "RADIO" )
  A2ADispatcher:SetSquadronCapInterval( "Sochi", 2, 30, 120, 1 )
 </code></pre>
@@ -1116,8 +1323,9 @@ Zones can be circles, can be setup in the mission editor using trigger zones, bu
 
 <p>For example, the following setup will create a CAP for squadron "Sochi":</p>
 
-<p>   A2ADispatcher:SetSquadronCap( "Sochi", CAPZoneWest, 4000, 8000, 600, 800, 800, 1200, "BARO" )
-   A2ADispatcher:SetSquadronCapInterval( "Sochi", 2, 30, 120, 1 )</p>
+<pre><code> A2ADispatcher:SetSquadronCap( "Sochi", CAPZoneWest, 4000, 8000, 600, 800, 800, 1200, "BARO" )
+ A2ADispatcher:SetSquadronCapInterval( "Sochi", 2, 30, 120, 1 )
+</code></pre>
 
 <h2>8. Setup a squadron for GCI:</h2>
 
@@ -1136,7 +1344,8 @@ too short will mean that the intruders may have alraedy passed the ideal interce
 
 <p>For example, the following setup will create a GCI for squadron "Sochi":</p>
 
-<p>   A2ADispatcher:SetSquadronGci( "Mozdok", 900, 1200 )</p>
+<pre><code> A2ADispatcher:SetSquadronGci( "Mozdok", 900, 1200 )
+</code></pre>
 
 <h2>9. Other configuration options</h2>
 
@@ -1146,175 +1355,9 @@ too short will mean that the intruders may have alraedy passed the ideal interce
 Use the method <a href="##(AI_A2A_DISPATCHER).SetTacticalDisplay">AI<em>A2A</em>DISPATCHER.SetTacticalDisplay</a>() to switch on the tactical display panel. The default will not show this panel.
 Note that there may be some performance impact if this panel is shown.</p>
 
-<h2>10. Mission Editor Guide:</h2>
+<h2>10. Q &amp; A:</h2>
 
-<p>The following steps need to be followed, in order to setup the different borders, templates and groups within the mission editor:</p>
-
-<h3>10.1. Define your EWR network:</h3>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia14.JPG" alt="Banner Image"/></p>
-
-<p>At strategic positions within the battlefield, position the correct groups of units that have radar detection capability in the battlefield.
-Create the naming of these groups as such, that these can be easily recognized and included as a prefix within your lua MOOSE mission script.
-These prefixes should be unique, so that accidentally no other groups would be incorporated within the EWR network.</p>
-
-<h3>10.2. Define the border zone:</h3>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia15.JPG" alt="Banner Image"/></p>
-
-<p>For a cold war situation, define your border zone.
-You can do this in many ways, as the <a href="Zone.html">Zone</a> capability within MOOSE outlines. However, the best practice is to create a ZONE_POLYGON class.
-To do this, you need to create a zone using a helicopter group, that is late activated, and has a unique group name.
-Place the helicopter where the border zone should start, and draw using the waypoints the polygon zone around the area that is considered the border.
-The helicopter group name is included as the reference within your lua MOOSE mission script, so ensure that the name is unique and is easily recognizable.</p>
-
-<h3>10.3. Define the plane templates:</h3>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia16.JPG" alt="Banner Image"/></p>
-
-<p>Define the templates of the planes that define the format of planes that will take part in the A2A defenses of your coalition.
-These plane templates will never be activated, but are used to create a diverse airplane portfolio allocated to your squadrons.</p>
-
-<p>IMPORTANT! <strong>Plane templates MUST be of ONE unit, and must have the Late Activated flag switched on!</strong></p>
-
-<p>Plane templates are used to diversify the defending squadrons with:</p>
-
-<ul>
-    <li>different airplane types</li>
-    <li>different airplane skins</li>
-    <li>different skill levels</li>
-    <li>different weapon payloads</li>
-    <li>different fuel and other characteristics</li>
-</ul>
-
-<p>Place these airplane templates are good visible locations within your mission, so you can easily retrieve them back.</p>
-
-<h3>10.4. Define the CAP zones:</h3>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia17.JPG" alt="Banner Image"/></p>
-
-<p>Similar as with the border zone, define the CAP zones using helicopter group templates. Its waypoints define the polygon zones. 
-But you can also define other zone types instead, like moving zones.</p>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia18.JPG" alt="Banner Image"/></p>
-
-<p>Or you can define also zones using trigger zones.</p>
-
-<h3>10.5. "Script it":</h3>
-
-<p>Find the following mission script as an example:</p>
-
-<pre><code>   -- Define a SET_GROUP object that builds a collection of groups that define the EWR network.
-   -- Here we build the network with all the groups that have a name starting with DF CCCP AWACS and DF CCCP EWR.
-   DetectionSetGroup = SET_GROUP:New()
-   DetectionSetGroup:FilterPrefixes( { "DF CCCP AWACS", "DF CCCP EWR" } )
-   DetectionSetGroup:FilterStart()
-
-   -- Here we define detection to be done by area, with a grouping radius of 3000.
-   Detection = DETECTION_AREAS:New( DetectionSetGroup, 30000 )
-
-   -- Setup the A2A dispatcher, and initialize it.
-   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )
-
-
-
-   -- Initialize the dispatcher, setting up a border zone. This is a polygon, 
-   -- which takes the waypoints of a late activated group with the name CCCP Border as the boundaries of the border area.
-   -- Any enemy crossing this border will be engaged.
-   CCCPBorderZone = ZONE_POLYGON:New( "CCCP Border", GROUP:FindByName( "CCCP Border" ) )
-   A2ADispatcher:SetBorderZone( CCCPBorderZone )
-
-   -- Initialize the dispatcher, setting up a radius of 100km where any airborne friendly 
-   -- without an assignment within 100km radius from a detected target, will engage that target.
-   A2ADispatcher:SetEngageRadius( 300000 )
-
-   -- Setup the squadrons.
-   A2ADispatcher:SetSquadron( "Mineralnye", AIRBASE.Caucasus.Mineralnye_Vody, { "SQ CCCP SU-27" }, 20 )
-   A2ADispatcher:SetSquadron( "Maykop", AIRBASE.Caucasus.Maykop_Khanskaya, { "SQ CCCP MIG-31" }, 20 )
-   A2ADispatcher:SetSquadron( "Mozdok", AIRBASE.Caucasus.Mozdok, { "SQ CCCP MIG-31" }, 20 )
-   A2ADispatcher:SetSquadron( "Sochi", AIRBASE.Caucasus.Sochi_Adler, { "SQ CCCP SU-27" }, 20 )
-   A2ADispatcher:SetSquadron( "Novo", AIRBASE.Caucasus.Novorossiysk, { "SQ CCCP SU-27" }, 20 )
-
-   -- Setup the overhead
-   A2ADispatcher:SetSquadronOverhead( "Mineralnye", 1.2 )
-   A2ADispatcher:SetSquadronOverhead( "Maykop", 1 )
-   A2ADispatcher:SetSquadronOverhead( "Mozdok", 1.5 )
-   A2ADispatcher:SetSquadronOverhead( "Sochi", 1 )
-   A2ADispatcher:SetSquadronOverhead( "Novo", 1 )
-
-   -- Setup the Grouping
-   A2ADispatcher:SetSquadronGrouping( "Mineralnye", 2 )
-   A2ADispatcher:SetSquadronGrouping( "Sochi", 2 )
-   A2ADispatcher:SetSquadronGrouping( "Novo", 3 )
-
-   -- Setup the Takeoff methods
-   A2ADispatcher:SetSquadronTakeoff( "Mineralnye", AI_A2A_DISPATCHER.Takeoff.Air )
-   A2ADispatcher:SetSquadronTakeoffInAir( "Sochi" )
-   A2ADispatcher:SetSquadronTakeoffFromRunway( "Mozdok" )
-   A2ADispatcher:SetSquadronTakeoffFromParkingCold( "Maykop" )
-   A2ADispatcher:SetSquadronTakeoffFromParkingHot( "Novo" )
-
-   -- Setup the Landing methods
-   A2ADispatcher:SetSquadronLandingAtRunway( "Mineralnye" )
-   A2ADispatcher:SetSquadronLandingNearAirbase( "Sochi" )
-   A2ADispatcher:SetSquadronLandingAtEngineShutdown( "Mozdok" )
-   A2ADispatcher:SetSquadronLandingNearAirbase( "Maykop" )
-   A2ADispatcher:SetSquadronLanding( "Novo", AI_A2A_DISPATCHER.Landing.AtRunway )
-
-
-   -- CAP Squadron execution.
-   CAPZoneEast = ZONE_POLYGON:New( "CAP Zone East", GROUP:FindByName( "CAP Zone East" ) )
-   A2ADispatcher:SetSquadronCap( "Mineralnye", CAPZoneEast, 4000, 10000, 500, 600, 800, 900 )
-   A2ADispatcher:SetSquadronCapInterval( "Mineralnye", 2, 30, 60, 1 )
-
-   CAPZoneWest = ZONE_POLYGON:New( "CAP Zone West", GROUP:FindByName( "CAP Zone West" ) )
-   A2ADispatcher:SetSquadronCap( "Sochi", CAPZoneWest, 4000, 8000, 600, 800, 800, 1200, "BARO" )
-   A2ADispatcher:SetSquadronCapInterval( "Sochi", 2, 30, 120, 1 )
-
-   CAPZoneMiddle = ZONE:New( "CAP Zone Middle")
-   A2ADispatcher:SetSquadronCap( "Maykop", CAPZoneMiddle, 4000, 8000, 600, 800, 800, 1200, "RADIO" )
-   A2ADispatcher:SetSquadronCapInterval( "Sochi", 2, 30, 120, 1 )
-
-   -- GCI Squadron execution.
-   A2ADispatcher:SetSquadronGci( "Mozdok", 900, 1200 )
-   A2ADispatcher:SetSquadronGci( "Novo", 900, 2100 )
-   A2ADispatcher:SetSquadronGci( "Maykop", 900, 1200 )
-</code></pre>
-
-<h4>10.5.1. Script the EWR network</h4>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia20.JPG" alt="Banner Image"/></p>
-
-<h4>10.5.2. Script the AI_A2A_DISPATCHER object and configure it</h4>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia21.JPG" alt="Banner Image"/></p>
-
-<h4>10.5.3. Script the squadrons</h4>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia22.JPG" alt="Banner Image"/></p>
-
-<p>Create the squadrons using the <a href="##(AI_A2A_DISPATCHER).SetSquadron">AI<em>A2A</em>DISPATCHER.SetSquadron</a> objects using:</p>
-
-<ul>
-    <li><a href="Zone.html##(ZONE)">Zone#ZONE</a> class to create a zone using a trigger zone set in the mission editor.</li>
-    <li><a href="Zone.html##(ZONE_UNIT)">Zone#ZONE_UNIT</a> class to create a zone around a unit object.</li>
-    <li><a href="Zone.html##(ZONE_GROUP)">Zone#ZONE_GROUP</a> class to create a zone around a group object.</li>
-    <li><a href="Zone.html##(ZONE_POLYGON)">Zone#ZONE_POLYGON</a> class to create a polygon zone using a late activated group object.</li>
-</ul>
-
-<p>Use the @{#AI<em>A2A</em>DISPATCHER.SetSquadronCap)() method to define CAP execution for the squadron, within the CAP zone defined.</p>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia26.JPG" alt="Banner Image"/></p>
-
-<p>Use the @{#AI<em>A2A</em>DISPATCHER.SetSquadronCapInterval)() method to define how many CAP groups can be airborne at the same time, and the timing intervals.</p>
-
-<p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia27.JPG" alt="Banner Image"/></p>
-
-<p>Use the @{#AI<em>A2A</em>DISPATCHER.SetSquadronGci)() method to define GCI execution for the squadron.</p>
-
-<h2>11. Q &amp; A:</h2>
-
-<h3>11.1. Which countries will be selected for each coalition?</h3>
+<h3>10.1. Which countries will be selected for each coalition?</h3>
 
 <p>Which countries are assigned to a coalition influences which units are available to the coalition. 
 For example because the mission calls for a EWR radar on the blue side the Ukraine might be chosen as a blue country 
@@ -1322,7 +1365,7 @@ so that the 55G6 EWR radar unit is available to blue. <br/>
 Some countries assign different tasking to aircraft, for example Germany assigns the CAP task to F-4E Phantoms but the USA does not. <br/>
 Therefore if F4s are wanted as a coalition’s CAP or GCI aircraft Germany will need to be assigned to that coalition. </p>
 
-<h3>11.2. Country, type, load out, skill and skins for CAP and GCI aircraft?</h3>
+<h3>10.2. Country, type, load out, skill and skins for CAP and GCI aircraft?</h3>
 
 <ul>
     <li>Note these can be from any countries within the coalition but must be an aircraft with one of the main tasks being “CAP”.</li>
@@ -1839,6 +1882,23 @@ DefenderSquadron</p>
 <dt>
 
 		<em></em>
+<a id="#(AI_A2A_DISPATCHER).DefenderDefault" >
+<strong>AI_A2A_DISPATCHER.DefenderDefault</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+	
+<p> The Defender Default Settings over all Squadrons.</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+		<em></em>
 <a id="#(AI_A2A_DISPATCHER).DefenderSpawns" >
 <strong>AI_A2A_DISPATCHER.DefenderSpawns</strong>
 </a>
@@ -2118,6 +2178,66 @@ The squadron name.</p>
 		<dl class="function">
 <dt>
 
+<a id="#(AI_A2A_DISPATCHER).GetDefaultLanding" >
+<strong>AI_A2A_DISPATCHER:GetDefaultLanding()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Gets the default method at which flights will land and despawn as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em>#number:</em>
+Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights by default despawn near the airbase when returning.
+  local LandingMethod = Dispatcher:GetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
+  if LandingMethod == AI_A2A_Dispatcher.Landing.NearAirbase then
+   ...
+  end
+</code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).GetDefaultTakeoff" >
+<strong>AI_A2A_DISPATCHER:GetDefaultTakeoff()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Gets the default method at which new flights will spawn and take-off as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em>#number:</em>
+Takeoff From the airbase hot, from the airbase cold, in the air, from the runway.</p>
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights by default take-off in the air.
+  local TakeoffMethod = Dispatcher:GetDefaultTakeoff()
+  if TakeOffMethod == , AI_A2A_Dispatcher.Takeoff.InAir then
+    ...
+  end
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(AI_A2A_DISPATCHER).GetDefenderTask" >
 <strong>AI_A2A_DISPATCHER:GetDefenderTask(Defender)</strong>
 </a>
@@ -2325,7 +2445,7 @@ Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown<
 
   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
   
-  -- Let new flights take-off in the air.
+  -- Let new flights despawn near the airbase when returning.
   local LandingMethod = Dispatcher:GetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
   if LandingMethod == AI_A2A_Dispatcher.Landing.NearAirbase then
    ...
@@ -2887,6 +3007,380 @@ or
 		<dl class="function">
 <dt>
 
+<a id="#(AI_A2A_DISPATCHER).SetDefaultGrouping" >
+<strong>AI_A2A_DISPATCHER:SetDefaultGrouping(Grouping)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets the default grouping of new airplanes spawned.</p>
+
+	
+<p>Grouping will trigger how new airplanes will be grouped if more than one airplane is spawned for defense.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em>#number Grouping </em></code>: 
+The level of grouping that will be applied of the CAP or GCI defenders. </p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Set a grouping by default per 2 airplanes.
+  Dispatcher:SetDefaultGrouping( 2 )
+
+</code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultLanding" >
+<strong>AI_A2A_DISPATCHER:SetDefaultLanding(Landing)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Defines the default method at which flights will land and despawn as part of the defense system.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em>#number Landing </em></code>: 
+The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights by default despawn near the airbase when returning.
+  Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
+  
+  -- Let new flights by default despawn after landing land at the runway.
+  Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtRunway )
+  
+  -- Let new flights by default despawn after landing and parking, and after engine shutdown.
+  Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtEngineShutdown )
+</code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultLandingAtEngineShutdown" >
+<strong>AI_A2A_DISPATCHER:SetDefaultLandingAtEngineShutdown()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets flights by default to land and despawn at engine shutdown, as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let flights by default land and despawn at engine shutdown.
+  Dispatcher:SetDefaultLandingAtEngineShutdown()
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultLandingAtRunway" >
+<strong>AI_A2A_DISPATCHER:SetDefaultLandingAtRunway()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets flights by default to land and despawn at the runway, as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let flights by default land at the runway and despawn.
+  Dispatcher:SetDefaultLandingAtRunway()
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultLandingNearAirbase" >
+<strong>AI_A2A_DISPATCHER:SetDefaultLandingNearAirbase()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets flights by default to land and despawn near the airbase in the air, as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let flights by default to land near the airbase and despawn.
+  Dispatcher:SetDefaultLandingNearAirbase()
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultOverhead" >
+<strong>AI_A2A_DISPATCHER:SetDefaultOverhead(Overhead)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Defines the default amount of extra planes that will take-off as part of the defense system.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em>#number Overhead </em></code>: 
+The %-tage of Units that dispatching command will allocate to intercept in surplus of detected amount of units.
+The default overhead is 1, so equal balance. The <a href="##(AI_A2A_DISPATCHER).SetOverhead">AI<em>A2A</em>DISPATCHER.SetOverhead</a>() method can be used to tweak the defense strength,
+taking into account the plane types of the squadron. For example, a MIG-31 with full long-distance A2A missiles payload, may still be less effective than a F-15C with short missiles...
+So in this case, one may want to use the Overhead method to allocate more defending planes as the amount of detected attacking planes.
+The overhead must be given as a decimal value with 1 as the neutral value, which means that Overhead values: </p>
+
+<ul>
+    <li>Higher than 1, will increase the defense unit amounts.</li>
+    <li>Lower than 1, will decrease the defense unit amounts.</li>
+</ul>
+
+<p>The amount of defending units is calculated by multiplying the amount of detected attacking planes as part of the detected group 
+multiplied by the Overhead and rounded up to the smallest integer. </p>
+
+<p>The Overhead value set for a Squadron, can be programmatically adjusted (by using this SetOverhead method), to adjust the defense overhead during mission execution.</p>
+
+<p>See example below.
+ </p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- An overhead of 1,5 with 1 planes detected, will allocate 2 planes ( 1 * 1,5 ) = 1,5 =&gt; rounded up gives 2.
+  -- An overhead of 1,5 with 2 planes detected, will allocate 3 planes ( 2 * 1,5 ) = 3 =&gt;  rounded up gives 3.
+  -- An overhead of 1,5 with 3 planes detected, will allocate 5 planes ( 3 * 1,5 ) = 4,5 =&gt; rounded up gives 5 planes.
+  -- An overhead of 1,5 with 4 planes detected, will allocate 6 planes ( 4 * 1,5 ) = 6  =&gt; rounded up gives 6 planes.
+  
+  Dispatcher:SetDefaultOverhead( 1.5 )
+</code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultTakeoff" >
+<strong>AI_A2A_DISPATCHER:SetDefaultTakeoff(Takeoff)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Defines the default method at which new flights will spawn and take-off as part of the defense system.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em>#number Takeoff </em></code>: 
+From the airbase hot, from the airbase cold, in the air, from the runway.</p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights by default take-off in the air.
+  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Air )
+  
+  -- Let new flights by default take-off from the runway.
+  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Runway )
+  
+  -- Let new flights by default take-off from the airbase hot.
+  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Hot )
+
+  -- Let new flights by default take-off from the airbase cold.
+  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Cold )
+
+</code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultTakeoffFromParkingCold" >
+<strong>AI_A2A_DISPATCHER:SetDefaultTakeoffFromParkingCold()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets flights to by default take-off from the airbase at a cold location, as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights take-off from a cold parking spot.
+  Dispatcher:SetDefaultTakeoffFromParkingCold()
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultTakeoffFromParkingHot" >
+<strong>AI_A2A_DISPATCHER:SetDefaultTakeoffFromParkingHot()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets flights by default to take-off from the airbase at a hot location, as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights by default take-off at a hot parking spot.
+  Dispatcher:SetDefaultTakeoffFromParkingHot()
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultTakeoffFromRunway" >
+<strong>AI_A2A_DISPATCHER:SetDefaultTakeoffFromRunway()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets flights by default to take-off from the runway, as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights by default take-off from the runway.
+  Dispatcher:SetDefaultTakeoffFromRunway()
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_A2A_DISPATCHER).SetDefaultTakeoffInAir" >
+<strong>AI_A2A_DISPATCHER:SetDefaultTakeoffInAir()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Sets flights to default take-off in the air, as part of the defense system.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_A2A_DISPATCHER)">#AI<em>A2A</em>DISPATCHER</a>:</em></p>
+
+
+			<h3>Usage:</h3>
+		<pre class="example"><code>
+
+  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Let new flights by default take-off in the air.
+  Dispatcher:SetDefaultTakeoffInAir()
+  </code></pre>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(AI_A2A_DISPATCHER).SetDefenderTask" >
 <strong>AI_A2A_DISPATCHER:SetDefenderTask(Defender, Type, Fsm, Target)</strong>
 </a>
@@ -3362,7 +3856,10 @@ The maximum speed at which the gci can be executed.</p>
 </dt>
 <dd>
 	
+<p>Sets the grouping of new airplanes spawned.</p>
 
+	
+<p>Grouping will trigger how new airplanes will be grouped if more than one airplane is spawned for defense.</p>
 
 		<h3>Parameters</h3>
 		<ul>
@@ -3388,6 +3885,8 @@ The level of grouping that will be applied of the CAP or GCI defenders. </p>
 		<pre class="example"><code>
 
   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  
+  -- Set a grouping per 2 airplanes.
   Dispatcher:SetSquadronGrouping( "SquadronName", 2 )
 
 </code></pre>
@@ -3430,13 +3929,13 @@ The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
 
   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
   
-  -- Let new flights take-off in the air.
+  -- Let new flights despawn near the airbase when returning.
   Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
   
-  -- Let new flights take-off from the runway.
+  -- Let new flights despawn after landing land at the runway.
   Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtRunway )
   
-  -- Let new flights take-off from the airbase hot.
+  -- Let new flights despawn after landing and parking, and after engine shutdown.
   Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtEngineShutdown )
 </code></pre>
 
@@ -3544,7 +4043,7 @@ The name of the squadron.</p>
 
   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
   
-  -- Let flights land in the air and despawn.
+  -- Let flights to land near the airbase and despawn.
   Dispatcher:SetSquadronLandingNearAirbase( "SquadronName" )
   </code></pre>
 
@@ -3608,8 +4107,7 @@ multiplied by the Overhead and rounded up to the smallest integer. </p>
   -- An overhead of 1,5 with 3 planes detected, will allocate 5 planes ( 3 * 1,5 ) = 4,5 =&gt; rounded up gives 5 planes.
   -- An overhead of 1,5 with 4 planes detected, will allocate 6 planes ( 4 * 1,5 ) = 6  =&gt; rounded up gives 6 planes.
   
-  Dispatcher:SetSquadronOverhead( 1,5 )
-
+  Dispatcher:SetSquadronOverhead( "SquadronName", 1.5 )
 </code></pre>
 
 </dd>
@@ -3696,7 +4194,7 @@ The name of the squadron.</p>
 
   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
   
-  -- Let new flights take-off in the air.
+  -- Let new flights take-off from a cold parking spot.
   Dispatcher:SetSquadronTakeoffFromParkingCold( "SquadronName" )
   </code></pre>
 
@@ -3768,7 +4266,7 @@ The name of the squadron.</p>
 
   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
   
-  -- Let new flights take-off in the air.
+  -- Let new flights take-off from the runway.
   Dispatcher:SetSquadronTakeoffFromRunway( "SquadronName" )
   </code></pre>
 
