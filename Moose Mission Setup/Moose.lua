@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170727_1240' )
+env.info( 'Moose Generation Timestamp: 20170728_2250' )
 
 --- Various routines
 -- @module routines
@@ -38759,9 +38759,6 @@ do -- AI_A2A_DISPATCHER
     end
     DefenderSquadron.Resources = Resources
     
-    self:SetSquadronOverhead( SquadronName, 1 )
-    self:SetSquadronLandingNearAirbase(SquadronName)
-
     return self
   end
   
@@ -40150,7 +40147,7 @@ do
   --- @type AI_A2A_GCICAP
   -- @extends #AI_A2A_DISPATCHER
 
-  --- # AI\_A2A\_GCICAP class, extends @{AI#AI_A2A_DISPATCHER}
+  --- # AI\_A2A\_GCICAP class, extends @{AI_A2A_Dispatcher#AI_A2A_DISPATCHER}
   -- 
   -- ![Banner Image](..\Presentations\AI_A2A_DISPATCHER\Dia1.JPG)
   -- 
@@ -40413,9 +40410,14 @@ do
 
   --- AI_A2A_GCICAP constructor.
   -- @param #AI_A2A_GCICAP self
-  -- @param #list<#string> EWRPrefixes A list of prefixes that of groups that setup the Early Warning Radar network.
+  -- @param #string EWRPrefixes A list of prefixes that of groups that setup the Early Warning Radar network.
+  -- @param #string TemplatePrefixes A list of template prefixes.
+  -- @param #string CapPrefixes A list of CAP zone prefixes (polygon zones).
+  -- @param #number CapLimit A number of how many CAP maximum will be spawned.
   -- @param #number GroupingRadius The radius in meters wherein detected planes are being grouped as one target area. 
   -- For airplanes, 6000 (6km) is recommended, and is also the default value of this parameter.
+  -- @param #number EngageRadius The radius in meters wherein detected airplanes will be engaged by airborne defenders without a task.
+  -- @param #number GciRadius The radius in meters wherein detected airplanes will GCI.
   -- @return #AI_A2A_GCICAP
   -- @usage
   --   
@@ -40424,10 +40426,11 @@ do
   --   
   --   A2ADispatcher = AI_A2A_GCICAP:New( { "BlueEWRGroundRadars", "BlueEWRAwacs" }, 30000 )
   --   
-  function AI_A2A_GCICAP:New( EWRPrefixes, TemplatePrefixes, CAPPrefixes, CapLimit, GroupingRadius, EngageRadius )
+  function AI_A2A_GCICAP:New( EWRPrefixes, TemplatePrefixes, CapPrefixes, CapLimit, GroupingRadius, EngageRadius, GciRadius )
 
     GroupingRadius = GroupingRadius or 30000
     EngageRadius = EngageRadius or 100000
+    GciRadius = GciRadius or 150000
 
     local EWRSetGroup = SET_GROUP:New()
     EWRSetGroup:FilterPrefixes( EWRPrefixes )
@@ -40438,12 +40441,12 @@ do
     local self = BASE:Inherit( self, AI_A2A_DISPATCHER:New( Detection ) ) -- #AI_A2A_GCICAP
     
     self:SetEngageRadius( EngageRadius )
+    self:SetGciRadius( GciRadius )
 
     -- Determine the coalition of the EWRNetwork, this will be the coalition of the GCICAP.
     local EWRFirst = EWRSetGroup:GetFirst() -- Wrapper.Group#GROUP
     local EWRCoalition = EWRFirst:GetCoalition()
-
-
+    
     -- Determine the airbases belonging to the coalition.
     local AirbaseNames = {} -- #list<#string>
     for AirbaseID, AirbaseData in pairs( _DATABASE.AIRBASES ) do
@@ -40488,7 +40491,7 @@ do
     -- CAP will be launched from there.
     
     self.CAPTemplates = SET_GROUP:New()
-    self.CAPTemplates:FilterPrefixes( CAPPrefixes )
+    self.CAPTemplates:FilterPrefixes( CapPrefixes )
     self.CAPTemplates:FilterOnce()
     
     for CAPID, CAPTemplate in pairs( self.CAPTemplates:GetSet() ) do
@@ -40529,6 +40532,37 @@ do
     self:__Start( 5 )
     
     return self
+  end
+
+  --- AI_A2A_GCICAP constructor with border.
+  -- @param #AI_A2A_GCICAP self
+  -- @param #string EWRPrefixes A list of prefixes that of groups that setup the Early Warning Radar network.
+  -- @param #string TemplatePrefixes A list of template prefixes.
+  -- @param #string BorderPrefix A Border Zone Prefix.
+  -- @param #string CapPrefixes A list of CAP zone prefixes (polygon zones).
+  -- @param #number CapLimit A number of how many CAP maximum will be spawned.
+  -- @param #number GroupingRadius The radius in meters wherein detected planes are being grouped as one target area. 
+  -- For airplanes, 6000 (6km) is recommended, and is also the default value of this parameter.
+  -- @param #number EngageRadius The radius in meters wherein detected airplanes will be engaged by airborne defenders without a task.
+  -- @param #number GciRadius The radius in meters wherein detected airplanes will GCI.
+  -- @return #AI_A2A_GCICAP
+  -- @usage
+  --   
+  --   -- Set a new AI A2A GCICAP object, based on an EWR network with a 30 km grouping radius
+  --   -- This for ground and awacs installations.
+  --   
+  --   A2ADispatcher = AI_A2A_GCICAP:New( { "BlueEWRGroundRadars", "BlueEWRAwacs" }, 30000 )
+  --   
+  function AI_A2A_GCICAP:NewWithBorder( EWRPrefixes, TemplatePrefixes, BorderPrefix, CapPrefixes, CapLimit, GroupingRadius, EngageRadius, GciRadius )
+
+    local self = AI_A2A_GCICAP:New( EWRPrefixes, TemplatePrefixes, CapPrefixes, CapLimit, GroupingRadius, EngageRadius, GciRadius )
+
+    if BorderPrefix then
+      self:SetBorderZone( ZONE_POLYGON:New( BorderPrefix, GROUP:FindByName( BorderPrefix ) ) )
+    end
+    
+    return self
+
   end
 
 end
