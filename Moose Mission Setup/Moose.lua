@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170730_1126' )
+env.info( 'Moose Generation Timestamp: 20170730_2111' )
 
 --- Various routines
 -- @module routines
@@ -35549,22 +35549,22 @@ end
 
 --- Returns the AI to the nearest friendly @{Airbase#AIRBASE}.
 -- @param #AI_BALANCER self
--- @param Dcs.DCSTypes#Distance ReturnTresholdRange If there is an enemy @{Client#CLIENT} within the ReturnTresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
+-- @param Dcs.DCSTypes#Distance ReturnThresholdRange If there is an enemy @{Client#CLIENT} within the ReturnThresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
 -- @param Core.Set#SET_AIRBASE ReturnAirbaseSet The SET of @{Set#SET_AIRBASE}s to evaluate where to return to.
-function AI_BALANCER:ReturnToNearestAirbases( ReturnTresholdRange, ReturnAirbaseSet )
+function AI_BALANCER:ReturnToNearestAirbases( ReturnThresholdRange, ReturnAirbaseSet )
 
   self.ToNearestAirbase = true
-  self.ReturnTresholdRange = ReturnTresholdRange
+  self.ReturnThresholdRange = ReturnThresholdRange
   self.ReturnAirbaseSet = ReturnAirbaseSet
 end
 
 --- Returns the AI to the home @{Airbase#AIRBASE}.
 -- @param #AI_BALANCER self
--- @param Dcs.DCSTypes#Distance ReturnTresholdRange If there is an enemy @{Client#CLIENT} within the ReturnTresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
-function AI_BALANCER:ReturnToHomeAirbase( ReturnTresholdRange )
+-- @param Dcs.DCSTypes#Distance ReturnThresholdRange If there is an enemy @{Client#CLIENT} within the ReturnThresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
+function AI_BALANCER:ReturnToHomeAirbase( ReturnThresholdRange )
 
   self.ToHomeAirbase = true
-  self.ReturnTresholdRange = ReturnTresholdRange
+  self.ReturnThresholdRange = ReturnThresholdRange
 end
 
 --- @param #AI_BALANCER self
@@ -35644,12 +35644,12 @@ function AI_BALANCER:onenterMonitoring( SetGroup )
           if self.ToNearestAirbase == false and self.ToHomeAirbase == false then
             self:Destroy( Client.UnitName, AIGroup )
           else
-            -- We test if there is no other CLIENT within the self.ReturnTresholdRange of the first unit of the AI group.
+            -- We test if there is no other CLIENT within the self.ReturnThresholdRange of the first unit of the AI group.
             -- If there is a CLIENT, the AI stays engaged and will not return.
-            -- If there is no CLIENT within the self.ReturnTresholdRange, then the unit will return to the Airbase return method selected.
+            -- If there is no CLIENT within the self.ReturnThresholdRange, then the unit will return to the Airbase return method selected.
 
             local PlayerInRange = { Value = false }          
-            local RangeZone = ZONE_RADIUS:New( 'RangeZone', AIGroup:GetVec2(), self.ReturnTresholdRange )
+            local RangeZone = ZONE_RADIUS:New( 'RangeZone', AIGroup:GetVec2(), self.ReturnThresholdRange )
             
             self:T2( RangeZone )
             
@@ -35771,8 +35771,8 @@ function AI_A2A:New( AIGroup )
   
   self:SetControllable( AIGroup )
   
-  self:SetFuelTreshold( .2, 60 )
-  self:SetDamageTreshold( 0.4 )
+  self:SetFuelThreshold( .2, 60 )
+  self:SetDamageThreshold( 0.4 )
 
   self:SetStartState( "Stopped" ) 
   
@@ -36012,13 +36012,13 @@ end
 -- When the fuel treshold is reached, the AI will continue for a given time its patrol task in orbit, while a new AIControllable is targetted to the AI_A2A.
 -- Once the time is finished, the old AI will return to the base.
 -- @param #AI_A2A self
--- @param #number PatrolFuelTresholdPercentage The treshold in percentage (between 0 and 1) when the AIControllable is considered to get out of fuel.
+-- @param #number PatrolFuelThresholdPercentage The treshold in percentage (between 0 and 1) when the AIControllable is considered to get out of fuel.
 -- @param #number PatrolOutOfFuelOrbitTime The amount of seconds the out of fuel AIControllable will orbit before returning to the base.
 -- @return #AI_A2A self
-function AI_A2A:SetFuelTreshold( PatrolFuelTresholdPercentage, PatrolOutOfFuelOrbitTime )
+function AI_A2A:SetFuelThreshold( PatrolFuelThresholdPercentage, PatrolOutOfFuelOrbitTime )
 
   self.PatrolManageFuel = true
-  self.PatrolFuelTresholdPercentage = PatrolFuelTresholdPercentage
+  self.PatrolFuelThresholdPercentage = PatrolFuelThresholdPercentage
   self.PatrolOutOfFuelOrbitTime = PatrolOutOfFuelOrbitTime
   
   self.Controllable:OptionRTBBingoFuel( false )
@@ -36033,12 +36033,12 @@ end
 -- Note that for groups, the average damage of the complete group will be calculated.
 -- So, in a group of 4 airplanes, 2 lost and 2 with damage 0.2, the damage treshold will be 0.25.
 -- @param #AI_A2A self
--- @param #number PatrolDamageTreshold The treshold in percentage (between 0 and 1) when the AI is considered to be damaged.
+-- @param #number PatrolDamageThreshold The treshold in percentage (between 0 and 1) when the AI is considered to be damaged.
 -- @return #AI_A2A self
-function AI_A2A:SetDamageTreshold( PatrolDamageTreshold )
+function AI_A2A:SetDamageThreshold( PatrolDamageThreshold )
 
   self.PatrolManageDamage = true
-  self.PatrolDamageTreshold = PatrolDamageTreshold
+  self.PatrolDamageThreshold = PatrolDamageThreshold
   
   return self
 end
@@ -36081,7 +36081,7 @@ function AI_A2A:onafterStatus()
     
     local Fuel = self.Controllable:GetUnit(1):GetFuel()
     self:F({Fuel=Fuel})
-    if Fuel < self.PatrolFuelTresholdPercentage then
+    if Fuel < self.PatrolFuelThresholdPercentage then
       self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... RTB!" )
       local OldAIControllable = self.Controllable
       local AIControllableTemplate = self.Controllable:GetTemplate()
@@ -36098,8 +36098,8 @@ function AI_A2A:onafterStatus()
     -- TODO: Check GROUP damage function.
     local Damage = self.Controllable:GetLife()
     local InitialLife = self.Controllable:GetLife0()
-    self:F( { Damage = Damage, InitialLife = InitialLife, DamageTreshold = self.PatrolDamageTreshold } )
-    if ( Damage / InitialLife ) < self.PatrolDamageTreshold then
+    self:F( { Damage = Damage, InitialLife = InitialLife, DamageThreshold = self.PatrolDamageThreshold } )
+    if ( Damage / InitialLife ) < self.PatrolDamageThreshold then
       self:E( self.Controllable:GetName() .. " is damaged: " .. Damage .. " ... RTB!" )
       self:Damaged()
       RTB = true
@@ -38224,18 +38224,35 @@ do -- AI_A2A_DISPATCHER
   -- 
   -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultGrouping}() to set the **default grouping** of spawned airplanes for all squadrons.
   -- 
-  -- ## 10.5. RTB fuel treshold.
+  -- ## 10.5. Default RTB fuel treshold.
   -- 
   -- When an airplane gets **out of fuel** to a certain %-tage, which is **15% (0.15)**, it will go RTB, and will be replaced with a new airplane when applicable.
   -- 
-  -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultFuelTreshold}() to set the **default fuel treshold** of spawned airplanes for all squadrons.
+  -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultFuelThreshold}() to set the **default fuel treshold** of spawned airplanes for all squadrons.
   -- 
-  -- ## 10.6. RTB damage treshold.
+  -- ## 10.6. Default RTB damage treshold.
   -- 
   -- When an airplane is **damaged** to a certain %-tage, which is **40% (0.40)**, it will go RTB, and will be replaced with a new airplane when applicable.
   -- 
-  -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultDamageTreshold}() to set the **default damage treshold** of spawned airplanes for all squadrons.
+  -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultDamageThreshold}() to set the **default damage treshold** of spawned airplanes for all squadrons.
   -- 
+  -- ## 10.7. Default CAP Time Interval.
+  -- 
+  -- CAP is time driven, and will evaluate in random time intervals if a new CAP needs to be spawned.
+  -- The **default CAP time interval** is between **180** and **600** seconds.
+  -- 
+  -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultCapTimeInterval}() to set the **default CAP time interval** of spawned airplanes for all squadrons.  
+  -- Note that you can still change the CAP limit and CAP time intervals for each CAP individually using the @{#AI_A2A_DISPATCHER.SetSquadronCapTimeInterval}() method.
+  -- 
+  -- ## 10.8. Default CAP limit.
+  -- 
+  -- Multiple CAP can be airborne at the same time for one squadron, which is controlled by the **CAP limit**.
+  -- The **default CAP limit** is 1 CAP per squadron to be airborne at the same time.
+  -- Note that the default CAP limit is used when a Squadron CAP is defined, and cannot be changed afterwards.
+  -- So, ensure that you set the default CAP limit **before** you spawn the Squadron CAP.
+  -- 
+  -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultCapTimeInterval}() to set the **default CAP time interval** of spawned airplanes for all squadrons.  
+  -- Note that you can still change the CAP limit and CAP time intervals for each CAP individually using the @{#AI_A2A_DISPATCHER.SetSquadronCapTimeInterval}() method.
   -- 
   -- ## 11. Q & A:
   -- 
@@ -38325,8 +38342,10 @@ do -- AI_A2A_DISPATCHER
     self:SetDefaultLanding( AI_A2A_DISPATCHER.Landing.NearAirbase )
     self:SetDefaultOverhead( 1 )
     self:SetDefaultGrouping( 1 )
-    self:SetDefaultFuelTreshold( 0.15, 0 ) -- 15% of fuel remaining in the tank will trigger the airplane to return to base or refuel.
-    self:SetDefaultDamageTreshold( 0.4 ) -- When 40% of damage, go RTB.
+    self:SetDefaultFuelThreshold( 0.15, 0 ) -- 15% of fuel remaining in the tank will trigger the airplane to return to base or refuel.
+    self:SetDefaultDamageThreshold( 0.4 ) -- When 40% of damage, go RTB.
+    self:SetDefaultCapTimeInterval( 180, 600 ) -- Between 180 and 600 seconds.
+    self:SetDefaultCapLimit( 1 ) -- Maximum one CAP per squadron.
     
     
     self:AddTransition( "Started", "Assign", "Started" )
@@ -38609,7 +38628,7 @@ do -- AI_A2A_DISPATCHER
   --- Set the default fuel treshold when defenders will RTB or Refuel in the air.
   -- The fuel treshold is by default set to 15%, which means that an airplane will stay in the air until 15% of its fuel has been consumed.
   -- @param #AI_A2A_DISPATCHER self
-  -- @param #number FuelTreshold A decimal number between 0 and 1, that expresses the %-tage of the treshold of fuel remaining in the tank when the plane will go RTB or Refuel.
+  -- @param #number FuelThreshold A decimal number between 0 and 1, that expresses the %-tage of the treshold of fuel remaining in the tank when the plane will go RTB or Refuel.
   -- @return #AI_A2A_DISPATCHER
   -- @usage
   -- 
@@ -38617,11 +38636,11 @@ do -- AI_A2A_DISPATCHER
   --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
   --   
   --   -- Now Setup the default fuel treshold.
-  --   A2ADispatcher:SetDefaultRefuelTreshold( 0.30 ) -- Go RTB when only 30% of fuel remaining in the tank.
+  --   A2ADispatcher:SetDefaultRefuelThreshold( 0.30 ) -- Go RTB when only 30% of fuel remaining in the tank.
   --   
-  function AI_A2A_DISPATCHER:SetDefaultFuelTreshold( FuelTreshold )
+  function AI_A2A_DISPATCHER:SetDefaultFuelThreshold( FuelThreshold )
     
-    self.DefenderDefault.FuelTreshold = FuelTreshold
+    self.DefenderDefault.FuelThreshold = FuelThreshold
     
     return self
   end  
@@ -38630,7 +38649,7 @@ do -- AI_A2A_DISPATCHER
   --- Set the default damage treshold when defenders will RTB.
   -- The default damage treshold is by default set to 40%, which means that when the airplane is 40% damaged, it will go RTB.
   -- @param #AI_A2A_DISPATCHER self
-  -- @param #number DamageTreshold A decimal number between 0 and 1, that expresses the %-tage of the damage treshold before going RTB.
+  -- @param #number DamageThreshold A decimal number between 0 and 1, that expresses the %-tage of the damage treshold before going RTB.
   -- @return #AI_A2A_DISPATCHER
   -- @usage
   -- 
@@ -38638,11 +38657,55 @@ do -- AI_A2A_DISPATCHER
   --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
   --   
   --   -- Now Setup the default damage treshold.
-  --   A2ADispatcher:SetDefaultDamageTreshold( 0.90 ) -- Go RTB when the airplane 90% damaged.
+  --   A2ADispatcher:SetDefaultDamageThreshold( 0.90 ) -- Go RTB when the airplane 90% damaged.
   --   
-  function AI_A2A_DISPATCHER:SetDefaultDamageTreshold( DamageTreshold )
+  function AI_A2A_DISPATCHER:SetDefaultDamageThreshold( DamageThreshold )
     
-    self.DefenderDefault.DamageTreshold = DamageTreshold
+    self.DefenderDefault.DamageThreshold = DamageThreshold
+    
+    return self
+  end  
+
+
+  --- Set the default CAP time interval for squadrons, which will be used to determine a random CAP timing.
+  -- The default CAP time interval is between 180 and 600 seconds.
+  -- @param #AI_A2A_DISPATCHER self
+  -- @param #number CapMinSeconds The minimum amount of seconds for the random time interval.
+  -- @param #number CapMaxSeconds The maximum amount of seconds for the random time interval.
+  -- @return #AI_A2A_DISPATCHER
+  -- @usage
+  -- 
+  --   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
+  --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
+  --   
+  --   -- Now Setup the default CAP time interval.
+  --   A2ADispatcher:SetDefaultCapTimeInterval( 300, 1200 ) -- Between 300 and 1200 seconds.
+  --   
+  function AI_A2A_DISPATCHER:SetDefaultCapTimeInterval( CapMinSeconds, CapMaxSeconds )
+    
+    self.DefenderDefault.CapMinSeconds = CapMinSeconds
+    self.DefenderDefault.CapMaxSeconds = CapMaxSeconds
+    
+    return self
+  end  
+
+
+  --- Set the default CAP limit for squadrons, which will be used to determine how many CAP can be airborne at the same time for the squadron.
+  -- The default CAP time interval is 1 CAP.
+  -- @param #AI_A2A_DISPATCHER self
+  -- @param #number CapLimit The maximum amount of CAP that can be airborne at the same time for the squadron.
+  -- @return #AI_A2A_DISPATCHER
+  -- @usage
+  -- 
+  --   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
+  --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
+  --   
+  --   -- Now Setup the default CAP limit.
+  --   A2ADispatcher:SetDefaultCapLimit( 2 ) -- Maximum 2 CAP per squadron.
+  --   
+  function AI_A2A_DISPATCHER:SetDefaultCapLimit( CapLimit )
+    
+    self.DefenderDefault.CapLimit = CapLimit
     
     return self
   end  
@@ -38908,7 +38971,7 @@ do -- AI_A2A_DISPATCHER
     Cap.EngageMaxSpeed = EngageMaxSpeed
     Cap.AltType = AltType
 
-    self:SetSquadronCapInterval( SquadronName, 2, 180, 600, 1 )
+    self:SetSquadronCapInterval( SquadronName, self.DefenderDefault.CapLimit, self.DefenderDefault.CapMinSeconds, self.DefenderDefault.CapMaxSeconds, 1 )
     
     return self
   end
@@ -39800,8 +39863,8 @@ do -- AI_A2A_DISPATCHER
           local Fsm = AI_A2A_CAP:New( DefenderCAP, Cap.Zone, Cap.FloorAltitude, Cap.CeilingAltitude, Cap.PatrolMinSpeed, Cap.PatrolMaxSpeed, Cap.EngageMinSpeed, Cap.EngageMaxSpeed, Cap.AltType )
           Fsm:SetDispatcher( self )
           Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
-          Fsm:SetFuelTreshold( self.DefenderDefault.FuelTreshold, 60 )
-          Fsm:SetDamageTreshold( self.DefenderDefault.DamageTreshold )
+          Fsm:SetFuelThreshold( self.DefenderDefault.FuelThreshold, 60 )
+          Fsm:SetDamageThreshold( self.DefenderDefault.DamageThreshold )
           Fsm:Start()
           Fsm:__Patrol( 2 )
   
@@ -39932,8 +39995,8 @@ do -- AI_A2A_DISPATCHER
               local Fsm = AI_A2A_GCI:New( DefenderGCI, Gci.EngageMinSpeed, Gci.EngageMaxSpeed )
               Fsm:SetDispatcher( self )
               Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
-              Fsm:SetFuelTreshold( self.DefenderDefault.FuelTreshold, 60 )
-              Fsm:SetDamageTreshold( self.DefenderDefault.DamageTreshold )
+              Fsm:SetFuelThreshold( self.DefenderDefault.FuelThreshold, 60 )
+              Fsm:SetDamageThreshold( self.DefenderDefault.DamageThreshold )
               Fsm:Start()
               Fsm:__Engage( 2, Target.Set ) -- Engage on the TargetSetUnit
     
@@ -41257,13 +41320,13 @@ end
 -- When the fuel treshold is reached, the AI will continue for a given time its patrol task in orbit, while a new AIControllable is targetted to the AI_PATROL_ZONE.
 -- Once the time is finished, the old AI will return to the base.
 -- @param #AI_PATROL_ZONE self
--- @param #number PatrolFuelTresholdPercentage The treshold in percentage (between 0 and 1) when the AIControllable is considered to get out of fuel.
+-- @param #number PatrolFuelThresholdPercentage The treshold in percentage (between 0 and 1) when the AIControllable is considered to get out of fuel.
 -- @param #number PatrolOutOfFuelOrbitTime The amount of seconds the out of fuel AIControllable will orbit before returning to the base.
 -- @return #AI_PATROL_ZONE self
-function AI_PATROL_ZONE:ManageFuel( PatrolFuelTresholdPercentage, PatrolOutOfFuelOrbitTime )
+function AI_PATROL_ZONE:ManageFuel( PatrolFuelThresholdPercentage, PatrolOutOfFuelOrbitTime )
 
   self.PatrolManageFuel = true
-  self.PatrolFuelTresholdPercentage = PatrolFuelTresholdPercentage
+  self.PatrolFuelThresholdPercentage = PatrolFuelThresholdPercentage
   self.PatrolOutOfFuelOrbitTime = PatrolOutOfFuelOrbitTime
   
   return self
@@ -41276,12 +41339,12 @@ end
 -- Note that for groups, the average damage of the complete group will be calculated.
 -- So, in a group of 4 airplanes, 2 lost and 2 with damage 0.2, the damage treshold will be 0.25.
 -- @param #AI_PATROL_ZONE self
--- @param #number PatrolDamageTreshold The treshold in percentage (between 0 and 1) when the AI is considered to be damaged.
+-- @param #number PatrolDamageThreshold The treshold in percentage (between 0 and 1) when the AI is considered to be damaged.
 -- @return #AI_PATROL_ZONE self
-function AI_PATROL_ZONE:ManageDamage( PatrolDamageTreshold )
+function AI_PATROL_ZONE:ManageDamage( PatrolDamageThreshold )
 
   self.PatrolManageDamage = true
-  self.PatrolDamageTreshold = PatrolDamageTreshold
+  self.PatrolDamageThreshold = PatrolDamageThreshold
   
   return self
 end
@@ -41497,7 +41560,7 @@ function AI_PATROL_ZONE:onafterStatus()
     local RTB = false
     
     local Fuel = self.Controllable:GetUnit(1):GetFuel()
-    if Fuel < self.PatrolFuelTresholdPercentage then
+    if Fuel < self.PatrolFuelThresholdPercentage then
       self:E( self.Controllable:GetName() .. " is out of fuel:" .. Fuel .. ", RTB!" )
       local OldAIControllable = self.Controllable
       local AIControllableTemplate = self.Controllable:GetTemplate()
@@ -41512,7 +41575,7 @@ function AI_PATROL_ZONE:onafterStatus()
     
     -- TODO: Check GROUP damage function.
     local Damage = self.Controllable:GetLife()
-    if Damage <= self.PatrolDamageTreshold then
+    if Damage <= self.PatrolDamageThreshold then
       self:E( self.Controllable:GetName() .. " is damaged:" .. Damage .. ", RTB!" )
       RTB = true
     end
