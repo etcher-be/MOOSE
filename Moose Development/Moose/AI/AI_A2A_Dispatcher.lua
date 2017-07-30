@@ -155,7 +155,7 @@
 -- 
 -- @module AI_A2A_Dispatcher
 
---BASE:TraceClass("AI_A2A_DISPATCHER")
+
 
 do -- AI_A2A_DISPATCHER
 
@@ -815,6 +815,7 @@ do -- AI_A2A_DISPATCHER
   --- @param #AI_A2A_DISPATCHER self
   -- @param Core.Event#EVENTDATA EventData
   function AI_A2A_DISPATCHER:OnEventLand( EventData )
+    self:F( "Landed" )
     local DefenderUnit = EventData.IniUnit
     local Defender = EventData.IniGroup
     local Squadron = self:GetSquadronFromDefender( Defender )
@@ -2255,7 +2256,7 @@ do -- AI_A2A_DISPATCHER
               Fsm:SetDispatcher( self )
               Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
               Fsm:Start()
-              Fsm:__Engage( 1, Target.Set ) -- Engage on the TargetSetUnit
+              Fsm:__Engage( 5, Target.Set ) -- Engage on the TargetSetUnit
     
       
               self:SetDefenderTask( DefenderGCI, "GCI", Fsm, Target )
@@ -2941,6 +2942,12 @@ do
     end
     
     self:__Start( 5 )
+    
+    self:HandleEvent( EVENTS.Crash, self.OnEventCrashOrDead )
+    self:HandleEvent( EVENTS.Dead, self.OnEventCrashOrDead )
+    
+    self:HandleEvent( EVENTS.Land )
+    self:HandleEvent( EVENTS.EngineShutdown )
     
     return self
   end
