@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170728_2250' )
+env.info( 'Moose Generation Timestamp: 20170730_0743' )
 
 --- Various routines
 -- @module routines
@@ -5274,7 +5274,7 @@ function EVENT:onEvent( Event )
         for EventClass, EventData in pairs( self.Events[Event.id][EventPriority] ) do
 
           if Event.IniObjectCategory ~= Object.Category.STATIC then
-            --self:E( { "Evaluating: ", EventClass:GetClassNameAndID() } )
+            self:E( { "Evaluating: ", EventClass:GetClassNameAndID() } )
           end
           
           Event.IniGroup = GROUP:FindByName( Event.IniDCSGroupName )
@@ -36616,6 +36616,7 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     )
 
     PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
+    PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     
     --- Now we're going to do something special, we're going to call a function from a waypoint action at the AIControllable...
     AIGroup:WayPointInitialize( PatrolRoute )
@@ -36623,7 +36624,7 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     local Tasks = {}
     Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_PATROL.PatrolRoute" )
     
-    PatrolRoute[1].task = AIGroup:TaskCombo( Tasks )
+    PatrolRoute[#PatrolRoute].task = AIGroup:TaskCombo( Tasks )
     
     --- Do a trick, link the NewPatrolRoute function of the PATROLGROUP object to the AIControllable in a temporary variable ...
     AIGroup:SetState( AIGroup, "AI_A2A_PATROL", self )
@@ -37051,10 +37052,8 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       self:T2( { self.MinSpeed, self.MaxSpeed, ToTargetSpeed } )
       
       EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
+      EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
 
-      AIGroup:OptionROEOpenFire()
-      AIGroup:OptionROTPassiveDefense()
-  
       local AttackTasks = {}
   
       for AttackUnitID, AttackUnit in pairs( self.AttackSetUnit:GetSet() ) do
@@ -37073,10 +37072,13 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         self:E("No targets found -> Going back to Patrolling")
         self:__Abort( 0.5 )
       else
+        AIGroup:OptionROEOpenFire()
+        AIGroup:OptionROTPassiveDefense()
+
         AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, #AttackTasks, "AI_A2A_CAP.AttackRoute" )
         AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( 4000, self.PatrolMinSpeed )
         
-        EngageRoute[1].task = AIGroup:TaskCombo( AttackTasks )
+        EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
         AIGroup:SetState( AIGroup, "AI_A2A_CAP", self )
@@ -37440,8 +37442,8 @@ end
 --- @param Wrapper.Group#GROUP AIControllable
 function AI_A2A_GCI.InterceptRoute( AIControllable )
 
-  AIControllable:T( "NewEngageRoute" )
   local EngageZone = AIControllable:GetState( AIControllable, "EngageZone" ) -- AI.AI_Cap#AI_A2A_GCI
+  EngageZone:E( "NewEngageRoute" )
   EngageZone:__Engage( 0.5 )
 end
 
@@ -37487,6 +37489,9 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
     if AIGroup:IsAlive() then
   
       local EngageRoute = {}
+      
+      local CurrentCoord = AIGroup:GetCoordinate()
+            
   
       --- Calculate the target route point.
       
@@ -37499,7 +37504,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       local ToInterceptAngle = CurrentCoord:GetAngleDegrees( CurrentCoord:GetDirectionVec3( ToTargetCoord ) )
       
       --- Create a route point of type air.
-      local ToPatrolRoutePoint = CurrentCoord:Translate( 5000, ToInterceptAngle ):RoutePointAir( 
+      local ToPatrolRoutePoint = CurrentCoord:Translate( 10000, ToInterceptAngle ):RoutePointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -37508,19 +37513,17 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       )
   
       self:F( { Angle = ToInterceptAngle, ToTargetSpeed = ToTargetSpeed } )
-      self:T2( { self.EngageMinSpeed, self.EngageMaxSpeed, ToTargetSpeed } )
+      self:F( { self.EngageMinSpeed, self.EngageMaxSpeed, ToTargetSpeed } )
       
       EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
+      EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
       
-      AIGroup:OptionROEOpenFire()
-      AIGroup:OptionROTPassiveDefense()
-  
       local AttackTasks = {}
   
       for AttackUnitID, AttackUnit in pairs( self.AttackSetUnit:GetSet() ) do
         local AttackUnit = AttackUnit -- Wrapper.Unit#UNIT
-        self:T( { "Intercepting Unit:", AttackUnit:GetName(), AttackUnit:IsAlive(), AttackUnit:IsAir() } )
         if AttackUnit:IsAlive() and AttackUnit:IsAir() then
+          self:T( { "Intercepting Unit:", AttackUnit:GetName(), AttackUnit:IsAlive(), AttackUnit:IsAir() } )
           AttackTasks[#AttackTasks+1] = AIGroup:TaskAttackUnit( AttackUnit )
         end
       end
@@ -37534,9 +37537,12 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         self:Return()
         self:__RTB( 0.5 )
       else
+        AIGroup:OptionROEOpenFire()
+        AIGroup:OptionROTPassiveDefense()
+
         AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, #AttackTasks, "AI_A2A_GCI.InterceptRoute" )
         AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( 4000, self.EngageMinSpeed )
-        EngageRoute[1].task = AIGroup:TaskCombo( AttackTasks )
+        EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
         AIGroup:SetState( AIGroup, "EngageZone", self )
@@ -37744,7 +37750,7 @@ end
 -- 
 -- @module AI_A2A_Dispatcher
 
---BASE:TraceClass("AI_A2A_DISPATCHER")
+
 
 do -- AI_A2A_DISPATCHER
 
@@ -38404,6 +38410,7 @@ do -- AI_A2A_DISPATCHER
   --- @param #AI_A2A_DISPATCHER self
   -- @param Core.Event#EVENTDATA EventData
   function AI_A2A_DISPATCHER:OnEventLand( EventData )
+    self:F( "Landed" )
     local DefenderUnit = EventData.IniUnit
     local Defender = EventData.IniGroup
     local Squadron = self:GetSquadronFromDefender( Defender )
@@ -39844,7 +39851,7 @@ do -- AI_A2A_DISPATCHER
               Fsm:SetDispatcher( self )
               Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
               Fsm:Start()
-              Fsm:__Engage( 1, Target.Set ) -- Engage on the TargetSetUnit
+              Fsm:__Engage( 5, Target.Set ) -- Engage on the TargetSetUnit
     
       
               self:SetDefenderTask( DefenderGCI, "GCI", Fsm, Target )
@@ -40530,6 +40537,12 @@ do
     end
     
     self:__Start( 5 )
+    
+    self:HandleEvent( EVENTS.Crash, self.OnEventCrashOrDead )
+    self:HandleEvent( EVENTS.Dead, self.OnEventCrashOrDead )
+    
+    self:HandleEvent( EVENTS.Land )
+    self:HandleEvent( EVENTS.EngineShutdown )
     
     return self
   end
