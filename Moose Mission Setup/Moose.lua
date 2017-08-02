@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170731_1707' )
+env.info( 'Moose Generation Timestamp: 20170802_0949' )
 
 --- Various routines
 -- @module routines
@@ -4239,7 +4239,7 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
 
   -- Initialize the ObjectSchedulers array, which is a weakly coupled table.
   -- If the object used as the key is nil, then the garbage collector will remove the item from the Functions array.
-  self.ObjectSchedulers = self.ObjectSchedulers or setmetatable( {}, { __mode = "v" } ) 
+  self.ObjectSchedulers = self.ObjectSchedulers or {} -- setmetatable( {}, { __mode = "v" } ) 
   
   if Scheduler.MasterObject then
     self.ObjectSchedulers[self.CallID] = Scheduler
@@ -19035,7 +19035,7 @@ function CONTROLLABLE:SetTask( DCSTask, WaitTime )
     -- Therefore we schedule the functions to set the mission and options for the Controllable.
     -- Controller.setTask( Controller, DCSTask )
 
-    if not WaitTime then
+    if not WaitTime or WaitTime == 0 then
       Controller:setTask( DCSTask )
     else
       self.TaskScheduler:Schedule( Controller, Controller.setTask, { DCSTask }, WaitTime )
@@ -35992,6 +35992,7 @@ function AI_A2A:New( AIGroup )
 
 
   self:AddTransition( "*", "Return", "Returning" )
+  self:AddTransition( "*", "Hold", "Holding" )
   self:AddTransition( "*", "Home", "Home" )
   self:AddTransition( "*", "LostControl", "LostControl" )
   self:AddTransition( "*", "Fuel", "Fuel" )
@@ -36152,21 +36153,34 @@ end
 
 --- @param #AI_A2A self
 function AI_A2A:onafterStatus()
-  self:F()
+
+  self:F( " Checking Status" )
 
   if self.Controllable and self.Controllable:IsAlive() then
   
     local RTB = false
     
     local DistanceFromHomeBase = self.HomeAirbase:GetCoordinate():Get2DDistance( self.Controllable:GetCoordinate() )
-    self:F({DistanceFromHomeBase=DistanceFromHomeBase})
     
-    if DistanceFromHomeBase > self.DisengageRadius then
-      self:E( self.Controllable:GetName() .. " is too far from home base, RTB!" )
-      self:Home()
-      RTB = true
+    if not self:Is( "Holding" ) and not self:Is( "Returning" ) then
+      local DistanceFromHomeBase = self.HomeAirbase:GetCoordinate():Get2DDistance( self.Controllable:GetCoordinate() )
+      self:F({DistanceFromHomeBase=DistanceFromHomeBase})
+      
+      if DistanceFromHomeBase > self.DisengageRadius then
+        self:E( self.Controllable:GetName() .. " is too far from home base, RTB!" )
+        self:Hold( 300 )
+        RTB = false
+      end
     end
     
+    if self:Is( "Damaged" ) or self:Is( "LostControl" ) then
+      if DistanceFromHomeBase < 5000 then
+        self:E( self.Controllable:GetName() .. " is too far from home base, RTB!" )
+        self:Home( "Destroy" )
+      end
+    end
+    
+
     
     local Fuel = self.Controllable:GetUnit(1):GetFuel()
     self:F({Fuel=Fuel})
@@ -36197,10 +36211,15 @@ function AI_A2A:onafterStatus()
     -- Check if planes went RTB and are out of control.
     if self.Controllable:HasTask() == false then
       if not self:Is( "Started" ) and 
-         not self:Is( "Stopped" ) then
+         not self:Is( "Stopped" ) and
+         not self:Is( "Home" ) then
         if self.IdleCount >= 2 then
-          self:E( self.Controllable:GetName() .. " control lost! " )
-          self:LostControl()
+          if Damage ~= InitialLife then
+            self:Damaged()
+          else  
+            self:E( self.Controllable:GetName() .. " control lost! " )
+            self:LostControl()
+          end
         else
           self.IdleCount = self.IdleCount + 1
         end
@@ -36208,7 +36227,7 @@ function AI_A2A:onafterStatus()
     else
       self.IdleCount = 0
     end
-    
+
     if RTB == true then
       self:__RTB( 0.5 )
     end
@@ -36221,11 +36240,30 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A.RTBRoute( AIGroup )
 
-  AIGroup:E( { "RTBRoute:", AIGroup:GetName() } )
-  local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
-  _AI_A2A:__RTB( 0.5 )
+  AIGroup:E( { "AI_A2A.RTBRoute:", AIGroup:GetName() } )
+  
+  if AIGroup:IsAlive() then
+    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
+    _AI_A2A:__RTB( 0.5 )
+    local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
+    AIGroup:SetTask( Task )
+  end
+  
 end
 
+--- @param Wrapper.Group#GROUP AIGroup
+function AI_A2A.RTBHold( AIGroup )
+
+  AIGroup:E( { "AI_A2A.RTBHold:", AIGroup:GetName() } )
+  if AIGroup:IsAlive() then
+    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
+    _AI_A2A:__RTB( 0.5 )
+    _AI_A2A:Return()
+    local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
+    AIGroup:SetTask( Task )
+  end
+  
+end
 
 
 --- @param #AI_A2A self
@@ -36237,8 +36275,6 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
   if AIGroup and AIGroup:IsAlive() then
 
     self:E( "Group " .. AIGroup:GetName() .. " ... RTB! ( " .. self:GetState() .. " )" )
-    
-    self.CheckStatus = false
     
     self:ClearTargetDistance()
     AIGroup:ClearTasks()
@@ -36256,6 +36292,7 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
     
     local ToAirbaseCoord = CurrentCoord:Translate( 5000, ToAirbaseAngle )
     if Distance < 5000 then
+      self:E( "RTB and near the airbase!" )
       self:Home()
       return
     end
@@ -36272,6 +36309,7 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
     self:T2( { self.MinSpeed, self.MaxSpeed, ToTargetSpeed } )
     
     EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
+    EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
     
     AIGroup:OptionROEHoldFire()
     AIGroup:OptionROTEvadeFire()
@@ -36281,12 +36319,13 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
   
     local Tasks = {}
     Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A.RTBRoute" )
-    EngageRoute[1].task = AIGroup:TaskCombo( Tasks )
+    Tasks[#Tasks+1] = AIGroup:TaskOrbitCircle( 4000, 350 )
+    EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( Tasks )
 
     AIGroup:SetState( AIGroup, "AI_A2A", self )
 
     --- NOW ROUTE THE GROUP!
-    AIGroup:WayPointExecute( 1, 0 )
+    AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
       
   end
     
@@ -36303,6 +36342,30 @@ function AI_A2A:onafterHome( AIGroup, From, Event, To )
   end
 
 end
+
+--- @param #AI_A2A self
+-- @param Wrapper.Group#GROUP AIGroup
+function AI_A2A:onafterHold( AIGroup, From, Event, To, HoldTime )
+  self:F( { AIGroup, From, Event, To } )
+
+  self:E( "Group " .. self.Controllable:GetName() .. " ... Holding! ( " .. self:GetState() .. " )" )
+  
+  if AIGroup and AIGroup:IsAlive() then
+    local OrbitTask = AIGroup:TaskOrbitCircle( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ), self.PatrolMinSpeed )
+    local TimedOrbitTask = AIGroup:TaskControlled( OrbitTask, AIGroup:TaskCondition( nil, nil, nil, nil, HoldTime , nil ) )
+    
+    local RTBTask = AIGroup:TaskFunction( 1, 1, "AI_A2A.RTBHold" )
+    
+    local OrbitHoldTask = AIGroup:TaskOrbitCircle( 4000, self.PatrolMinSpeed )
+    
+    AIGroup:SetState( AIGroup, "AI_A2A", self )
+    
+    AIGroup:SetTask( AIGroup:TaskCombo( { TimedOrbitTask, RTBTask, OrbitHoldTask } ), 0 )
+  end
+
+end
+
+
     
 
 
@@ -37076,8 +37139,15 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A_CAP.AttackRoute( AIGroup )
 
-  local EngageZone = AIGroup:GetState( AIGroup, "AI_A2A_CAP" ) -- AI.AI_Cap#AI_A2A_CAP
-  EngageZone:__Engage( 0.5 )
+  AIGroup:E( { "AI_A2A_CAP.AttackRoute:", AIGroup:GetName() } )
+
+  if AIGroup:IsAlive() then
+    local _AI_A2A_CAP = AIGroup:GetState( AIGroup, "AI_A2A_CAP" ) -- AI.AI_Cap#AI_A2A_CAP
+    _AI_A2A_CAP:__Engage( 0.5 )
+
+    local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
+    AIGroup:SetTask( Task )
+  end
 end
 
 --- @param #AI_A2A_CAP self
@@ -37164,17 +37234,17 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROEOpenFire()
         AIGroup:OptionROTPassiveDefense()
 
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, #AttackTasks, "AI_A2A_CAP.AttackRoute" )
+        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_CAP.AttackRoute" )
         AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( 4000, self.PatrolMinSpeed )
         
-        EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
+        EngageRoute[1].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
         AIGroup:SetState( AIGroup, "AI_A2A_CAP", self )
       end
       
       --- NOW ROUTE THE GROUP!
-      AIGroup:WayPointExecute( 1, 0 )
+      AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
     end
   else
     self:E("No targets found -> Going back to Patrolling")
@@ -37529,11 +37599,17 @@ end
 -- todo: need to fix this global function
 
 --- @param Wrapper.Group#GROUP AIControllable
-function AI_A2A_GCI.InterceptRoute( AIControllable )
+function AI_A2A_GCI.InterceptRoute( AIGroup )
 
-  local EngageZone = AIControllable:GetState( AIControllable, "EngageZone" ) -- AI.AI_Cap#AI_A2A_GCI
-  EngageZone:E( "NewEngageRoute" )
-  EngageZone:__Engage( 0.5 )
+  AIGroup:E( { "AI_A2A_GCI.InterceptRoute:", AIGroup:GetName() } )
+  
+  if AIGroup:IsAlive() then
+    local _AI_A2A_GCI = AIGroup:GetState( AIGroup, "AI_A2A_GCI" ) -- AI.AI_Cap#AI_A2A_GCI
+    _AI_A2A_GCI:__Engage( 0.5 )
+  
+    local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
+    AIGroup:SetTask( Task )
+  end
 end
 
 --- @param #AI_A2A_GCI self
@@ -37629,16 +37705,17 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROEOpenFire()
         AIGroup:OptionROTPassiveDefense()
 
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, #AttackTasks, "AI_A2A_GCI.InterceptRoute" )
+        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_GCI.InterceptRoute" )
         AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( 4000, self.EngageMinSpeed )
         EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-        AIGroup:SetState( AIGroup, "EngageZone", self )
+        AIGroup:SetState( AIGroup, "AI_A2A_GCI", self )
       end
       
       --- NOW ROUTE THE GROUP!
-      AIGroup:WayPointExecute( 1, 0 )
+      --AIGroup:ClearTasks()
+      AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
     
     end
   else
@@ -38144,6 +38221,8 @@ do -- AI_A2A_DISPATCHER
   -- For example with a group setting of 2, if 3 targets are detected and cannot be engaged by CAP or any airborne flight, 
   -- a GCI needs to be started, the GCI flights will be grouped as follows: Group 1 of 2 flights and Group 2 of one flight!
   -- 
+  -- Even more ... If one target has been detected, and the overhead is 1.5, grouping is 1, then two groups of planes will be spawned, with one unit each!
+  -- 
   -- The **grouping value is set for a Squadron**, and can be **dynamically adjusted** during mission execution, so to adjust the defense flights grouping when the tactical situation changes.
   -- 
   -- ### 6.4. Overhead and Balance the effectiveness of the air defenses in case of GCI
@@ -38167,6 +38246,8 @@ do -- AI_A2A_DISPATCHER
   -- 
   -- The amount of defending units is calculated by multiplying the amount of detected attacking planes as part of the detected group 
   -- multiplied by the Overhead and rounded up to the smallest integer. 
+  -- 
+  -- For example ... If one target has been detected, and the overhead is 1.5, grouping is 1, then two groups of planes will be spawned, with one unit each!
   -- 
   -- The **overhead value is set for a Squadron**, and can be **dynamically adjusted** during mission execution, so to adjust the defense overhead when the tactical situation changes.
   --
@@ -38456,6 +38537,8 @@ do -- AI_A2A_DISPATCHER
 
     self:SetEngageRadius()
     self:SetGciRadius()
+    self:SetIntercept( 300 )  -- A default intercept delay time of 300 seconds.
+    self:SetDisengageRadius( 100000 ) -- The default disengage radius is 100 km.
     
     self:SetDefaultTakeoff( AI_A2A_DISPATCHER.Takeoff.Air )
     self:SetDefaultLanding( AI_A2A_DISPATCHER.Landing.NearAirbase )
@@ -38465,8 +38548,6 @@ do -- AI_A2A_DISPATCHER
     self:SetDefaultDamageThreshold( 0.4 ) -- When 40% of damage, go RTB.
     self:SetDefaultCapTimeInterval( 180, 600 ) -- Between 180 and 600 seconds.
     self:SetDefaultCapLimit( 1 ) -- Maximum one CAP per squadron.
-    self:SetIntercept( 300 )  -- A default intercept delay time of 300 seconds.
-    self:SetDisengageRadius( 100000 ) -- The default disengage radius is 100 km.
     
     
     self:AddTransition( "Started", "Assign", "Started" )
@@ -39847,11 +39928,11 @@ do -- AI_A2A_DISPATCHER
   
 
   --- @param #AI_A2A_DISPATCHER self
-  function AI_A2A_DISPATCHER:AddDefenderToSquadron( Squadron, Defender )
+  function AI_A2A_DISPATCHER:AddDefenderToSquadron( Squadron, Defender, Size )
     self.Defenders = self.Defenders or {}
     local DefenderName = Defender:GetName()
     self.Defenders[ DefenderName ] = Squadron
-    Squadron.Resources = Squadron.Resources - Defender:GetSize()
+    Squadron.Resources = Squadron.Resources - Size
     self:F( { DefenderName = DefenderName, SquadronResources = Squadron.Resources } )
   end
 
@@ -40008,7 +40089,7 @@ do -- AI_A2A_DISPATCHER
 
         local TakeoffMethod = self:GetSquadronTakeoff( SquadronName )
         local DefenderCAP = Spawn:SpawnAtAirbase( DefenderSquadron.Airbase, TakeoffMethod )
-        self:AddDefenderToSquadron( DefenderSquadron, DefenderCAP )
+        self:AddDefenderToSquadron( DefenderSquadron, DefenderCAP, DefenderGrouping )
   
         if DefenderCAP then
   
@@ -40051,13 +40132,19 @@ do -- AI_A2A_DISPATCHER
         end
 
         --- @param #AI_A2A_DISPATCHER self
-        function Fsm:onafterHome( Defender, From, Event, To )
+        function Fsm:onafterHome( Defender, From, Event, To, Action )
           self:F({"CAP Home"})
           self:GetParent(self).onafterHome( self, Defender, From, Event, To )
           
           local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
           local AIGroup = self:GetControllable()
           local Squadron = Dispatcher:GetSquadronFromDefender( AIGroup )
+
+          if Action and Action == "Destroy" then
+            Dispatcher:RemoveDefenderFromSquadron( Squadron, AIGroup )
+            AIGroup:Destroy()
+          end
+          
           if Dispatcher:GetSquadronLanding( Squadron.Name ) == AI_A2A_DISPATCHER.Landing.NearAirbase then
             Dispatcher:RemoveDefenderFromSquadron( Squadron, AIGroup )
             AIGroup:Destroy()
@@ -40096,7 +40183,7 @@ do -- AI_A2A_DISPATCHER
       for SquadronName, DefenderSquadron in pairs( self.DefenderSquadrons or {} ) do
         for InterceptID, Intercept in pairs( DefenderSquadron.Gci or {} ) do
     
-          self:E( { DefenderSquadron } )
+          --self:E( { DefenderSquadron } )
           local SpawnCoord = DefenderSquadron.Airbase:GetCoordinate() -- Core.Point#COORDINATE
           --local TargetCoord = AttackerSet:GetFirst():GetCoordinate()
           local TargetCoord = DetectedItem.InterceptCoord
@@ -40129,58 +40216,87 @@ do -- AI_A2A_DISPATCHER
             local DefenderOverhead = DefenderSquadron.Overhead or self.DefenderDefault.Overhead
             local DefenderGrouping = DefenderSquadron.Grouping or self.DefenderDefault.Grouping
             local DefendersNeeded = math.ceil( DefendersCount * DefenderOverhead )
+            
+            self:F( { DefaultOverhead = self.DefenderDefault.Overhead, Overhead = DefenderOverhead } )
+            self:F( { DefaultGrouping = self.DefenderDefault.Grouping, Grouping = DefenderGrouping } )
+            self:F( { DefendersCount = DefendersCount, DefendersNeeded = DefendersNeeded } )
+            
+            while ( DefendersNeeded > 0 ) do
           
-            local Spawn = DefenderSquadron.Spawn[ math.random( 1, #DefenderSquadron.Spawn ) ]
-            if DefenderGrouping then
-              Spawn:InitGrouping( ( DefenderGrouping < DefendersNeeded ) and DefenderGrouping or DefendersNeeded )
-            else
-              Spawn:InitGrouping()
-            end
-            
-            local TakeoffMethod = self:GetSquadronTakeoff( ClosestDefenderSquadronName )
-            local DefenderGCI = Spawn:SpawnAtAirbase( DefenderSquadron.Airbase, TakeoffMethod )
-            self:F( { GCIDefender = DefenderGCI:GetName() } )
-    
-            self:AddDefenderToSquadron( DefenderSquadron, DefenderGCI )
-            
-      
-            if DefenderGCI then
-    
-              DefendersCount = DefendersCount - DefenderGCI:GetSize()
-              
-              local Fsm = AI_A2A_GCI:New( DefenderGCI, Gci.EngageMinSpeed, Gci.EngageMaxSpeed )
-              Fsm:SetDispatcher( self )
-              Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
-              Fsm:SetFuelThreshold( self.DefenderDefault.FuelThreshold, 60 )
-              Fsm:SetDamageThreshold( self.DefenderDefault.DamageThreshold )
-              Fsm:SetDisengageRadius( self.DisengageRadius )
-              Fsm:Start()
-              Fsm:__Engage( 2, DetectedItem.Set ) -- Engage on the TargetSetUnit
-    
-      
-              self:SetDefenderTask( DefenderGCI, "GCI", Fsm, DetectedItem )
-              
-              
-              function Fsm:onafterRTB( Defender, From, Event, To )
-                self:F({"GCI RTB"})
-                self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
-                
-                local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
-                local AIGroup = self:GetControllable()
-                Dispatcher:ClearDefenderTaskTarget( AIGroup )
+              local Spawn = DefenderSquadron.Spawn[ math.random( 1, #DefenderSquadron.Spawn ) ] -- Functional.Spawn#SPAWN
+              local DefenderGrouping = ( DefenderGrouping < DefendersNeeded ) and DefenderGrouping or DefendersNeeded
+              if DefenderGrouping then
+                Spawn:InitGrouping( DefenderGrouping )
+              else
+                Spawn:InitGrouping()
               end
               
-              --- @param #AI_A2A_DISPATCHER self
-              function Fsm:onafterHome( Defender, From, Event, To )
-                self:F({"GCI Home"})
-                self:GetParent(self).onafterHome( self, Defender, From, Event, To )
+              local TakeoffMethod = self:GetSquadronTakeoff( ClosestDefenderSquadronName )
+              local DefenderGCI = Spawn:SpawnAtAirbase( DefenderSquadron.Airbase, TakeoffMethod ) -- Wrapper.Group#GROUP
+              self:F( { GCIDefender = DefenderGCI:GetName() } )
+
+              DefendersNeeded = DefendersNeeded - DefenderGrouping
+      
+              self:AddDefenderToSquadron( DefenderSquadron, DefenderGCI, DefenderGrouping )
+        
+              if DefenderGCI then
+      
+                DefendersCount = DefendersCount - DefenderGrouping
                 
-                local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
-                local AIGroup = self:GetControllable()
-                local Squadron = Dispatcher:GetSquadronFromDefender( AIGroup )
-                if Dispatcher:GetSquadronLanding( Squadron.Name ) == AI_A2A_DISPATCHER.Landing.NearAirbase then
-                  Dispatcher:RemoveDefenderFromSquadron( Squadron, AIGroup )
-                  AIGroup:Destroy()
+                local Fsm = AI_A2A_GCI:New( DefenderGCI, Gci.EngageMinSpeed, Gci.EngageMaxSpeed )
+                Fsm:SetDispatcher( self )
+                Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
+                Fsm:SetFuelThreshold( self.DefenderDefault.FuelThreshold, 60 )
+                Fsm:SetDamageThreshold( self.DefenderDefault.DamageThreshold )
+                Fsm:SetDisengageRadius( self.DisengageRadius )
+                Fsm:Start()
+                Fsm:__Engage( 2, DetectedItem.Set ) -- Engage on the TargetSetUnit
+      
+        
+                self:SetDefenderTask( DefenderGCI, "GCI", Fsm, DetectedItem )
+                
+                
+                function Fsm:onafterRTB( Defender, From, Event, To )
+                  self:F({"GCI RTB"})
+                  self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
+                  
+                  local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
+                  local AIGroup = self:GetControllable()
+                  Dispatcher:ClearDefenderTaskTarget( AIGroup )
+                end
+
+                --- @param #AI_A2A_DISPATCHER self
+                function Fsm:onafterLostControl( Defender, From, Event, To )
+                  self:F({"GCI Home"})
+                  self:GetParent(self).onafterHome( self, Defender, From, Event, To )
+                  
+                  local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
+                  local AIGroup = self:GetControllable() -- Wrapper.Group#GROUP
+                  local Squadron = Dispatcher:GetSquadronFromDefender( AIGroup )
+                  if AIGroup:IsAboveRunway() then
+                    Dispatcher:RemoveDefenderFromSquadron( Squadron, AIGroup )
+                    AIGroup:Destroy()
+                  end
+                end
+                
+                --- @param #AI_A2A_DISPATCHER self
+                function Fsm:onafterHome( Defender, From, Event, To, Action )
+                  self:F({"GCI Home"})
+                  self:GetParent(self).onafterHome( self, Defender, From, Event, To )
+                  
+                  local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
+                  local AIGroup = self:GetControllable()
+                  local Squadron = Dispatcher:GetSquadronFromDefender( AIGroup )
+
+                  if Action and Action == "Destroy" then
+                    Dispatcher:RemoveDefenderFromSquadron( Squadron, AIGroup )
+                    AIGroup:Destroy()
+                  end
+
+                  if Dispatcher:GetSquadronLanding( Squadron.Name ) == AI_A2A_DISPATCHER.Landing.NearAirbase then
+                    Dispatcher:RemoveDefenderFromSquadron( Squadron, AIGroup )
+                    AIGroup:Destroy()
+                  end
                 end
               end
             end
@@ -40324,7 +40440,16 @@ do -- AI_A2A_DISPATCHER
         for Defender, DefenderTask in pairs( self:GetDefenderTasks() ) do
           local Defender = Defender -- Wrapper.Group#GROUP
            if DefenderTask.Target and DefenderTask.Target.Index == DetectedItem.Index then
-             Report:Add( string.format( "   - %s ( %s - %s ): ( #%d ) %s", Defender:GetName(), DefenderTask.Type, DefenderTask.Fsm:GetState(), Defender:GetSize(), Defender:HasTask() == true and "Executing" or "Idle" ) )
+             local Fuel = Defender:GetUnit(1):GetFuel() * 100
+             local Damage = Defender:GetLife() / Defender:GetLife0() * 100
+             Report:Add( string.format( "   - %s ( %s - %s ): ( #%d ) F: %3d, D:%3d - %s", 
+                                        Defender:GetName(), 
+                                        DefenderTask.Type, 
+                                        DefenderTask.Fsm:GetState(), 
+                                        Defender:GetSize(), 
+                                        Fuel,
+                                        Damage, 
+                                        Defender:HasTask() == true and "Executing" or "Idle" ) )
            end
         end
       end
@@ -40338,7 +40463,16 @@ do -- AI_A2A_DISPATCHER
         local Defender = Defender -- Wrapper.Group#GROUP
         if not DefenderTask.Target then
           local DefenderHasTask = Defender:HasTask()
-          Report:Add( string.format( "   - %s ( %s - %s ): ( #%d ) %s", Defender:GetName(), DefenderTask.Type, DefenderTask.Fsm:GetState(), Defender:GetSize(), Defender:HasTask() == true and "Executing" or "Idle" ) )
+          local Fuel = Defender:GetUnit(1):GetFuel() * 100
+          local Damage = Defender:GetLife() / Defender:GetLife0() * 100
+          Report:Add( string.format( "   - %s ( %s - %s ): ( #%d ) F: %3d, D:%3d - %s", 
+                                     Defender:GetName(), 
+                                     DefenderTask.Type, 
+                                     DefenderTask.Fsm:GetState(), 
+                                     Defender:GetSize(),
+                                     Fuel,
+                                     Damage, 
+                                     Defender:HasTask() == true and "Executing" or "Idle" ) )
         end
       end
       Report:Add( string.format( "\n - %d Tasks", TaskCount ) )
