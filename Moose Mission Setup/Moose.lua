@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170802_1242' )
+env.info( 'Moose Generation Timestamp: 20170802_1247' )
 
 --- Various routines
 -- @module routines
@@ -36758,7 +36758,6 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     local CurrentCoord = AIGroup:GetCoordinate()
     
     local ToTargetCoord = self.PatrolZone:GetRandomPointVec2()
-    self:E({self.PatrolFloorAltitude, self.PatrolCeilingAltitude})
     ToTargetCoord:SetAlt( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ) )
     self:SetTargetDistance( ToTargetCoord ) -- For RTB status check
     
@@ -39249,8 +39248,6 @@ do -- AI_A2A_DISPATCHER
       local Variance = ( Cap.HighInterval - Cap.LowInterval ) / 2
       local Median = Cap.LowInterval + Variance
       local Randomization = Variance / Median
-      
-      self:E({Randomization = Randomization})
       
       if ScheduleID then
         Scheduler:Stop( ScheduleID )
