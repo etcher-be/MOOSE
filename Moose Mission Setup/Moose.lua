@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170802_0949' )
+env.info( 'Moose Generation Timestamp: 20170802_1242' )
 
 --- Various routines
 -- @module routines
@@ -4256,8 +4256,8 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
   self.Schedule[Scheduler][self.CallID].Arguments = ScheduleArguments
   self.Schedule[Scheduler][self.CallID].StartTime = timer.getTime() + ( Start or 0 )
   self.Schedule[Scheduler][self.CallID].Start = Start + .1
-  self.Schedule[Scheduler][self.CallID].Repeat = Repeat
-  self.Schedule[Scheduler][self.CallID].Randomize = Randomize
+  self.Schedule[Scheduler][self.CallID].Repeat = Repeat or 0
+  self.Schedule[Scheduler][self.CallID].Randomize = Randomize or 0
   self.Schedule[Scheduler][self.CallID].Stop = Stop
 
   self:T3( self.Schedule[Scheduler][self.CallID] )
@@ -4362,7 +4362,7 @@ function SCHEDULEDISPATCHER:Start( Scheduler, CallID )
       Schedule[CallID].ScheduleID = timer.scheduleFunction( 
         Schedule[CallID].CallHandler, 
         CallID, 
-        timer.getTime() + Schedule[CallID].Start
+        timer.getTime() + Schedule[CallID].Start + math.random( - ( Schedule[CallID].Randomize * Schedule[CallID].Repeat / 2 ), ( Schedule[CallID].Randomize * Schedule[CallID].Repeat / 2 ) )
       )
     end
   else
@@ -36723,8 +36723,13 @@ end
 -- Note that this method is required, as triggers the next route when patrolling for the Controllable.
 function AI_A2A_PATROL.PatrolRoute( AIGroup )
 
-  local _AI_A2A_Patrol = AIGroup:GetState( AIGroup, "AI_A2A_PATROL" ) -- #AI_A2A_PATROL
-  _AI_A2A_Patrol:Route()
+  AIGroup:E( { "AI_A2A_PATROL.PatrolRoute:", AIGroup:GetName() } )
+
+  if AIGroup:IsAlive() then
+    local _AI_A2A_Patrol = AIGroup:GetState( AIGroup, "AI_A2A_PATROL" ) -- #AI_A2A_PATROL
+    _AI_A2A_Patrol:Route()
+  end
+  
 end
 
 
@@ -36753,7 +36758,8 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     local CurrentCoord = AIGroup:GetCoordinate()
     
     local ToTargetCoord = self.PatrolZone:GetRandomPointVec2()
-    ToTargetCoord:SetAlt(math.random( self.PatrolFloorAltitude,self.PatrolCeilingAltitude ) )
+    self:E({self.PatrolFloorAltitude, self.PatrolCeilingAltitude})
+    ToTargetCoord:SetAlt( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ) )
     self:SetTargetDistance( ToTargetCoord ) -- For RTB status check
     
     local ToTargetSpeed = math.random( self.PatrolMinSpeed, self.PatrolMaxSpeed )
@@ -36770,9 +36776,6 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     
-    --- Now we're going to do something special, we're going to call a function from a waypoint action at the AIControllable...
-    AIGroup:WayPointInitialize( PatrolRoute )
-
     local Tasks = {}
     Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_PATROL.PatrolRoute" )
     
@@ -36781,8 +36784,11 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     --- Do a trick, link the NewPatrolRoute function of the PATROLGROUP object to the AIControllable in a temporary variable ...
     AIGroup:SetState( AIGroup, "AI_A2A_PATROL", self )
 
+    AIGroup:OptionROEReturnFire()
+    AIGroup:OptionROTPassiveDefense()
+
     --- NOW ROUTE THE GROUP!
-    AIGroup:WayPointExecute( 1, 2 )
+    AIGroup:SetTask( AIGroup:TaskRoute( PatrolRoute ), 0.5 )
   end
 
 end
@@ -37145,8 +37151,8 @@ function AI_A2A_CAP.AttackRoute( AIGroup )
     local _AI_A2A_CAP = AIGroup:GetState( AIGroup, "AI_A2A_CAP" ) -- AI.AI_Cap#AI_A2A_CAP
     _AI_A2A_CAP:__Engage( 0.5 )
 
-    local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
-    AIGroup:SetTask( Task )
+    --local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
+    --AIGroup:SetTask( Task )
   end
 end
 
@@ -37223,10 +37229,6 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         end
       end
   
-      --- Now we're going to do something special, we're going to call a function from a waypoint action at the AIControllable...
-      self.Controllable:WayPointInitialize( EngageRoute )
-      
-      
       if #AttackTasks == 0 then
         self:E("No targets found -> Going back to Patrolling")
         self:__Abort( 0.5 )
@@ -37235,7 +37237,7 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROTPassiveDefense()
 
         AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_CAP.AttackRoute" )
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( 4000, self.PatrolMinSpeed )
+        --AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( AIGroup:GetHeight(), self.PatrolMinSpeed )
         
         EngageRoute[1].task = AIGroup:TaskCombo( AttackTasks )
         
@@ -37607,8 +37609,8 @@ function AI_A2A_GCI.InterceptRoute( AIGroup )
     local _AI_A2A_GCI = AIGroup:GetState( AIGroup, "AI_A2A_GCI" ) -- AI.AI_Cap#AI_A2A_GCI
     _AI_A2A_GCI:__Engage( 0.5 )
   
-    local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
-    AIGroup:SetTask( Task )
+    --local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
+    --AIGroup:SetTask( Task )
   end
 end
 
@@ -37706,7 +37708,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROTPassiveDefense()
 
         AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_GCI.InterceptRoute" )
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( 4000, self.EngageMinSpeed )
+        --AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( AIGroup:GetHeight(), self.EngageMinSpeed )
         EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
@@ -39243,10 +39245,18 @@ do -- AI_A2A_DISPATCHER
       Cap.CapLimit = CapLimit
       Cap.Scheduler = Cap.Scheduler or SCHEDULER:New( self ) 
       local Scheduler = Cap.Scheduler -- Core.Scheduler#SCHEDULER
+      local ScheduleID = Cap.ScheduleID
       local Variance = ( Cap.HighInterval - Cap.LowInterval ) / 2
       local Median = Cap.LowInterval + Variance
       local Randomization = Variance / Median
-      Scheduler:Schedule(self, self.SchedulerCAP, { SquadronName }, Median, Median, Randomization )
+      
+      self:E({Randomization = Randomization})
+      
+      if ScheduleID then
+        Scheduler:Stop( ScheduleID )
+      end
+      
+      Cap.ScheduleID = Scheduler:Schedule( self, self.SchedulerCAP, { SquadronName }, Median, Median, Randomization )
     else
       error( "This squadron does not exist:" .. SquadronName )
     end
