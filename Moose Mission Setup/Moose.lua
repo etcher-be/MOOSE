@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170802_1247' )
+env.info( 'Moose Generation Timestamp: 20170802_2056' )
 
 --- Various routines
 -- @module routines
@@ -40185,7 +40185,9 @@ do -- AI_A2A_DISPATCHER
     local ClosestDistance = 0
     local ClosestDefenderSquadronName = nil
     
-    while( DefendersCount > 0 ) do
+    local BreakLoop = false
+    
+    while( DefendersCount > 0 and not BreakLoop ) do
     
       for SquadronName, DefenderSquadron in pairs( self.DefenderSquadrons or {} ) do
         for InterceptID, Intercept in pairs( DefenderSquadron.Gci or {} ) do
@@ -40196,7 +40198,7 @@ do -- AI_A2A_DISPATCHER
           local TargetCoord = DetectedItem.InterceptCoord
           if TargetCoord then
             local Distance = SpawnCoord:Get2DDistance( TargetCoord )
-            self:F( { Distance = Distance, TargetCoord = TargetCoord } )
+              self:F( { Distance = Distance, TargetCoord = TargetCoord } )
             
             if ClosestDistance == 0 or Distance < ClosestDistance then
               
@@ -40305,15 +40307,20 @@ do -- AI_A2A_DISPATCHER
                     AIGroup:Destroy()
                   end
                 end
-              end
-            end
+              end  -- if DefenderGCI then
+            end  -- while ( DefendersNeeded > 0 ) do
           end
+        else
+          -- No more resources, try something else.
+          -- Subject for a later enhancement to try to depart from another squadron and disable this one.
+          BreakLoop = true
+          break
         end
       else
         -- There isn't any closest airbase anymore, break the loop.
         break
       end
-    end
+    end -- if DefenderSquadron then
   end
 
 
