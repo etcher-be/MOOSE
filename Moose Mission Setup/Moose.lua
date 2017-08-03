@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170802_2126' )
+env.info( 'Moose Generation Timestamp: 20170803_1237' )
 
 --- Various routines
 -- @module routines
@@ -35991,6 +35991,33 @@ function AI_A2A:New( AIGroup )
 -- @param #string Event The Event string.
 -- @param #string To The To State string.
 
+  self:AddTransition( "Patrolling", "Refuel", "Refuelling" ) 
+
+  --- Refuel Handler OnBefore for AI_A2A
+  -- @function [parent=#AI_A2A] OnBeforeRefuel
+  -- @param #AI_A2A self
+  -- @param Wrapper.Controllable#CONTROLLABLE Controllable The Controllable Object managed by the FSM.
+  -- @param #string From
+  -- @param #string Event
+  -- @param #string To
+  -- @return #boolean
+  
+  --- Refuel Handler OnAfter for AI_A2A
+  -- @function [parent=#AI_A2A] OnAfterRefuel
+  -- @param #AI_A2A self
+  -- @param Wrapper.Controllable#CONTROLLABLE Controllable The Controllable Object managed by the FSM.
+  -- @param #string From
+  -- @param #string Event
+  -- @param #string To
+  
+  --- Refuel Trigger for AI_A2A
+  -- @function [parent=#AI_A2A] Refuel
+  -- @param #AI_A2A self
+  
+  --- Refuel Asynchronous Trigger for AI_A2A
+  -- @function [parent=#AI_A2A] __Refuel
+  -- @param #AI_A2A self
+  -- @param #number Delay
 
   self:AddTransition( "*", "Return", "Returning" )
   self:AddTransition( "*", "Hold", "Holding" )
@@ -36065,6 +36092,16 @@ function AI_A2A:SetHomeAirbase( HomeAirbase )
   self:F2( { HomeAirbase } )
   
   self.HomeAirbase = HomeAirbase
+end
+
+--- Sets to refuel at the given tanker.
+-- @param #AI_A2A self
+-- @param Wrapper.Group#GROUP TankerName The group name of the tanker as defined within the Mission Editor or spawned.
+-- @return #AI_A2A self
+function AI_A2A:SetTanker( TankerName )
+  self:F2( { TankerName } )
+  
+  self.TankerName = TankerName
 end
 
 
@@ -36186,16 +36223,21 @@ function AI_A2A:onafterStatus()
     local Fuel = self.Controllable:GetUnit(1):GetFuel()
     self:F({Fuel=Fuel})
     if Fuel < self.PatrolFuelThresholdPercentage then
-      self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... RTB!" )
-      local OldAIControllable = self.Controllable
-      local AIControllableTemplate = self.Controllable:GetTemplate()
-      
-      local OrbitTask = OldAIControllable:TaskOrbitCircle( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ), self.PatrolMinSpeed )
-      local TimedOrbitTask = OldAIControllable:TaskControlled( OrbitTask, OldAIControllable:TaskCondition(nil,nil,nil,nil,self.PatrolOutOfFuelOrbitTime,nil ) )
-      OldAIControllable:SetTask( TimedOrbitTask, 10 )
-
-      self:Fuel()
-      RTB = true
+      if self.TankerName then
+        self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... Refuelling at Tanker!" )
+        self:Refuel()
+      else
+        self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... RTB!" )
+        local OldAIControllable = self.Controllable
+        local AIControllableTemplate = self.Controllable:GetTemplate()
+        
+        local OrbitTask = OldAIControllable:TaskOrbitCircle( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ), self.PatrolMinSpeed )
+        local TimedOrbitTask = OldAIControllable:TaskControlled( OrbitTask, OldAIControllable:TaskCondition(nil,nil,nil,nil,self.PatrolOutOfFuelOrbitTime,nil ) )
+        OldAIControllable:SetTask( TimedOrbitTask, 10 )
+  
+        self:Fuel()
+        RTB = true
+      end
     else
     end
     
@@ -36344,6 +36386,8 @@ function AI_A2A:onafterHome( AIGroup, From, Event, To )
 
 end
 
+
+
 --- @param #AI_A2A self
 -- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A:onafterHold( AIGroup, From, Event, To, HoldTime )
@@ -36366,7 +36410,69 @@ function AI_A2A:onafterHold( AIGroup, From, Event, To, HoldTime )
 
 end
 
+--- @param Wrapper.Group#GROUP AIGroup
+function AI_A2A.Resume( AIGroup )
 
+  AIGroup:E( { "AI_A2A.Resume:", AIGroup:GetName() } )
+  if AIGroup:IsAlive() then
+    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
+    _AI_A2A:__RTB( 0.5 )
+    --_AI_A2A:Retur()
+  end
+  
+end
+
+--- @param #AI_A2A self
+-- @param Wrapper.Group#GROUP AIGroup
+function AI_A2A:onafterRefuel( AIGroup, From, Event, To )
+  self:F( { AIGroup, From, Event, To } )
+
+  self:E( "Group " .. self.Controllable:GetName() .. " ... Refuelling! ( " .. self:GetState() .. " )" )
+  
+  if AIGroup and AIGroup:IsAlive() then
+    local Tanker = GROUP:FindByName( self.TankerName )
+    if Tanker:IsAlive() and Tanker:IsAirPlane() then
+
+      local RefuelRoute = {}
+  
+      --- Calculate the target route point.
+      
+      local CurrentCoord = AIGroup:GetCoordinate()
+      local ToRefuelCoord = Tanker:GetCoordinate()
+      local ToRefuelSpeed = math.random( self.PatrolMinSpeed, self.PatrolMaxSpeed )
+      
+      --- Create a route point of type air.
+      local ToRefuelRoutePoint = ToRefuelCoord:RoutePointAir( 
+        self.PatrolAltType, 
+        POINT_VEC3.RoutePointType.TurningPoint, 
+        POINT_VEC3.RoutePointAction.TurningPoint, 
+        ToRefuelSpeed, 
+        true 
+      )
+  
+      self:F( { ToRefuelSpeed = ToRefuelSpeed } )
+      
+      RefuelRoute[#RefuelRoute+1] = ToRefuelRoutePoint
+      RefuelRoute[#RefuelRoute+1] = ToRefuelRoutePoint
+      
+      AIGroup:OptionROEHoldFire()
+      AIGroup:OptionROTEvadeFire()
+  
+      local Tasks = {}
+      Tasks[#Tasks+1] = AIGroup:TaskRefueling()
+      Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, self:GetClassName() .. ".Resume" )
+      RefuelRoute[#RefuelRoute].task = AIGroup:TaskCombo( Tasks )
+      AIGroup:SetState( AIGroup, "AI_A2A", self )
+  
+      --- NOW ROUTE THE GROUP!
+      AIGroup:SetTask( AIGroup:TaskRoute( RefuelRoute ), 1 )
+      
+    else
+      self:RTB()
+    end
+  end
+
+end
     
 
 
@@ -36586,7 +36692,7 @@ function AI_A2A_PATROL:New( AIGroup, PatrolZone, PatrolFloorAltitude, PatrolCeil
   -- defafult PatrolAltType to "RADIO" if not specified
   self.PatrolAltType = PatrolAltType or "RADIO"
   
-  self:AddTransition( "Started", "Patrol", "Patrolling" )
+  self:AddTransition( { "Started", "Refuelling" }, "Patrol", "Patrolling" )
 
 --- OnBefore Transition Handler for Event Patrol.
 -- @function [parent=#AI_A2A_PATROL] OnBeforePatrol
@@ -36658,6 +36764,8 @@ function AI_A2A_PATROL:New( AIGroup, PatrolZone, PatrolFloorAltitude, PatrolCeil
 -- @function [parent=#AI_A2A_PATROL] __Route
 -- @param #AI_A2A_PATROL self
 -- @param #number Delay The delay in seconds.
+
+
 
   self:AddTransition( "*", "Reset", "Patrolling" ) -- FSM_CONTROLLABLE Transition for type #AI_A2A_PATROL.
   
@@ -36793,6 +36901,17 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
 
 end
 
+--- @param Wrapper.Group#GROUP AIGroup
+function AI_A2A_PATROL.Resume( AIGroup )
+
+  AIGroup:E( { "AI_A2A_PATROL.Resume:", AIGroup:GetName() } )
+  if AIGroup:IsAlive() then
+    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
+      _AI_A2A:__Reset( 1 )
+      _AI_A2A:__Route( 5 )
+  end
+  
+end
 --- **AI** -- **Execute Combat Air Patrol (CAP).**
 --
 -- ![Banner Image](..\Presentations\AI_CAP\Dia1.JPG)
@@ -37287,6 +37406,18 @@ function AI_A2A_CAP:OnEventDead( EventData )
       self:__Destroy( 1, EventData )
     end
   end  
+end
+
+--- @param Wrapper.Group#GROUP AIGroup
+function AI_A2A_CAP.Resume( AIGroup )
+
+  AIGroup:E( { "AI_A2A_CAP.Resume:", AIGroup:GetName() } )
+  if AIGroup:IsAlive() then
+    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
+      _AI_A2A:__Reset( 1 )
+      _AI_A2A:__Route( 5 )
+  end
+  
 end
 --- **AI** -- **Execute Ground Controlled Interception (GCI).**
 --
@@ -38227,7 +38358,7 @@ do -- AI_A2A_DISPATCHER
   -- 
   -- The **grouping value is set for a Squadron**, and can be **dynamically adjusted** during mission execution, so to adjust the defense flights grouping when the tactical situation changes.
   -- 
-  -- ### 6.4. Overhead and Balance the effectiveness of the air defenses in case of GCI
+  -- ### 6.4. Overhead and Balance the effectiveness of the air defenses in case of GCI.
   -- 
   -- The effectiveness can be set with the **overhead parameter**. This is a number that is used to calculate the amount of Units that dispatching command will allocate to GCI in surplus of detected amount of units.
   -- The **default value** of the overhead parameter is 1.0, which means **equal balance**. 
@@ -38253,6 +38384,14 @@ do -- AI_A2A_DISPATCHER
   -- 
   -- The **overhead value is set for a Squadron**, and can be **dynamically adjusted** during mission execution, so to adjust the defense overhead when the tactical situation changes.
   --
+  -- ## 6.5. Squadron fuel treshold.
+  -- 
+  -- When an airplane gets **out of fuel** to a certain %-tage, which is by default **15% (0.15)**, there are two possible actions that can be taken:
+  --  - The defender will go RTB, and will be replaced with a new defender if possible.
+  --  - The defender will refuel at a tanker, if a tanker has been specified for the squadron.
+  -- 
+  -- Use the method @{#AI_A2A_DISPATCHER.SetSquadronFuelThreshold}() to set the **squadron fuel treshold** of spawned airplanes for all squadrons.
+  -- 
   -- ## 7. Setup a squadron for CAP
   -- 
   -- ### 7.1. Set the CAP zones
@@ -38327,6 +38466,31 @@ do -- AI_A2A_DISPATCHER
   --      A2ADispatcher:SetSquadronCap( "Sochi", CAPZoneWest, 4000, 8000, 600, 800, 800, 1200, "BARO" )
   --      A2ADispatcher:SetSquadronCapInterval( "Sochi", 2, 30, 120, 1 )
   -- 
+  -- ## 7.3. Squadron tanker to refuel when executing CAP and defender is out of fuel.
+  -- 
+  -- Instead of sending CAP to RTB when out of fuel, you can let CAP refuel in mid air using a tanker.
+  -- This greatly increases the efficiency of your CAP operations.
+  -- 
+  -- In the mission editor, setup a group with task Refuelling. A tanker unit of the correct coalition will be automatically selected.
+  -- Then, use the method @{#AI_A2A_DISPATCHER.SetDefaultTanker}() to set the default tanker for the refuelling.
+  -- You can also specify a specific tanker for refuelling for a squadron  by using the method @{#AI_A2A_DISPATCHER.SetSquadronTanker}().
+  -- 
+  -- When the tanker specified is alive and in the air, the tanker will be used for refuelling.
+  -- 
+  -- For example, the following setup will create a CAP for squadron "Gelend" with a refuel task for the squadron:
+  -- 
+  -- ![Banner Image](..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_10.JPG)
+  -- 
+  --      -- Define the CAP
+  --      A2ADispatcher:SetSquadron( "Gelend", AIRBASE.Caucasus.Gelendzhik, { "SQ CCCP SU-30" }, 20 )
+  --      A2ADispatcher:SetSquadronCap( "Gelend", ZONE:New( "PatrolZoneGelend" ), 4000, 8000, 600, 800, 1000, 1300 )
+  --      A2ADispatcher:SetSquadronCapInterval( "Gelend", 2, 30, 600, 1 ) 
+  --      A2ADispatcher:SetSquadronGci( "Gelend", 900, 1200 )
+  --    
+  --      -- Setup the Refuelling for squadron "Gelend", at tanker (group) "TankerGelend" when the fuel in the tank of the CAP defenders is less than 80%.
+  --      A2ADispatcher:SetSquadronFuelThreshold( "Gelend", 0.8 )
+  --      A2ADispatcher:SetSquadronTanker( "Gelend", "TankerGelend" )
+  --  
   -- ## 8. Setup a squadron for GCI:
   -- 
   -- The method @{#AI_A2A_DISPATCHER.SetSquadronGci}() defines a GCI execution for a squadron.
@@ -38428,6 +38592,31 @@ do -- AI_A2A_DISPATCHER
   -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultCapTimeInterval}() to set the **default CAP time interval** of spawned airplanes for all squadrons.  
   -- Note that you can still change the CAP limit and CAP time intervals for each CAP individually using the @{#AI_A2A_DISPATCHER.SetSquadronCapTimeInterval}() method.
   -- 
+  -- ## 10.7.3. Default tanker for refuelling when executing CAP.
+  -- 
+  -- Instead of sending CAP to RTB when out of fuel, you can let CAP refuel in mid air using a tanker.
+  -- This greatly increases the efficiency of your CAP operations.
+  -- 
+  -- In the mission editor, setup a group with task Refuelling. A tanker unit of the correct coalition will be automatically selected.
+  -- Then, use the method @{#AI_A2A_DISPATCHER.SetDefaultTanker}() to set the tanker for the dispatcher.
+  -- Use the method @{#AI_A2A_DISPATCHER.SetDefaultFuelTreshold}() to set the %-tage left in the defender airplane tanks when a refuel action is needed.
+  -- 
+  -- When the tanker specified is alive and in the air, the tanker will be used for refuelling.
+  -- 
+  -- For example, the following setup will set the default refuel tanker to "Tanker":
+  -- 
+  -- ![Banner Image](..\Presentations\AI_A2A_DISPATCHER\AI_A2A_DISPATCHER-ME_11.JPG)
+  -- 
+  --      -- Define the CAP
+  --      A2ADispatcher:SetSquadron( "Sochi", AIRBASE.Caucasus.Sochi_Adler, { "SQ CCCP SU-34" }, 20 )
+  --      A2ADispatcher:SetSquadronCap( "Sochi", ZONE:New( "PatrolZone" ), 4000, 8000, 600, 800, 1000, 1300 )
+  --      A2ADispatcher:SetSquadronCapInterval("Sochi", 2, 30, 600, 1 ) 
+  --      A2ADispatcher:SetSquadronGci( "Sochi", 900, 1200 )
+  --      
+  --      -- Set the default tanker for refuelling to "Tanker", when the default fuel treshold has reached 90% fuel left.
+  --      A2ADispatcher:SetDefaultFuelThreshold( 0.9 )
+  --      A2ADispatcher:SetDefaultTanker( "Tanker" )
+  --  
   -- ## 10.8. Default settings for GCI.
   -- 
   -- ## 10.8.1. Optimal intercept point calculation.
@@ -38452,9 +38641,10 @@ do -- AI_A2A_DISPATCHER
   -- ## 10.8.2. Default disengage radius.
   -- 
   -- The radius to **disengage any target** when the **distance** of the defender to the **home base** is larger than the specified meters.
-  -- The default disengage radius is **100km** (100000 meters). Note that the disengage radius is applicable to ALL squadrons!
+  -- The default disengage radius is **300km** (300000 meters). Note that the disengage radius is applicable to ALL squadrons!
   --   
   -- Use the method @{#AI_A2A_DISPATCHER.SetDisengageRadius}() to modify the default disengage radius to another distance setting.
+  -- 
   -- 
   -- ## 11. Q & A:
   -- 
@@ -38540,7 +38730,7 @@ do -- AI_A2A_DISPATCHER
     self:SetEngageRadius()
     self:SetGciRadius()
     self:SetIntercept( 300 )  -- A default intercept delay time of 300 seconds.
-    self:SetDisengageRadius( 100000 ) -- The default disengage radius is 100 km.
+    self:SetDisengageRadius( 300000 ) -- The default disengage radius is 300 km.
     
     self:SetDefaultTakeoff( AI_A2A_DISPATCHER.Takeoff.Air )
     self:SetDefaultLanding( AI_A2A_DISPATCHER.Landing.NearAirbase )
@@ -38741,7 +38931,7 @@ do -- AI_A2A_DISPATCHER
 
   --- Define the radius to disengage any target when the distance to the home base is larger than the specified meters.
   -- @param #AI_A2A_DISPATCHER self
-  -- @param #number DisengageRadius (Optional, Default = 100000) The radius to disengage a target when too far from the home base.
+  -- @param #number DisengageRadius (Optional, Default = 300000) The radius to disengage a target when too far from the home base.
   -- @return #AI_A2A_DISPATCHER
   -- @usage
   -- 
@@ -38749,11 +38939,11 @@ do -- AI_A2A_DISPATCHER
   --   Dispatcher:SetDisengageRadius( 50000 )
   --   
   --   -- Set 100km as the disengage radius.
-  --   Dispatcher:SetDisngageRadius() -- 100000 is the default value.
+  --   Dispatcher:SetDisngageRadius() -- 300000 is the default value.
   --   
   function AI_A2A_DISPATCHER:SetDisengageRadius( DisengageRadius )
 
-    self.DisengageRadius = DisengageRadius
+    self.DisengageRadius = DisengageRadius or 300000
   
     return self
   end
@@ -38844,27 +39034,6 @@ do -- AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetTacticalDisplay( TacticalDisplay )
     
     self.TacticalDisplay = TacticalDisplay
-    
-    return self
-  end  
-
-
-  --- Set the default fuel treshold when defenders will RTB or Refuel in the air.
-  -- The fuel treshold is by default set to 15%, which means that an airplane will stay in the air until 15% of its fuel has been consumed.
-  -- @param #AI_A2A_DISPATCHER self
-  -- @param #number FuelThreshold A decimal number between 0 and 1, that expresses the %-tage of the treshold of fuel remaining in the tank when the plane will go RTB or Refuel.
-  -- @return #AI_A2A_DISPATCHER
-  -- @usage
-  -- 
-  --   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
-  --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
-  --   
-  --   -- Now Setup the default fuel treshold.
-  --   A2ADispatcher:SetDefaultRefuelThreshold( 0.30 ) -- Go RTB when only 30% of fuel remaining in the tank.
-  --   
-  function AI_A2A_DISPATCHER:SetDefaultFuelThreshold( FuelThreshold )
-    
-    self.DefenderDefault.FuelThreshold = FuelThreshold
     
     return self
   end  
@@ -39934,6 +40103,96 @@ do -- AI_A2A_DISPATCHER
     return self
   end
   
+  --- Set the default fuel treshold when defenders will RTB or Refuel in the air.
+  -- The fuel treshold is by default set to 15%, which means that an airplane will stay in the air until 15% of its fuel has been consumed.
+  -- @param #AI_A2A_DISPATCHER self
+  -- @param #number FuelThreshold A decimal number between 0 and 1, that expresses the %-tage of the treshold of fuel remaining in the tank when the plane will go RTB or Refuel.
+  -- @return #AI_A2A_DISPATCHER
+  -- @usage
+  -- 
+  --   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
+  --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
+  --   
+  --   -- Now Setup the default fuel treshold.
+  --   A2ADispatcher:SetDefaultRefuelThreshold( 0.30 ) -- Go RTB when only 30% of fuel remaining in the tank.
+  --   
+  function AI_A2A_DISPATCHER:SetDefaultFuelThreshold( FuelThreshold )
+    
+    self.DefenderDefault.FuelThreshold = FuelThreshold
+    
+    return self
+  end  
+
+
+  --- Set the fuel treshold for the squadron when defenders will RTB or Refuel in the air.
+  -- The fuel treshold is by default set to 15%, which means that an airplane will stay in the air until 15% of its fuel has been consumed.
+  -- @param #AI_A2A_DISPATCHER self
+  -- @param #string SquadronName The name of the squadron.
+  -- @param #number FuelThreshold A decimal number between 0 and 1, that expresses the %-tage of the treshold of fuel remaining in the tank when the plane will go RTB or Refuel.
+  -- @return #AI_A2A_DISPATCHER
+  -- @usage
+  -- 
+  --   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
+  --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
+  --   
+  --   -- Now Setup the default fuel treshold.
+  --   A2ADispatcher:SetSquadronRefuelThreshold( "SquadronName", 0.30 ) -- Go RTB when only 30% of fuel remaining in the tank.
+  --   
+  function AI_A2A_DISPATCHER:SetSquadronFuelThreshold( SquadronName, FuelThreshold )
+    
+    local DefenderSquadron = self:GetSquadron( SquadronName )
+    DefenderSquadron.FuelThreshold = FuelThreshold
+    
+    return self
+  end  
+
+  --- Set the default tanker where defenders will Refuel in the air.
+  -- @param #AI_A2A_DISPATCHER self
+  -- @param #strig TankerName A string defining the group name of the Tanker as defined within the Mission Editor.
+  -- @return #AI_A2A_DISPATCHER
+  -- @usage
+  -- 
+  --   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
+  --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
+  --   
+  --   -- Now Setup the default fuel treshold.
+  --   A2ADispatcher:SetDefaultRefuelThreshold( 0.30 ) -- Go RTB when only 30% of fuel remaining in the tank.
+  --   
+  --   -- Now Setup the default tanker.
+  --   A2ADispatcher:SetDefaultTanker( "Tanker" ) -- The group name of the tanker is "Tanker" in the Mission Editor.
+  function AI_A2A_DISPATCHER:SetDefaultTanker( TankerName )
+    
+    self.DefenderDefault.TankerName = TankerName
+    
+    return self
+  end  
+
+
+  --- Set the squadron tanker where defenders will Refuel in the air.
+  -- @param #AI_A2A_DISPATCHER self
+  -- @param #string SquadronName The name of the squadron.
+  -- @param #strig TankerName A string defining the group name of the Tanker as defined within the Mission Editor.
+  -- @return #AI_A2A_DISPATCHER
+  -- @usage
+  -- 
+  --   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
+  --   A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  
+  --   
+  --   -- Now Setup the squadron fuel treshold.
+  --   A2ADispatcher:SetSquadronRefuelThreshold( "SquadronName", 0.30 ) -- Go RTB when only 30% of fuel remaining in the tank.
+  --   
+  --   -- Now Setup the squadron tanker.
+  --   A2ADispatcher:SetSquadronTanker( "SquadronName", "Tanker" ) -- The group name of the tanker is "Tanker" in the Mission Editor.
+  function AI_A2A_DISPATCHER:SetSquadronTanker( SquadronName, TankerName )
+    
+    local DefenderSquadron = self:GetSquadron( SquadronName )
+    DefenderSquadron.TankerName = TankerName
+    
+    return self
+  end  
+
+
+
 
   --- @param #AI_A2A_DISPATCHER self
   function AI_A2A_DISPATCHER:AddDefenderToSquadron( Squadron, Defender, Size )
@@ -39999,7 +40258,7 @@ do -- AI_A2A_DISPATCHER
           if AIGroup:IsAlive() then
             -- Check if the CAP is patrolling or engaging. If not, this is not a valid CAP, even if it is alive!
             -- The CAP could be damaged, lost control, or out of fuel!
-            if DefenderTask.Fsm:Is( "Patrolling" ) or DefenderTask.Fsm:Is( "Engaging" ) then
+            if DefenderTask.Fsm:Is( "Patrolling" ) or DefenderTask.Fsm:Is( "Engaging" ) or DefenderTask.Fsm:Is( "Refuelling" )then
               CapCount = CapCount + 1
             end
           end
@@ -40104,9 +40363,10 @@ do -- AI_A2A_DISPATCHER
           local Fsm = AI_A2A_CAP:New( DefenderCAP, Cap.Zone, Cap.FloorAltitude, Cap.CeilingAltitude, Cap.PatrolMinSpeed, Cap.PatrolMaxSpeed, Cap.EngageMinSpeed, Cap.EngageMaxSpeed, Cap.AltType )
           Fsm:SetDispatcher( self )
           Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
-          Fsm:SetFuelThreshold( self.DefenderDefault.FuelThreshold, 60 )
+          Fsm:SetFuelThreshold( DefenderSquadron.FuelThreshold or self.DefenderDefault.FuelThreshold, 60 )
           Fsm:SetDamageThreshold( self.DefenderDefault.DamageThreshold )
           Fsm:SetDisengageRadius( self.DisengageRadius )
+          Fsm:SetTanker( DefenderSquadron.TankerName or self.DefenderDefault.TankerName )
           Fsm:Start()
           Fsm:__Patrol( 2 )
   
@@ -40256,7 +40516,7 @@ do -- AI_A2A_DISPATCHER
                 local Fsm = AI_A2A_GCI:New( DefenderGCI, Gci.EngageMinSpeed, Gci.EngageMaxSpeed )
                 Fsm:SetDispatcher( self )
                 Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
-                Fsm:SetFuelThreshold( self.DefenderDefault.FuelThreshold, 60 )
+                Fsm:SetFuelThreshold( DefenderSquadron.FuelThreshold or self.DefenderDefault.FuelThreshold, 60 )
                 Fsm:SetDamageThreshold( self.DefenderDefault.DamageThreshold )
                 Fsm:SetDisengageRadius( self.DisengageRadius )
                 Fsm:Start()
