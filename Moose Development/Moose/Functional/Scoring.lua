@@ -803,6 +803,8 @@ function SCORING:_EventOnHit( Event )
   local TargetUnitCoalition = nil
   local TargetUnitCategory = nil
   local TargetUnitType = nil
+  
+  local WeaponName = Event.WeaponName or ""
 
   if Event.IniDCSUnit then
 
@@ -919,7 +921,7 @@ function SCORING:_EventOnHit( Event )
                   :ToAllIf( self:IfMessagesHit() and self:IfMessagesToAll() )
                   :ToCoalitionIf( InitCoalition, self:IfMessagesHit() and self:IfMessagesToCoalition() )
               end
-              self:ScoreCSV( InitPlayerName, TargetPlayerName, "HIT_PENALTY", 1, -10, InitUnitName, InitUnitCoalition, InitUnitCategory, InitUnitType, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType )
+              self:ScoreCSV( InitPlayerName, TargetPlayerName, "HIT_PENALTY", 1, -10, InitUnitName, InitUnitCoalition, InitUnitCategory, InitUnitType, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType, WeaponName )
             else
               Player.Score = Player.Score + 1
               PlayerHit.Score = PlayerHit.Score + 1
@@ -943,7 +945,7 @@ function SCORING:_EventOnHit( Event )
                   :ToAllIf( self:IfMessagesHit() and self:IfMessagesToAll() )
                   :ToCoalitionIf( InitCoalition, self:IfMessagesHit() and self:IfMessagesToCoalition() )
               end
-              self:ScoreCSV( InitPlayerName, TargetPlayerName, "HIT_SCORE", 1, 1, InitUnitName, InitUnitCoalition, InitUnitCategory, InitUnitType, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType )
+              self:ScoreCSV( InitPlayerName, TargetPlayerName, "HIT_SCORE", 1, 1, InitUnitName, InitUnitCoalition, InitUnitCategory, InitUnitType, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType, WeaponName )
             end
           else -- A scenery object was hit.
             MESSAGE
@@ -952,7 +954,7 @@ function SCORING:_EventOnHit( Event )
                   )
               :ToAllIf( self:IfMessagesHit() and self:IfMessagesToAll() )
               :ToCoalitionIf( InitCoalition, self:IfMessagesHit() and self:IfMessagesToCoalition() )
-            self:ScoreCSV( InitPlayerName, "", "HIT_SCORE", 1, 0, InitUnitName, InitUnitCoalition, InitUnitCategory, InitUnitType, TargetUnitName, "", "Scenery", TargetUnitType )
+            self:ScoreCSV( InitPlayerName, "", "HIT_SCORE", 1, 0, InitUnitName, InitUnitCoalition, InitUnitCategory, InitUnitType, TargetUnitName, "", "Scenery", TargetUnitType, WeaponName )
           end
         end
       end
@@ -963,7 +965,7 @@ function SCORING:_EventOnHit( Event )
   
   -- It is a weapon initiated by a player, that is hitting something
   -- This seems to occur only with scenery and static objects.
-  if Event.WeaponPlayerName ~= nil then 
+  if Event.WeaponPlayerName ~= nil then -- WeaponPlayerName is filled when the weapon is the plane flown by the player!
     self:_AddPlayerFromUnit( Event.WeaponUNIT )
     if self.Players[Event.WeaponPlayerName] then -- This should normally not happen, but i'll test it anyway.
       if TargetPlayerName ~= nil then -- It is a player hitting another player ...
@@ -1015,7 +1017,7 @@ function SCORING:_EventOnHit( Event )
                     )
                 :ToAllIf( self:IfMessagesHit() and self:IfMessagesToAll() )
                 :ToCoalitionIf( Event.WeaponCoalition, self:IfMessagesHit() and self:IfMessagesToCoalition() )
-              self:ScoreCSV( Event.WeaponPlayerName, TargetPlayerName, "HIT_PENALTY", 1, -10, Event.WeaponName, Event.WeaponCoalition, Event.WeaponCategory, Event.WeaponTypeName, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType )
+              self:ScoreCSV( Event.WeaponPlayerName, TargetPlayerName, "HIT_PENALTY", 1, -10, Event.WeaponName, Event.WeaponCoalition, Event.WeaponCategory, Event.WeaponTypeName, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType, WeaponName )
             else
               Player.Score = Player.Score + 1
               PlayerHit.Score = PlayerHit.Score + 1
@@ -1028,7 +1030,7 @@ function SCORING:_EventOnHit( Event )
                     )
                 :ToAllIf( self:IfMessagesHit() and self:IfMessagesToAll() )
                 :ToCoalitionIf( Event.WeaponCoalition, self:IfMessagesHit() and self:IfMessagesToCoalition() )
-              self:ScoreCSV( Event.WeaponPlayerName, TargetPlayerName, "HIT_SCORE", 1, 1, Event.WeaponName, Event.WeaponCoalition, Event.WeaponCategory, Event.WeaponTypeName, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType )
+              self:ScoreCSV( Event.WeaponPlayerName, TargetPlayerName, "HIT_SCORE", 1, 1, Event.WeaponName, Event.WeaponCoalition, Event.WeaponCategory, Event.WeaponTypeName, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType, WeaponName )
             end
           else -- A scenery object was hit.
             MESSAGE
@@ -1037,7 +1039,7 @@ function SCORING:_EventOnHit( Event )
                   )
               :ToAllIf( self:IfMessagesHit() and self:IfMessagesToAll() )
               :ToCoalitionIf( InitCoalition, self:IfMessagesHit() and self:IfMessagesToCoalition() )
-            self:ScoreCSV( Event.WeaponPlayerName, "", "HIT_SCORE", 1, 0, Event.WeaponName, Event.WeaponCoalition, Event.WeaponCategory, Event.WeaponTypeName, TargetUnitName, "", "Scenery", TargetUnitType )
+            self:ScoreCSV( Event.WeaponPlayerName, "", "HIT_SCORE", 1, 0, Event.WeaponName, Event.WeaponCoalition, Event.WeaponCategory, Event.WeaponTypeName, TargetUnitName, "", "Scenery", TargetUnitType, WeaponName )
           end
         end
       end
@@ -1697,8 +1699,9 @@ end
 -- @param #string TargetUnitCoalition The coalition of the target unit.
 -- @param #string TargetUnitCategory The category of the target unit.
 -- @param #string TargetUnitType The type of the target unit.
+-- @param #string WeaponName The name of the weapon used.
 -- @return #SCORING self
-function SCORING:ScoreCSV( PlayerName, TargetPlayerName, ScoreType, ScoreTimes, ScoreAmount, PlayerUnitName, PlayerUnitCoalition, PlayerUnitCategory, PlayerUnitType, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType )
+function SCORING:ScoreCSV( PlayerName, TargetPlayerName, ScoreType, ScoreTimes, ScoreAmount, PlayerUnitName, PlayerUnitCoalition, PlayerUnitCategory, PlayerUnitType, TargetUnitName, TargetUnitCoalition, TargetUnitCategory, TargetUnitType, WeaponName )
   --write statistic information to file
   local ScoreTime = self:SecondsToClock( timer.getTime() )
   PlayerName = PlayerName:gsub( '"', '_' )
@@ -1739,6 +1742,7 @@ function SCORING:ScoreCSV( PlayerName, TargetPlayerName, ScoreType, ScoreTimes, 
   TargetUnitCategory = TargetUnitCategory or ""
   TargetUnitType = TargetUnitType or ""
   TargetUnitName = TargetUnitName or ""
+  WeaponName = WeaponName or "---"
 
   if lfs and io and os then
     self.CSVFile:write(
@@ -1756,6 +1760,7 @@ function SCORING:ScoreCSV( PlayerName, TargetPlayerName, ScoreType, ScoreTimes, 
       '"' .. TargetUnitCategory   .. '"' .. ',' ..
       '"' .. TargetUnitType       .. '"' .. ',' ..
       '"' .. TargetUnitName       .. '"' .. ',' ..
+      '"' .. WeaponName           .. '"' .. ',' ..
       ''  .. ScoreTimes           .. ''  .. ',' ..
       ''  .. ScoreAmount
     )
