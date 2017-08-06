@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170806_0741' )
+env.info( 'Moose Generation Timestamp: 20170806_0815' )
 
 --- Various routines
 -- @module routines
@@ -38076,13 +38076,13 @@ do -- AI_A2A_DISPATCHER
   -- 
   -- # Demo Missions
   -- 
-  -- ### [AI\_A2A\_DISPATCHER Demo Missions](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-100%20-%20AI_A2A%20-%20Demonstration)
+  -- ### [AI\_A2A\_DISPATCHER Demo Missions](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching)
   -- 
   -- ====
   -- 
   -- # YouTube Channel
   -- 
-  -- ### [---]()
+  -- ### [DCS WORLD - MOOSE - A2A GCICAP - Build an automatic A2A Defense System](https://www.youtube.com/playlist?list=PL7ZUrU4zZUl0S4KMNUUJpaUs6zZHjLKNx)
   -- 
   -- ===
   -- 
@@ -38196,13 +38196,16 @@ do -- AI_A2A_DISPATCHER
   -- Use the method @{#AI_A2A_DISPATCHER.SetEngageRadius}() to set a specific Engage Radius.
   -- **The Engage Radius is defined for ALL squadrons which are operational.**
   -- 
-  -- Demonstration Mission: [AID-019 - AI_A2A - Engage Range Test](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID-019%20-%20AI_A2A%20-%20Engage%20Range%20Test)
+  -- Demonstration Mission: [AID-019 - AI_A2A - Engage Range Test](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-019%20-%20AI_A2A%20-%20Engage%20Range%20Test)
   -- 
-  -- In this example an Engage Radius is set to 50km.
+  -- In this example an Engage Radius is set to various values.
   -- 
-  --     -- Initialize the dispatcher, setting up a radius of 50km where any airborne friendly 
-  --     -- without an assignment within 50km radius from a detected target, will engage that target.
+  --     -- Set 50km as the radius to engage any target by airborne friendlies.
   --     A2ADispatcher:SetEngageRadius( 50000 )
+  --   
+  --     -- Set 100km as the radius to engage any target by airborne friendlies.
+  --     A2ADispatcher:SetEngageRadius() -- 100000 is the default value.
+  --   
   -- 
   -- ## 4. Set the **Ground Controlled Intercept Radius** or **Gci radius**:
   -- 
@@ -38215,6 +38218,8 @@ do -- AI_A2A_DISPATCHER
   -- 
   -- Use the method @{#AI_A2A_DISPATCHER.SetGciRadius}() to set a specific controlled ground intercept radius.
   -- **The Ground Controlled Intercept radius is defined for ALL squadrons which are operational.**
+  -- 
+  -- Demonstration Mission: [AID-013 - AI_A2A - Intercept Test](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-013%20-%20AI_A2A%20-%20Intercept%20Test)
   -- 
   -- In these examples, the Gci Radius is set to various values:
   -- 
@@ -38246,6 +38251,8 @@ do -- AI_A2A_DISPATCHER
   -- If a hot war is chosen then **no borders** actually need to be defined using the helicopter units other than 
   -- it makes it easier sometimes for the mission maker to envisage where the red and blue territories roughly are. 
   -- In a hot war the borders are effectively defined by the ground based radar coverage of a coalition.
+  -- 
+  -- Demonstration Mission: [AID-009 - AI_A2A - Border Test](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-009 - AI_A2A - Border Test)
   -- 
   -- In this example a border is set for the CCCP A2A dispatcher:
   -- 
@@ -38952,16 +38959,18 @@ do -- AI_A2A_DISPATCHER
   --   
   -- **Use the method @{#AI_A2A_DISPATCHER.SetEngageRadius}() to modify the default Engage Radius for ALL squadrons.**
   -- 
+  -- Demonstration Mission: [AID-019 - AI_A2A - Engage Range Test](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-019%20-%20AI_A2A%20-%20Engage%20Range%20Test)
+  -- 
   -- @param #AI_A2A_DISPATCHER self
   -- @param #number EngageRadius (Optional, Default = 100000) The radius to report friendlies near the target.
   -- @return #AI_A2A_DISPATCHER
   -- @usage
   -- 
   --   -- Set 50km as the radius to engage any target by airborne friendlies.
-  --   Dispatcher:SetEngageRadius( 50000 )
+  --   A2ADispatcher:SetEngageRadius( 50000 )
   --   
   --   -- Set 100km as the radius to engage any target by airborne friendlies.
-  --   Dispatcher:SetEngageRadius() -- 100000 is the default value.
+  --   A2ADispatcher:SetEngageRadius() -- 100000 is the default value.
   --   
   function AI_A2A_DISPATCHER:SetEngageRadius( EngageRadius )
 
@@ -38977,10 +38986,10 @@ do -- AI_A2A_DISPATCHER
   -- @usage
   -- 
   --   -- Set 50km as the Disengage Radius.
-  --   Dispatcher:SetDisengageRadius( 50000 )
+  --   A2ADispatcher:SetDisengageRadius( 50000 )
   --   
   --   -- Set 100km as the Disengage Radius.
-  --   Dispatcher:SetDisngageRadius() -- 300000 is the default value.
+  --   A2ADispatcher:SetDisngageRadius() -- 300000 is the default value.
   --   
   function AI_A2A_DISPATCHER:SetDisengageRadius( DisengageRadius )
 
@@ -39000,6 +39009,8 @@ do -- AI_A2A_DISPATCHER
   -- 
   -- Use the method @{#AI_A2A_DISPATCHER.SetGciRadius}() to set a specific controlled ground intercept radius.
   -- **The Ground Controlled Intercept radius is defined for ALL squadrons which are operational.**
+  -- 
+  -- Demonstration Mission: [AID-013 - AI_A2A - Intercept Test](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-013%20-%20AI_A2A%20-%20Intercept%20Test)
   -- 
   -- @param #AI_A2A_DISPATCHER self
   -- @param #number GciRadius (Optional, Default = 200000) The radius to ground control intercept detected targets from the nearest airbase.
@@ -39597,14 +39608,14 @@ do -- AI_A2A_DISPATCHER
   --  
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- An overhead of 1,5 with 1 planes detected, will allocate 2 planes ( 1 * 1,5 ) = 1,5 => rounded up gives 2.
   --   -- An overhead of 1,5 with 2 planes detected, will allocate 3 planes ( 2 * 1,5 ) = 3 =>  rounded up gives 3.
   --   -- An overhead of 1,5 with 3 planes detected, will allocate 5 planes ( 3 * 1,5 ) = 4,5 => rounded up gives 5 planes.
   --   -- An overhead of 1,5 with 4 planes detected, will allocate 6 planes ( 4 * 1,5 ) = 6  => rounded up gives 6 planes.
   --   
-  --   Dispatcher:SetDefaultOverhead( 1.5 )
+  --   A2ADispatcher:SetDefaultOverhead( 1.5 )
   -- 
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetDefaultOverhead( Overhead )
@@ -39636,14 +39647,14 @@ do -- AI_A2A_DISPATCHER
   --  
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- An overhead of 1,5 with 1 planes detected, will allocate 2 planes ( 1 * 1,5 ) = 1,5 => rounded up gives 2.
   --   -- An overhead of 1,5 with 2 planes detected, will allocate 3 planes ( 2 * 1,5 ) = 3 =>  rounded up gives 3.
   --   -- An overhead of 1,5 with 3 planes detected, will allocate 5 planes ( 3 * 1,5 ) = 4,5 => rounded up gives 5 planes.
   --   -- An overhead of 1,5 with 4 planes detected, will allocate 6 planes ( 4 * 1,5 ) = 6  => rounded up gives 6 planes.
   --   
-  --   Dispatcher:SetSquadronOverhead( "SquadronName", 1.5 )
+  --   A2ADispatcher:SetSquadronOverhead( "SquadronName", 1.5 )
   -- 
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetSquadronOverhead( SquadronName, Overhead )
@@ -39661,10 +39672,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #number Grouping The level of grouping that will be applied of the CAP or GCI defenders. 
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Set a grouping by default per 2 airplanes.
-  --   Dispatcher:SetDefaultGrouping( 2 )
+  --   A2ADispatcher:SetDefaultGrouping( 2 )
   -- 
   -- 
   -- @return #AI_A2A_DISPATCHER
@@ -39683,10 +39694,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #number Grouping The level of grouping that will be applied of the CAP or GCI defenders. 
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Set a grouping per 2 airplanes.
-  --   Dispatcher:SetSquadronGrouping( "SquadronName", 2 )
+  --   A2ADispatcher:SetSquadronGrouping( "SquadronName", 2 )
   -- 
   -- 
   -- @return #AI_A2A_DISPATCHER
@@ -39704,19 +39715,19 @@ do -- AI_A2A_DISPATCHER
   -- @param #number Takeoff From the airbase hot, from the airbase cold, in the air, from the runway.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights by default take-off in the air.
-  --   Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Air )
+  --   A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Air )
   --   
   --   -- Let new flights by default take-off from the runway.
-  --   Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Runway )
+  --   A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Runway )
   --   
   --   -- Let new flights by default take-off from the airbase hot.
-  --   Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Hot )
+  --   A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Hot )
   -- 
   --   -- Let new flights by default take-off from the airbase cold.
-  --   Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Cold )
+  --   A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Cold )
   -- 
   -- 
   -- @return #AI_A2A_DISPATCHER
@@ -39734,19 +39745,19 @@ do -- AI_A2A_DISPATCHER
   -- @param #number Takeoff From the airbase hot, from the airbase cold, in the air, from the runway.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights take-off in the air.
-  --   Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Air )
+  --   A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Air )
   --   
   --   -- Let new flights take-off from the runway.
-  --   Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Runway )
+  --   A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Runway )
   --   
   --   -- Let new flights take-off from the airbase hot.
-  --   Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Hot )
+  --   A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Hot )
   -- 
   --   -- Let new flights take-off from the airbase cold.
-  --   Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Cold )
+  --   A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Cold )
   -- 
   -- 
   -- @return #AI_A2A_DISPATCHER
@@ -39765,10 +39776,10 @@ do -- AI_A2A_DISPATCHER
   -- @return #number Takeoff From the airbase hot, from the airbase cold, in the air, from the runway.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights by default take-off in the air.
-  --   local TakeoffMethod = Dispatcher:GetDefaultTakeoff()
+  --   local TakeoffMethod = A2ADispatcher:GetDefaultTakeoff()
   --   if TakeOffMethod == , AI_A2A_Dispatcher.Takeoff.InAir then
   --     ...
   --   end
@@ -39784,10 +39795,10 @@ do -- AI_A2A_DISPATCHER
   -- @return #number Takeoff From the airbase hot, from the airbase cold, in the air, from the runway.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights take-off in the air.
-  --   local TakeoffMethod = Dispatcher:GetSquadronTakeoff( "SquadronName" )
+  --   local TakeoffMethod = A2ADispatcher:GetSquadronTakeoff( "SquadronName" )
   --   if TakeOffMethod == , AI_A2A_Dispatcher.Takeoff.InAir then
   --     ...
   --   end
@@ -39803,10 +39814,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #AI_A2A_DISPATCHER self
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights by default take-off in the air.
-  --   Dispatcher:SetDefaultTakeoffInAir()
+  --   A2ADispatcher:SetDefaultTakeoffInAir()
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -39824,10 +39835,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #number TakeoffAltitude (optional) The altitude in meters above the ground. If not given, the default takeoff altitude will be used.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights take-off in the air.
-  --   Dispatcher:SetSquadronTakeoffInAir( "SquadronName" )
+  --   A2ADispatcher:SetSquadronTakeoffInAir( "SquadronName" )
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -39847,10 +39858,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #AI_A2A_DISPATCHER self
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights by default take-off from the runway.
-  --   Dispatcher:SetDefaultTakeoffFromRunway()
+  --   A2ADispatcher:SetDefaultTakeoffFromRunway()
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -39867,10 +39878,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #string SquadronName The name of the squadron.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights take-off from the runway.
-  --   Dispatcher:SetSquadronTakeoffFromRunway( "SquadronName" )
+  --   A2ADispatcher:SetSquadronTakeoffFromRunway( "SquadronName" )
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -39886,10 +39897,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #AI_A2A_DISPATCHER self
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights by default take-off at a hot parking spot.
-  --   Dispatcher:SetDefaultTakeoffFromParkingHot()
+  --   A2ADispatcher:SetDefaultTakeoffFromParkingHot()
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -39905,10 +39916,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #string SquadronName The name of the squadron.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights take-off in the air.
-  --   Dispatcher:SetSquadronTakeoffFromParkingHot( "SquadronName" )
+  --   A2ADispatcher:SetSquadronTakeoffFromParkingHot( "SquadronName" )
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -39924,10 +39935,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #AI_A2A_DISPATCHER self
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights take-off from a cold parking spot.
-  --   Dispatcher:SetDefaultTakeoffFromParkingCold()
+  --   A2ADispatcher:SetDefaultTakeoffFromParkingCold()
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -39944,10 +39955,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #string SquadronName The name of the squadron.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights take-off from a cold parking spot.
-  --   Dispatcher:SetSquadronTakeoffFromParkingCold( "SquadronName" )
+  --   A2ADispatcher:SetSquadronTakeoffFromParkingCold( "SquadronName" )
   --   
   -- @return #AI_A2A_DISPATCHER
   -- 
@@ -40005,16 +40016,16 @@ do -- AI_A2A_DISPATCHER
   -- @param #number Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights by default despawn near the airbase when returning.
-  --   Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
+  --   A2ADispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
   --   
   --   -- Let new flights by default despawn after landing land at the runway.
-  --   Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtRunway )
+  --   A2ADispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtRunway )
   --   
   --   -- Let new flights by default despawn after landing and parking, and after engine shutdown.
-  --   Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtEngineShutdown )
+  --   A2ADispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtEngineShutdown )
   -- 
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetDefaultLanding( Landing )
@@ -40031,16 +40042,16 @@ do -- AI_A2A_DISPATCHER
   -- @param #number Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights despawn near the airbase when returning.
-  --   Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
+  --   A2ADispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
   --   
   --   -- Let new flights despawn after landing land at the runway.
-  --   Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtRunway )
+  --   A2ADispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtRunway )
   --   
   --   -- Let new flights despawn after landing and parking, and after engine shutdown.
-  --   Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtEngineShutdown )
+  --   A2ADispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtEngineShutdown )
   -- 
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetSquadronLanding( SquadronName, Landing )
@@ -40057,10 +40068,10 @@ do -- AI_A2A_DISPATCHER
   -- @return #number Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights by default despawn near the airbase when returning.
-  --   local LandingMethod = Dispatcher:GetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
+  --   local LandingMethod = A2ADispatcher:GetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
   --   if LandingMethod == AI_A2A_Dispatcher.Landing.NearAirbase then
   --    ...
   --   end
@@ -40077,10 +40088,10 @@ do -- AI_A2A_DISPATCHER
   -- @return #number Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let new flights despawn near the airbase when returning.
-  --   local LandingMethod = Dispatcher:GetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
+  --   local LandingMethod = A2ADispatcher:GetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
   --   if LandingMethod == AI_A2A_Dispatcher.Landing.NearAirbase then
   --    ...
   --   end
@@ -40096,10 +40107,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #AI_A2A_DISPATCHER self
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let flights by default to land near the airbase and despawn.
-  --   Dispatcher:SetDefaultLandingNearAirbase()
+  --   A2ADispatcher:SetDefaultLandingNearAirbase()
   --   
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetDefaultLandingNearAirbase()
@@ -40115,10 +40126,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #string SquadronName The name of the squadron.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let flights to land near the airbase and despawn.
-  --   Dispatcher:SetSquadronLandingNearAirbase( "SquadronName" )
+  --   A2ADispatcher:SetSquadronLandingNearAirbase( "SquadronName" )
   --   
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetSquadronLandingNearAirbase( SquadronName )
@@ -40133,10 +40144,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #AI_A2A_DISPATCHER self
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let flights by default land at the runway and despawn.
-  --   Dispatcher:SetDefaultLandingAtRunway()
+  --   A2ADispatcher:SetDefaultLandingAtRunway()
   --   
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetDefaultLandingAtRunway()
@@ -40152,10 +40163,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #string SquadronName The name of the squadron.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let flights land at the runway and despawn.
-  --   Dispatcher:SetSquadronLandingAtRunway( "SquadronName" )
+  --   A2ADispatcher:SetSquadronLandingAtRunway( "SquadronName" )
   --   
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetSquadronLandingAtRunway( SquadronName )
@@ -40170,10 +40181,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #AI_A2A_DISPATCHER self
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let flights by default land and despawn at engine shutdown.
-  --   Dispatcher:SetDefaultLandingAtEngineShutdown()
+  --   A2ADispatcher:SetDefaultLandingAtEngineShutdown()
   --   
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetDefaultLandingAtEngineShutdown()
@@ -40189,10 +40200,10 @@ do -- AI_A2A_DISPATCHER
   -- @param #string SquadronName The name of the squadron.
   -- @usage:
   -- 
-  --   local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  --   local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   --   
   --   -- Let flights land and despawn at engine shutdown.
-  --   Dispatcher:SetSquadronLandingAtEngineShutdown( "SquadronName" )
+  --   A2ADispatcher:SetSquadronLandingAtEngineShutdown( "SquadronName" )
   --   
   -- @return #AI_A2A_DISPATCHER
   function AI_A2A_DISPATCHER:SetSquadronLandingAtEngineShutdown( SquadronName )
@@ -40986,7 +40997,7 @@ do
   -- 
   -- # YouTube Channel
   -- 
-  -- ### [---]()
+  -- ### [DCS WORLD - MOOSE - A2A GCICAP - Build an automatic A2A Defense System](https://www.youtube.com/playlist?list=PL7ZUrU4zZUl0S4KMNUUJpaUs6zZHjLKNx)
   -- 
   -- ===
   -- 
