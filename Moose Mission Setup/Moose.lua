@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170806_0815' )
+env.info( 'Moose Generation Timestamp: 20170806_1107' )
 
 --- Various routines
 -- @module routines
@@ -49570,7 +49570,8 @@ function TASK:ReportOverview( ReportGroup ) --R2.1 fixed report. Now nicely form
       if Line ~= 0 then
         Report:AddIndent( LineReport:Text( ", " ) )
       else
-        Report:Add( TaskName .. ":" .. LineReport:Text( ", " ))
+        Report:Add( TaskName )
+        Report:AddIndent( "   " .. LineReport:Text( ", " ) )
       end
       LineReport = REPORT:New()
       Line = math.floor( TaskInfo.TaskInfoOrder / 10 )
@@ -49585,7 +49586,7 @@ function TASK:ReportOverview( ReportGroup ) --R2.1 fixed report. Now nicely form
         local FromCoordinate = ReportGroup:GetUnit(1):GetCoordinate()
         local ToCoordinate = TaskInfo.TaskInfoText -- Core.Point#COORDINATE
         --Report:Add( TaskInfoIDText )
-        LineReport:Add( ToCoordinate:ToString( ReportGroup, nil, self ) )
+        LineReport:Add( TaskInfoIDText .. ToCoordinate:ToString( ReportGroup, nil, self ) )
         --Report:AddIndent( ToCoordinate:ToStringBULLS( ReportGroup:GetCoalition() ) )
       else
       end
@@ -50731,12 +50732,12 @@ do -- TASK_A2G_SEAD
   function TASK_A2G_SEAD:UpdateTaskInfo() 
 
     local TargetCoordinate = self.TargetSetUnit:GetFirst():GetCoordinate()
-    self:SetInfo( "Coordinates", TargetCoordinate, 10 )
+    self:SetInfo( "Coordinates", TargetCoordinate, 0 )
 
     self:SetInfo( "Threat", "[" .. string.rep(  "■", self.TargetSetUnit:CalculateThreatLevelA2G() ) .. "]", 11 )
     local DetectedItemsCount = self.TargetSetUnit:Count()
     local DetectedItemsTypes = self.TargetSetUnit:GetTypeNames()
-    self:SetInfo( "Targets", string.format( "%d of %s", DetectedItemsCount, DetectedItemsTypes ), 0 ) 
+    self:SetInfo( "Targets", string.format( "%d of %s", DetectedItemsCount, DetectedItemsTypes ), 10 ) 
 
   end
     
@@ -50858,12 +50859,12 @@ do -- TASK_A2G_BAI
   function TASK_A2G_BAI:UpdateTaskInfo() 
 
     local TargetCoordinate = self.TargetSetUnit:GetFirst():GetCoordinate()
-    self:SetInfo( "Coordinates", TargetCoordinate, 10 )
+    self:SetInfo( "Coordinates", TargetCoordinate, 0 )
 
     self:SetInfo( "Threat", "[" .. string.rep(  "■", self.TargetSetUnit:CalculateThreatLevelA2G() ) .. "]", 11 )
     local DetectedItemsCount = self.TargetSetUnit:Count()
     local DetectedItemsTypes = self.TargetSetUnit:GetTypeNames()
-    self:SetInfo( "Targets", string.format( "%d of %s", DetectedItemsCount, DetectedItemsTypes ), 0 ) 
+    self:SetInfo( "Targets", string.format( "%d of %s", DetectedItemsCount, DetectedItemsTypes ), 10 ) 
 
   end
 
@@ -50986,12 +50987,12 @@ do -- TASK_A2G_CAS
   function TASK_A2G_CAS:UpdateTaskInfo()
   
     local TargetCoordinate = self.TargetSetUnit:GetFirst():GetCoordinate()
-    self:SetInfo( "Coordinates", TargetCoordinate, 10 )
+    self:SetInfo( "Coordinates", TargetCoordinate, 0 )
 
     self:SetInfo( "Threat", "[" .. string.rep(  "■", self.TargetSetUnit:CalculateThreatLevelA2G() ) .. "]", 11 )
     local DetectedItemsCount = self.TargetSetUnit:Count()
     local DetectedItemsTypes = self.TargetSetUnit:GetTypeNames()
-    self:SetInfo( "Targets", string.format( "%d of %s", DetectedItemsCount, DetectedItemsTypes ), 0 ) 
+    self:SetInfo( "Targets", string.format( "%d of %s", DetectedItemsCount, DetectedItemsTypes ), 10 ) 
 
   end
 
