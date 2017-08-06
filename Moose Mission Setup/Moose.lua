@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170806_1107' )
+env.info( 'Moose Generation Timestamp: 20170806_1740' )
 
 --- Various routines
 -- @module routines
@@ -4363,7 +4363,7 @@ function SCHEDULEDISPATCHER:Start( Scheduler, CallID )
       Schedule[CallID].ScheduleID = timer.scheduleFunction( 
         Schedule[CallID].CallHandler, 
         CallID, 
-        timer.getTime() + Schedule[CallID].Start + math.random( - ( Schedule[CallID].Randomize * Schedule[CallID].Repeat / 2 ), ( Schedule[CallID].Randomize * Schedule[CallID].Repeat / 2 ) )
+        timer.getTime() + Schedule[CallID].Start 
       )
     end
   else
@@ -36292,7 +36292,7 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A.RTBRoute( AIGroup )
 
-  AIGroup:E( { "AI_A2A.RTBRoute:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A.RTBRoute:", AIGroup:GetName() } )
   
   if AIGroup:IsAlive() then
     local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
@@ -36306,7 +36306,7 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A.RTBHold( AIGroup )
 
-  AIGroup:E( { "AI_A2A.RTBHold:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A.RTBHold:", AIGroup:GetName() } )
   if AIGroup:IsAlive() then
     local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
     _AI_A2A:__RTB( 0.5 )
@@ -36422,7 +36422,7 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A.Resume( AIGroup )
 
-  AIGroup:E( { "AI_A2A.Resume:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A.Resume:", AIGroup:GetName() } )
   if AIGroup:IsAlive() then
     local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
     _AI_A2A:__RTB( 0.5 )
@@ -36841,7 +36841,7 @@ end
 -- Note that this method is required, as triggers the next route when patrolling for the Controllable.
 function AI_A2A_PATROL.PatrolRoute( AIGroup )
 
-  AIGroup:E( { "AI_A2A_PATROL.PatrolRoute:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_PATROL.PatrolRoute:", AIGroup:GetName() } )
 
   if AIGroup:IsAlive() then
     local _AI_A2A_Patrol = AIGroup:GetState( AIGroup, "AI_A2A_PATROL" ) -- #AI_A2A_PATROL
@@ -36913,7 +36913,7 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A_PATROL.Resume( AIGroup )
 
-  AIGroup:E( { "AI_A2A_PATROL.Resume:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_PATROL.Resume:", AIGroup:GetName() } )
   if AIGroup:IsAlive() then
     local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
       _AI_A2A:__Reset( 1 )
@@ -37273,7 +37273,7 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A_CAP.AttackRoute( AIGroup )
 
-  AIGroup:E( { "AI_A2A_CAP.AttackRoute:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_CAP.AttackRoute:", AIGroup:GetName() } )
 
   if AIGroup:IsAlive() then
     local _AI_A2A_CAP = AIGroup:GetState( AIGroup, "AI_A2A_CAP" ) -- AI.AI_Cap#AI_A2A_CAP
@@ -37420,7 +37420,7 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A_CAP.Resume( AIGroup )
 
-  AIGroup:E( { "AI_A2A_CAP.Resume:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_CAP.Resume:", AIGroup:GetName() } )
   if AIGroup:IsAlive() then
     local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
       _AI_A2A:__Reset( 1 )
@@ -37743,7 +37743,7 @@ end
 --- @param Wrapper.Group#GROUP AIControllable
 function AI_A2A_GCI.InterceptRoute( AIGroup )
 
-  AIGroup:E( { "AI_A2A_GCI.InterceptRoute:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_GCI.InterceptRoute:", AIGroup:GetName() } )
   
   if AIGroup:IsAlive() then
     local _AI_A2A_GCI = AIGroup:GetState( AIGroup, "AI_A2A_GCI" ) -- AI.AI_Cap#AI_A2A_GCI
@@ -48066,6 +48066,7 @@ function MISSION:ReportOverview( ReportGroup, TaskStatus )
   for TaskID, Task in UTILS.spairs( self:GetTasks(), function( t, a, b ) return t[a]:ReportOrder( ReportGroup ) <  t[b]:ReportOrder( ReportGroup ) end  ) do
     local Task = Task -- Tasking.Task#TASK
     if Task:Is( TaskStatus ) then
+      Report:Add( string.rep( "-", 140 ) )
       Report:Add( " - " .. Task:ReportOverview( ReportGroup ) )
     end
   end
@@ -49570,8 +49571,7 @@ function TASK:ReportOverview( ReportGroup ) --R2.1 fixed report. Now nicely form
       if Line ~= 0 then
         Report:AddIndent( LineReport:Text( ", " ) )
       else
-        Report:Add( TaskName )
-        Report:AddIndent( "   " .. LineReport:Text( ", " ) )
+        Report:Add( TaskName .. " - " .. LineReport:Text( ", " ) )
       end
       LineReport = REPORT:New()
       Line = math.floor( TaskInfo.TaskInfoOrder / 10 )
