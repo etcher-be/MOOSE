@@ -348,16 +348,12 @@ end
 -- todo: need to fix this global function
 
 --- @param Wrapper.Group#GROUP AIGroup
-function AI_A2A_CAP.AttackRoute( AIGroup )
+function AI_A2A_CAP.AttackRoute( AIGroup, Fsm )
 
   AIGroup:F( { "AI_A2A_CAP.AttackRoute:", AIGroup:GetName() } )
 
   if AIGroup:IsAlive() then
-    local _AI_A2A_CAP = AIGroup:GetState( AIGroup, "AI_A2A_CAP" ) -- AI.AI_Cap#AI_A2A_CAP
-    _AI_A2A_CAP:__Engage( 0.5 )
-
-    --local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
-    --AIGroup:SetTask( Task )
+    Fsm:__Engage( 0.5 )
   end
 end
 
@@ -410,7 +406,7 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       local ToInterceptAngle = CurrentCoord:GetAngleDegrees( CurrentCoord:GetDirectionVec3( ToTargetCoord ) )
       
       --- Create a route point of type air.
-      local ToPatrolRoutePoint = CurrentCoord:Translate( 5000, ToInterceptAngle ):RoutePointAir( 
+      local ToPatrolRoutePoint = CurrentCoord:Translate( 5000, ToInterceptAngle ):WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -441,13 +437,12 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROEOpenFire()
         AIGroup:OptionROTPassiveDefense()
 
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_CAP.AttackRoute" )
-        --AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( AIGroup:GetHeight(), self.PatrolMinSpeed )
+        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( "AI_A2A_CAP.AttackRoute", self )
         
         EngageRoute[1].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-        AIGroup:SetState( AIGroup, "AI_A2A_CAP", self )
+        --AIGroup:SetState( AIGroup, "AI_A2A_CAP", self )
       end
       
       --- NOW ROUTE THE GROUP!

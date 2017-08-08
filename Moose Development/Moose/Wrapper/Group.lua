@@ -507,7 +507,6 @@ end
 --- Returns a COORDINATE object indicating the point of the first UNIT of the GROUP within the mission.
 -- @param Wrapper.Group#GROUP self
 -- @return Core.Point#COORDINATE The COORDINATE of the GROUP.
--- @return #nil The POSITIONABLE is not existing or alive.  
 function GROUP:GetCoordinate()
   self:F2( self.PositionableName )
 
@@ -564,6 +563,32 @@ function GROUP:GetHeading()
   return nil
   
 end
+
+--- Returns relative amount of fuel (from 0.0 to 1.0) the group has in its internal tanks. If there are additional fuel tanks the value may be greater than 1.0.
+-- @param #GROUP self
+-- @return #number The relative amount of fuel (from 0.0 to 1.0).
+-- @return #nil The GROUP is not existing or alive.  
+function GROUP:GetFuel()
+  self:F( self.ControllableName )
+
+  local DCSControllable = self:GetDCSObject()
+  
+  if DCSControllable then
+    local GroupSize = self:GetSize()
+    local TotalFuel = 0
+    for UnitID, UnitData in pairs( self:GetUnits() ) do
+      local Unit = UnitData -- Wrapper.Unit#UNIT
+      local UnitFuel = Unit:GetFuel()
+      self:F( { Fuel = UnitFuel } )
+      TotalFuel = TotalFuel + UnitFuel
+    end
+    local GroupFuel = TotalFuel / GroupSize
+    return GroupFuel
+  end
+  
+  return 0
+end
+
 
 do -- Is Zone methods
 
@@ -1091,7 +1116,7 @@ do -- Route methods
     
         local PointTo = {}
         local AirbasePointVec2 = RTBAirbase:GetPointVec2()
-        local AirbaseAirPoint = AirbasePointVec2:RoutePointAir(
+        local AirbaseAirPoint = AirbasePointVec2:WaypointAir(
           POINT_VEC3.RoutePointAltType.BARO,
           "Land",
           "Landing", 
