@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170808_1612' )
+env.info( 'Moose Generation Timestamp: 20170808_1809' )
 
 --- Various routines
 -- @module routines
@@ -20291,7 +20291,7 @@ function CONTROLLABLE:TaskFunction( FunctionString, ... )
   DCSScript[#DCSScript+1] = "local MissionControllable = GROUP:Find( ... ) "
 
   if arg and arg.n > 0 then
-    local ArgumentKey = tostring( arg )
+    local ArgumentKey = tostring( arg ):match("table: (.*)")
     self:SetState( self, ArgumentKey, arg )
     DCSScript[#DCSScript+1] = "local Arguments = MissionControllable:GetState( MissionControllable, '" .. ArgumentKey .. "' ) "
     DCSScript[#DCSScript+1] = "MissionControllable:ClearState( MissionControllable, '" .. ArgumentKey .. "' ) "
