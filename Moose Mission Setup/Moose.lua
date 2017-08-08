@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170808_1809' )
+env.info( 'Moose Generation Timestamp: 20170808_2139' )
 
 --- Various routines
 -- @module routines
@@ -3557,7 +3557,7 @@ function BASE:GetState( Object, Key )
 
   if self.States[ClassNameAndID] then
     local Value = self.States[ClassNameAndID][Key] or false
-    self:T2( { ClassNameAndID, Key, Value } )
+    self:E( { ClassNameAndID, Key, Value } )
     return Value
   end
   
@@ -12665,12 +12665,12 @@ do -- COORDINATE
     RoutePoint.x = self.x
     RoutePoint.y = self.z
     RoutePoint.alt = self.y
-    RoutePoint.alt_type = AltType
+    RoutePoint.alt_type = AltType or "RADIO"
 
-    RoutePoint.type = Type
-    RoutePoint.action = Action
+    RoutePoint.type = Type or nil
+    RoutePoint.action = Action or nil
 
-    RoutePoint.speed = Speed / 3.6
+    RoutePoint.speed = ( Speed and Speed / 3.6 ) or ( 500 / 3.6 )
     RoutePoint.speed_locked = true
 
     --  ["task"] =
@@ -19074,7 +19074,6 @@ function CONTROLLABLE:SetTask( DCSTask, WaitTime )
 
     local function SetTask( Controller, DCSTask )
       local Controller = self:_GetController()
-      Controller:resetTask()
       Controller:setTask( DCSTask )
     end
 
@@ -20291,10 +20290,10 @@ function CONTROLLABLE:TaskFunction( FunctionString, ... )
   DCSScript[#DCSScript+1] = "local MissionControllable = GROUP:Find( ... ) "
 
   if arg and arg.n > 0 then
-    local ArgumentKey = tostring( arg ):match("table: (.*)")
+    local ArgumentKey = '_' .. tostring( arg ):match("table: (.*)")
     self:SetState( self, ArgumentKey, arg )
     DCSScript[#DCSScript+1] = "local Arguments = MissionControllable:GetState( MissionControllable, '" .. ArgumentKey .. "' ) "
-    DCSScript[#DCSScript+1] = "MissionControllable:ClearState( MissionControllable, '" .. ArgumentKey .. "' ) "
+    --DCSScript[#DCSScript+1] = "MissionControllable:ClearState( MissionControllable, '" .. ArgumentKey .. "' ) "
     DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable, unpack( Arguments ) )"
   else
     DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable )"
@@ -27530,7 +27529,7 @@ end
 -- @return Wrapper.Group#GROUP that was spawned.
 -- @return #nil Nothing was spawned.
 function SPAWN:SpawnAtAirbase( Airbase, Takeoff, TakeoffAltitude ) -- R2.2
-  self:F( { self.SpawnTemplatePrefix, Airbase } )
+  self:E( { self.SpawnTemplatePrefix, Airbase, Takeoff, TakeoffAltitude } )
 
   local PointVec3 = Airbase:GetPointVec3()
   self:T2(PointVec3)
@@ -27557,15 +27556,23 @@ function SPAWN:SpawnAtAirbase( Airbase, Takeoff, TakeoffAltitude ) -- R2.2
         local TY = PointVec3.z + ( SY - BY )
         SpawnTemplate.units[UnitID].x = TX
         SpawnTemplate.units[UnitID].y = TY
-        SpawnTemplate.units[UnitID].alt = PointVec3.y + ( TakeoffAltitude or 200 )
+        if Takeoff == GROUP.Takeoff.Air then
+          SpawnTemplate.units[UnitID].alt = PointVec3.y + ( TakeoffAltitude or 200 )
+        else
+          SpawnTemplate.units[UnitID].alt = PointVec3.y + 10
+        end
         self:T( 'After Translation SpawnTemplate.units['..UnitID..'].x = ' .. SpawnTemplate.units[UnitID].x .. ', SpawnTemplate.units['..UnitID..'].y = ' .. SpawnTemplate.units[UnitID].y )
       end
       
       SpawnTemplate.route.points[1].x = PointVec3.x
       SpawnTemplate.route.points[1].y = PointVec3.z
-      SpawnTemplate.route.points[1].alt = PointVec3.y + ( TakeoffAltitude or 200 )
+      if Takeoff == GROUP.Takeoff.Air then
+        SpawnTemplate.route.points[1].alt = PointVec3.y + ( TakeoffAltitude or 200 )
+      else
+        SpawnTemplate.route.points[1].alt = PointVec3.y + 10
+        SpawnTemplate.route.points[1].airdromeId = Airbase:GetID()
+      end
       SpawnTemplate.route.points[1].type = GROUPTEMPLATE.Takeoff[Takeoff]
-      SpawnTemplate.route.points[1].airdromeId = Airbase:GetID()
       
       SpawnTemplate.x = PointVec3.x
       SpawnTemplate.y = PointVec3.z
@@ -36529,7 +36536,6 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
     self:T2( { self.MinSpeed, self.MaxSpeed, ToTargetSpeed } )
     
     EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
-    EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
     
     AIGroup:OptionROEHoldFire()
     AIGroup:OptionROTEvadeFire()
@@ -36539,13 +36545,10 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
   
     local Tasks = {}
     Tasks[#Tasks+1] = AIGroup:TaskFunction( "AI_A2A.RTBRoute", self )
-    Tasks[#Tasks+1] = AIGroup:TaskOrbitCircle( 4000, 350 )
     EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( Tasks )
 
-    --AIGroup:SetState( AIGroup, "AI_A2A", self )
-
     --- NOW ROUTE THE GROUP!
-    AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
+    AIGroup:Route( EngageRoute, 0.5 )
       
   end
     
@@ -36628,7 +36631,6 @@ function AI_A2A:onafterRefuel( AIGroup, From, Event, To )
       self:F( { ToRefuelSpeed = ToRefuelSpeed } )
       
       RefuelRoute[#RefuelRoute+1] = ToRefuelRoutePoint
-      RefuelRoute[#RefuelRoute+1] = ToRefuelRoutePoint
       
       AIGroup:OptionROEHoldFire()
       AIGroup:OptionROTEvadeFire()
@@ -36637,11 +36639,8 @@ function AI_A2A:onafterRefuel( AIGroup, From, Event, To )
       Tasks[#Tasks+1] = AIGroup:TaskRefueling()
       Tasks[#Tasks+1] = AIGroup:TaskFunction( self:GetClassName() .. ".Resume", self )
       RefuelRoute[#RefuelRoute].task = AIGroup:TaskCombo( Tasks )
-      --AIGroup:SetState( AIGroup, "AI_A2A", self )
   
-      --- NOW ROUTE THE GROUP!
-      AIGroup:SetTask( AIGroup:TaskRoute( RefuelRoute ), 1 )
-      
+      AIGroup:Route( RefuelRoute, 0.5 )
     else
       self:RTB()
     end
@@ -37056,21 +37055,15 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     )
 
     PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
-    PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     
     local Tasks = {}
     Tasks[#Tasks+1] = AIGroup:TaskFunction( "AI_A2A_PATROL.PatrolRoute", self )
-    
     PatrolRoute[#PatrolRoute].task = AIGroup:TaskCombo( Tasks )
     
-    --- Do a trick, link the NewPatrolRoute function of the PATROLGROUP object to the AIControllable in a temporary variable ...
-    --AIGroup:SetState( AIGroup, "AI_A2A_PATROL", self )
-
     AIGroup:OptionROEReturnFire()
     AIGroup:OptionROTPassiveDefense()
 
-    --- NOW ROUTE THE GROUP!
-    AIGroup:SetTask( AIGroup:TaskRoute( PatrolRoute ), 0.5 )
+    AIGroup:Route( PatrolRoute, 0.5 )
   end
 
 end
@@ -37506,7 +37499,6 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       self:T2( { self.MinSpeed, self.MaxSpeed, ToTargetSpeed } )
       
       EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
-      EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
 
       local AttackTasks = {}
   
@@ -37526,15 +37518,10 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROTPassiveDefense()
 
         AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( "AI_A2A_CAP.AttackRoute", self )
-        
-        EngageRoute[1].task = AIGroup:TaskCombo( AttackTasks )
-        
-        --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-        --AIGroup:SetState( AIGroup, "AI_A2A_CAP", self )
+        EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
       end
       
-      --- NOW ROUTE THE GROUP!
-      AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
+      AIGroup:Route( EngageRoute, 0.5 )
     end
   else
     self:E("No targets found -> Going back to Patrolling")
@@ -37970,7 +37957,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       local ToInterceptAngle = CurrentCoord:GetAngleDegrees( CurrentCoord:GetDirectionVec3( ToTargetCoord ) )
       
       --- Create a route point of type air.
-      local ToPatrolRoutePoint = CurrentCoord:Translate( 10000, ToInterceptAngle ):WaypointAir( 
+      local ToPatrolRoutePoint = CurrentCoord:Translate( 15000, ToInterceptAngle ):WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -37981,7 +37968,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       self:F( { Angle = ToInterceptAngle, ToTargetSpeed = ToTargetSpeed } )
       self:F( { self.EngageMinSpeed, self.EngageMaxSpeed, ToTargetSpeed } )
       
-      EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
+      --EngageRoute[#EngageRoute+1] = CurrentCoord:WaypointAir()
       EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
       
       local AttackTasks = {}
@@ -37993,11 +37980,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
           AttackTasks[#AttackTasks+1] = AIGroup:TaskAttackUnit( AttackUnit )
         end
       end
-  
-      --- Now we're going to do something special, we're going to call a function from a waypoint action at the AIControllable...
-      AIGroup:WayPointInitialize( EngageRoute )
-      
-      
+        
       if #AttackTasks == 0 then
         self:E("No targets found -> Going RTB")
         self:Return()
@@ -38008,14 +37991,9 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
 
         AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( "AI_A2A_GCI.InterceptRoute", self )
         EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
-        
-        --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-        --AIGroup:SetState( AIGroup, "AI_A2A_GCI", self )
       end
       
-      --- NOW ROUTE THE GROUP!
-      --AIGroup:ClearTasks()
-      AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
+      AIGroup:Route( EngageRoute, 0.5 )
     
     end
   else
