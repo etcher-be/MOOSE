@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170806_1740' )
+env.info( 'Moose Generation Timestamp: 20170808_1559' )
 
 --- Various routines
 -- @module routines
@@ -4277,11 +4277,12 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
     if not Scheduler then
       Scheduler = self.PersistentSchedulers[CallID]
     end
-
+    
     --self:T3( { Scheduler = Scheduler } )
     
     if Scheduler then
 
+      local MasterObject = tostring(Scheduler.MasterObject) 
       local Schedule = self.Schedule[Scheduler][CallID]
       
       --self:T3( { Schedule = Schedule } )
@@ -4311,6 +4312,9 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
       
       local CurrentTime = timer.getTime()
       local StartTime = Schedule.StartTime
+
+      self:F3( { Master = MasterObject, CurrentTime = CurrentTime, StartTime = StartTime, Start = Start, Repeat = Repeat, Randomize = Randomize, Stop = Stop } )
+      
       
       if Status and (( Result == nil ) or ( Result and Result ~= false ) ) then
         if Repeat ~= 0 and ( ( Stop == 0 ) or ( Stop ~= 0 and CurrentTime <= StartTime + Stop ) ) then
@@ -12231,8 +12235,8 @@ do -- COORDINATE
   --
   -- A COORDINATE can prepare waypoints for Ground and Air groups to be embedded into a Route.
   --
-  --   * @{#COORDINATE.RoutePointAir}(): Build an air route point.
-  --   * @{#COORDINATE.RoutePointGround}(): Build a ground route point.
+  --   * @{#COORDINATE.WaypointAir}(): Build an air route point.
+  --   * @{#COORDINATE.WaypointGround}(): Build a ground route point.
   --
   -- Route points can be used in the Route methods of the @{Group#GROUP} class.
   --
@@ -12654,7 +12658,7 @@ do -- COORDINATE
   -- @param Dcs.DCSTypes#Speed Speed Airspeed in km/h.
   -- @param #boolean SpeedLocked true means the speed is locked.
   -- @return #table The route point.
-  function COORDINATE:RoutePointAir( AltType, Type, Action, Speed, SpeedLocked )
+  function COORDINATE:WaypointAir( AltType, Type, Action, Speed, SpeedLocked )
     self:F2( { AltType, Type, Action, Speed, SpeedLocked } )
 
     local RoutePoint = {}
@@ -12692,10 +12696,10 @@ do -- COORDINATE
 
   --- Build an ground type route point.
   -- @param #COORDINATE self
-  -- @param Dcs.DCSTypes#Speed Speed Speed in km/h.
-  -- @param #COORDINATE.RoutePointAction Formation The route point Formation.
+  -- @param #number Speed (optional) Speed in km/h. The default speed is 999 km/h.
+  -- @param #string Formation (optional) The route point Formation, which is a text string that specifies exactly the Text in the Type of the route point, like "Vee", "Echelon Right".
   -- @return #table The route point.
-  function COORDINATE:RoutePointGround( Speed, Formation )
+  function COORDINATE:WaypointGround( Speed, Formation )
     self:F2( { Formation, Speed } )
 
     local RoutePoint = {}
@@ -12705,7 +12709,7 @@ do -- COORDINATE
     RoutePoint.action = Formation or ""
 
 
-    RoutePoint.speed = Speed / 3.6
+    RoutePoint.speed = ( Speed or 999 ) / 3.6
     RoutePoint.speed_locked = true
 
     --  ["task"] =
@@ -16269,8 +16273,8 @@ do -- CARGO_REPRESENTABLE
   
     local PointStartVec2 = self.CargoObject:GetPointVec2()
   
-    Points[#Points+1] = PointStartVec2:RoutePointGround( Speed )
-    Points[#Points+1] = ToPointVec2:RoutePointGround( Speed )
+    Points[#Points+1] = PointStartVec2:WaypointGround( Speed )
+    Points[#Points+1] = ToPointVec2:WaypointGround( Speed )
   
     local TaskRoute = self.CargoObject:TaskRoute( Points )
     self.CargoObject:SetTask( TaskRoute, 2 )
@@ -16492,9 +16496,9 @@ function CARGO_UNIT:onenterUnBoarding( From, Event, To, ToPointVec2, NearRadius 
       self.CargoCarrier = nil
 
       local Points = {}
-      Points[#Points+1] = CargoCarrierPointVec2:RoutePointGround( Speed )
+      Points[#Points+1] = CargoCarrierPointVec2:WaypointGround( Speed )
       
-      Points[#Points+1] = ToPointVec2:RoutePointGround( Speed )
+      Points[#Points+1] = ToPointVec2:WaypointGround( Speed )
   
       local TaskRoute = self.CargoObject:TaskRoute( Points )
       self.CargoObject:SetTask( TaskRoute, 1 )
@@ -16631,8 +16635,8 @@ function CARGO_UNIT:onafterBoard( From, Event, To, CargoCarrier, NearRadius, ...
     
       local PointStartVec2 = self.CargoObject:GetPointVec2()
     
-      Points[#Points+1] = PointStartVec2:RoutePointGround( Speed )
-      Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+      Points[#Points+1] = PointStartVec2:WaypointGround( Speed )
+      Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
     
       local TaskRoute = self.CargoObject:TaskRoute( Points )
       self.CargoObject:SetTask( TaskRoute, 2 )
@@ -16679,8 +16683,8 @@ function CARGO_UNIT:onafterBoarding( From, Event, To, CargoCarrier, NearRadius, 
         
           local PointStartVec2 = self.CargoObject:GetPointVec2()
         
-          Points[#Points+1] = PointStartVec2:RoutePointGround( Speed )
-          Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+          Points[#Points+1] = PointStartVec2:WaypointGround( Speed )
+          Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
         
           local TaskRoute = self.CargoObject:TaskRoute( Points )
           self.CargoObject:SetTask( TaskRoute, 0.2 )
@@ -17119,8 +17123,8 @@ function CARGO_PACKAGE:onafterOnBoard( From, Event, To, CargoCarrier, Speed, Boa
     self:T( { CargoCarrierHeading, CargoDeployHeading } )
     local CargoDeployPointVec2 = CargoCarrier:GetPointVec2():Translate( BoardDistance, CargoDeployHeading )
 
-    Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-    Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+    Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+    Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
     local TaskRoute = self.CargoCarrier:TaskRoute( Points )
     self.CargoCarrier:SetTask( TaskRoute, 1 )
@@ -17196,8 +17200,8 @@ function CARGO_PACKAGE:onafterUnBoard( From, Event, To, CargoCarrier, Speed, UnL
     self:T( { CargoCarrierHeading, CargoDeployHeading } )
     local CargoDeployPointVec2 = StartPointVec2:Translate( UnBoardDistance, CargoDeployHeading )
 
-    Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-    Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+    Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+    Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
     local TaskRoute = CargoCarrier:TaskRoute( Points )
     CargoCarrier:SetTask( TaskRoute, 1 )
@@ -17243,8 +17247,8 @@ function CARGO_PACKAGE:onafterLoad( From, Event, To, CargoCarrier, Speed, LoadDi
   local CargoDeployPointVec2 = StartPointVec2:Translate( LoadDistance, CargoDeployHeading )
   
   local Points = {}
-  Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-  Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+  Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+  Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
   local TaskRoute = self.CargoCarrier:TaskRoute( Points )
   self.CargoCarrier:SetTask( TaskRoute, 1 )
@@ -17269,8 +17273,8 @@ function CARGO_PACKAGE:onafterUnLoad( From, Event, To, CargoCarrier, Speed, Dist
   self.CargoCarrier = CargoCarrier
 
   local Points = {}
-  Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-  Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+  Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+  Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
   local TaskRoute = self.CargoCarrier:TaskRoute( Points )
   self.CargoCarrier:SetTask( TaskRoute, 1 )
@@ -17896,7 +17900,7 @@ end
 -- @extends Wrapper.Identifiable#IDENTIFIABLE
 
 --- @type POSITIONABLE
--- @extends POSITIONABLE.__
+-- @extends Wrapper.Identifiable#IDENTIFIABLE
 
 
 --- # POSITIONABLE class, extends @{Identifiable#IDENTIFIABLE}
@@ -18038,7 +18042,6 @@ end
 --- Returns a COORDINATE object indicating the point in 3D of the POSITIONABLE within the mission.
 -- @param Wrapper.Positionable#POSITIONABLE self
 -- @return Core.Point#COORDINATE The COORDINATE of the POSITIONABLE.
--- @return #nil The POSITIONABLE is not existing or alive.  
 function POSITIONABLE:GetCoordinate()
   self:F2( self.PositionableName )
 
@@ -18047,7 +18050,7 @@ function POSITIONABLE:GetCoordinate()
   if DCSPositionable then
     local PositionableVec3 = self:GetPositionVec3()
     
-    local PositionableCoordinate = POINT_VEC3:NewFromVec3( PositionableVec3 )
+    local PositionableCoordinate = COORDINATE:NewFromVec3( PositionableVec3 )
     PositionableCoordinate:SetHeading( self:GetHeading() )
   
     self:T2( PositionableCoordinate )
@@ -18791,6 +18794,22 @@ end
 --   * @{#CONTROLLABLE.TaskCondition}: Return a condition section for a controlled task.
 --   * @{#CONTROLLABLE.TaskControlled}: Return a Controlled Task taking a Task and a TaskCondition.
 -- 
+-- ### Call a function as a Task
+-- 
+-- A function can be called which is part of a Task. The method @{#CONTROLLABLE.TaskFunction}() prepares
+-- a Task that can call a GLOBAL function from within the Controller execution.
+-- This method can also be used to **embed a function call when a certain waypoint has been reached**.
+-- See below the **Tasks at Waypoints** section.
+-- 
+-- Demonstration Mission: [GRP-502 - Route at waypoint to random point](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/GRP - Group Commands/GRP-502 - Route at waypoint to random point)
+-- 
+-- ### Tasks at Waypoints
+-- 
+-- Special Task methods are available to set tasks at certain waypoints.
+-- The method @{#CONTROLLABLE.SetTaskAtWaypoint}() helps preparing a Route, embedding a Task at the Waypoint of the Route.
+-- 
+-- This creates a Task element, with an action to call a function as part of a Wrapped Task.
+-- 
 -- ### Obtain the mission from controllable templates
 -- 
 -- Controllable templates contain complete mission descriptions. Sometimes you want to copy a complete mission from a controllable and assign it to another:
@@ -18953,6 +18972,16 @@ function CONTROLLABLE:GetLife0()
   return nil
 end
 
+--- Returns relative amount of fuel (from 0.0 to 1.0) the unit has in its internal tanks.
+-- This method returns nil to ensure polymorphic behaviour! This method needs to be overridden by GROUP or UNIT.
+-- @param #CONTROLLABLE self
+-- @return #nil The CONTROLLABLE is not existing or alive.  
+function CONTROLLABLE:GetFuel()
+  self:F( self.ControllableName )
+
+  return nil
+end
+
 
 
 
@@ -19030,16 +19059,21 @@ function CONTROLLABLE:SetTask( DCSTask, WaitTime )
 
   if DCSControllable then
 
-    local Controller = self:_GetController()
 
     -- When a controllable SPAWNs, it takes about a second to get the controllable in the simulator. Setting tasks to unspawned controllables provides unexpected results.
     -- Therefore we schedule the functions to set the mission and options for the Controllable.
     -- Controller.setTask( Controller, DCSTask )
 
-    if not WaitTime or WaitTime == 0 then
+    local function SetTask( Controller, DCSTask )
+      local Controller = self:_GetController()
+      Controller:resetTask()
       Controller:setTask( DCSTask )
+    end
+
+    if not WaitTime or WaitTime == 0 then
+      SetTask( DCSTask )
     else
-      self.TaskScheduler:Schedule( Controller, Controller.setTask, { DCSTask }, WaitTime )
+      self.TaskScheduler:Schedule( self, SetTask, { DCSTask }, WaitTime )
     end
 
     return self
@@ -19145,11 +19179,11 @@ function CONTROLLABLE:TaskWrappedAction( DCSCommand, Index )
   self:F2( { DCSCommand } )
 
   local DCSTaskWrappedAction
-
+  
   DCSTaskWrappedAction = {
     id = "WrappedAction",
     enabled = true,
-    number = Index,
+    number = Index or 1,
     auto = false,
     params = {
       action = DCSCommand,
@@ -19159,6 +19193,22 @@ function CONTROLLABLE:TaskWrappedAction( DCSCommand, Index )
   self:T3( { DCSTaskWrappedAction } )
   return DCSTaskWrappedAction
 end
+
+--- Set a Task at a Waypoint using a Route list.
+-- @param #CONTROLLABLE self
+-- @param #table Waypoint The Waypoint!
+-- @param Dcs.DCSTasking.Task#Task Task The Task structure to be executed!
+-- @return Dcs.DCSTasking.Task#Task
+function CONTROLLABLE:SetTaskWaypoint( Waypoint, Task )
+
+  Waypoint.task = self:TaskCombo( { Task } )
+
+  self:T3( { Waypoint.task } )
+  return Waypoint.task
+end
+
+
+
 
 --- Executes a command action
 -- @param #CONTROLLABLE self
@@ -20176,6 +20226,84 @@ function CONTROLLABLE:TaskEmbarkToTransport( Point, Radius )
   return DCSTask
 end
 
+--- This creates a Task element, with an action to call a function as part of a Wrapped Task.
+-- This Task can then be embedded at a Waypoint by calling the method @{#CONTROLLABLE.SetTaskAtWaypoint}.
+-- @param #CONTROLLABLE self
+-- @param #string FunctionString The function name embedded as a string that will be called.
+-- @param ... The variable arguments passed to the function when called! These arguments can be of any type!
+-- @return #CONTROLLABLE
+-- @usage
+-- 
+--  local ZoneList = { 
+--    ZONE:New( "ZONE1" ), 
+--    ZONE:New( "ZONE2" ), 
+--    ZONE:New( "ZONE3" ), 
+--    ZONE:New( "ZONE4" ), 
+--    ZONE:New( "ZONE5" ) 
+--  }
+--  
+--  GroundGroup = GROUP:FindByName( "Vehicle" )
+--  
+--  --- @param Wrapper.Group#GROUP GroundGroup
+--  function RouteToZone( Vehicle, ZoneRoute )
+--  
+--    local Route = {}
+--    
+--    Vehicle:E( { ZoneRoute = ZoneRoute } )
+--    
+--    Vehicle:MessageToAll( "Moving to zone " .. ZoneRoute:GetName(), 10 )
+--  
+--    -- Get the current coordinate of the Vehicle
+--    local FromCoord = Vehicle:GetCoordinate()
+--    
+--    -- Select a random Zone and get the Coordinate of the new Zone.
+--    local RandomZone = ZoneList[ math.random( 1, #ZoneList ) ] -- Core.Zone#ZONE
+--    local ToCoord = RandomZone:GetCoordinate()
+--    
+--    -- Create a "ground route point", which is a "point" structure that can be given as a parameter to a Task
+--    Route[#Route+1] = FromCoord:WaypointGround( 72 )
+--    Route[#Route+1] = ToCoord:WaypointGround( 60, "Vee" )
+--    
+--    local TaskRouteToZone = Vehicle:TaskFunction( "RouteToZone", RandomZone )
+--    
+--    Vehicle:SetTaskAtWaypoint( Route, #Route, TaskRouteToZone ) -- Set for the given Route at Waypoint 2 the TaskRouteToZone.
+--  
+--    Vehicle:Route( Route, math.random( 10, 20 ) ) -- Move after a random seconds to the Route. See the Route method for details.
+--    
+--  end
+--    
+--    RouteToZone( GroundGroup, ZoneList[1] )
+-- 
+function CONTROLLABLE:TaskFunction( FunctionString, ... )
+  self:F2( { FunctionString, arg } )
+
+  local DCSTask
+
+  local DCSScript = {}
+  DCSScript[#DCSScript+1] = "local MissionControllable = GROUP:Find( ... ) "
+
+  if arg and arg.n > 0 then
+    local ArgumentKey = tostring( arg )
+    self:SetState( self, ArgumentKey, arg )
+    DCSScript[#DCSScript+1] = "local Arguments = MissionControllable:GetState( MissionControllable, '" .. ArgumentKey .. "' ) "
+    DCSScript[#DCSScript+1] = "MissionControllable:ClearState( MissionControllable, '" .. ArgumentKey .. "' ) "
+    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable, unpack( Arguments ) )"
+  else
+    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable )"
+  end
+
+  DCSTask = self:TaskWrappedAction(
+    self:CommandDoScript(
+      table.concat( DCSScript )
+    )
+  )
+
+  self:T( DCSTask )
+
+  return DCSTask
+
+end
+
 
 
 --- (AIR + GROUND) Return a mission task from a mission template.
@@ -20316,19 +20444,16 @@ end
 
 --- Make the controllable to follow a given route.
 -- @param #CONTROLLABLE self
--- @param #table GoPoints A table of Route Points.
--- @return #CONTROLLABLE self
-function CONTROLLABLE:Route( GoPoints )
-  self:F2( GoPoints )
+-- @param #table Route A table of Route Points.
+-- @param #number DelaySeconds Wait for the specified seconds before executing the Route.
+-- @return #CONTROLLABLE The CONTROLLABLE.
+function CONTROLLABLE:Route( Route, DelaySeconds )
+  self:F2( Route )
 
   local DCSControllable = self:GetDCSObject()
-
   if DCSControllable then
-    local Points = routines.utils.deepCopy( GoPoints )
-    local MissionTask = { id = 'Mission', params = { route = { points = Points, }, }, }
-    local Controller = self:_GetController()
-    --Controller.setTask( Controller, MissionTask )
-    self.TaskScheduler:Schedule( Controller, Controller.setTask, { MissionTask }, 1 )
+    local RouteTask = self:TaskRoute( Route ) -- Create a RouteTask, that will route the CONTROLLABLE to the Route.
+    self:SetTask( RouteTask, DelaySeconds or 1 ) -- Execute the RouteTask after the specified seconds (default is 1).
     return self
   end
 
@@ -20336,6 +20461,24 @@ function CONTROLLABLE:Route( GoPoints )
 end
 
 
+--- Make the GROUND controllable to drive towards a specific point.
+-- @param #CONTROLLABLE self
+-- @param Core.Point#COORDINATE ToCoordinate A Coordinate to drive to.
+-- @param #number Speed (optional) Speed in km/h. The default speed is 999 km/h.
+-- @param #string Formation (optional) The route point Formation, which is a text string that specifies exactly the Text in the Type of the route point, like "Vee", "Echelon Right".
+-- @param #number DelaySeconds Wait for the specified seconds before executing the Route.
+-- @return #CONTROLLABLE The CONTROLLABLE.
+function CONTROLLABLE:RouteGroundTo( ToCoordinate, Speed, Formation, DelaySeconds )
+
+  local FromCoordinate = self:GetCoordinate()
+  
+  local FromWP = FromCoordinate:WaypointGround()
+  local ToWP = ToCoordinate:WaypointGround( Speed, Formation )
+
+  self:Route( { FromWP, ToWP }, DelaySeconds )
+
+  return self
+end
 
 --- (AIR + GROUND) Route the controllable to a given zone.
 -- The controllable final destination point can be randomized.
@@ -21017,36 +21160,10 @@ function CONTROLLABLE:WayPointFunction( WayPoint, WayPointIndex, WayPointFunctio
   self:F2( { WayPoint, WayPointIndex, WayPointFunction } )
 
   table.insert( self.WayPoints[WayPoint].task.params.tasks, WayPointIndex )
-  self.WayPoints[WayPoint].task.params.tasks[WayPointIndex] = self:TaskFunction( WayPoint, WayPointIndex, WayPointFunction, arg )
+  self.WayPoints[WayPoint].task.params.tasks[WayPointIndex] = self:TaskFunction( WayPointFunction, arg )
   return self
 end
 
-
-function CONTROLLABLE:TaskFunction( WayPoint, WayPointIndex, FunctionString, FunctionArguments )
-  self:F2( { WayPoint, WayPointIndex, FunctionString, FunctionArguments } )
-
-  local DCSTask
-
-  local DCSScript = {}
-  DCSScript[#DCSScript+1] = "local MissionControllable = GROUP:Find( ... ) "
-
-  if FunctionArguments and #FunctionArguments > 0 then
-    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable, " .. table.concat( FunctionArguments, "," ) .. ")"
-  else
-    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable )"
-  end
-
-  DCSTask = self:TaskWrappedAction(
-    self:CommandDoScript(
-      table.concat( DCSScript )
-    ), WayPointIndex
-  )
-
-  self:T( DCSTask )
-
-  return DCSTask
-
-end
 
 --- Executes the WayPoint plan.
 -- The function gets a WayPoint parameter, that you can use to restart the mission at a specific WayPoint.
@@ -21611,7 +21728,6 @@ end
 --- Returns a COORDINATE object indicating the point of the first UNIT of the GROUP within the mission.
 -- @param Wrapper.Group#GROUP self
 -- @return Core.Point#COORDINATE The COORDINATE of the GROUP.
--- @return #nil The POSITIONABLE is not existing or alive.  
 function GROUP:GetCoordinate()
   self:F2( self.PositionableName )
 
@@ -21668,6 +21784,32 @@ function GROUP:GetHeading()
   return nil
   
 end
+
+--- Returns relative amount of fuel (from 0.0 to 1.0) the group has in its internal tanks. If there are additional fuel tanks the value may be greater than 1.0.
+-- @param #GROUP self
+-- @return #number The relative amount of fuel (from 0.0 to 1.0).
+-- @return #nil The GROUP is not existing or alive.  
+function GROUP:GetFuel()
+  self:F( self.ControllableName )
+
+  local DCSControllable = self:GetDCSObject()
+  
+  if DCSControllable then
+    local GroupSize = self:GetSize()
+    local TotalFuel = 0
+    for UnitID, UnitData in pairs( self:GetUnits() ) do
+      local Unit = UnitData -- Wrapper.Unit#UNIT
+      local UnitFuel = Unit:GetFuel()
+      self:F( { Fuel = UnitFuel } )
+      TotalFuel = TotalFuel + UnitFuel
+    end
+    local GroupFuel = TotalFuel / GroupSize
+    return GroupFuel
+  end
+  
+  return 0
+end
+
 
 do -- Is Zone methods
 
@@ -22195,7 +22337,7 @@ do -- Route methods
     
         local PointTo = {}
         local AirbasePointVec2 = RTBAirbase:GetPointVec2()
-        local AirbaseAirPoint = AirbasePointVec2:RoutePointAir(
+        local AirbaseAirPoint = AirbasePointVec2:WaypointAir(
           POINT_VEC3.RoutePointAltType.BARO,
           "Land",
           "Landing", 
@@ -22878,12 +23020,12 @@ function UNIT:GetRadar()
   return nil, nil
 end
 
---- Returns relative amount of fuel (from 0.0 to 1.0) the unit has in its internal tanks. If there are additional fuel tanks the value may be greater than 1.0.
+--- Returns relative amount of fuel (from 0.0 to 1.0) the UNIT has in its internal tanks. If there are additional fuel tanks the value may be greater than 1.0.
 -- @param #UNIT self
 -- @return #number The relative amount of fuel (from 0.0 to 1.0).
 -- @return #nil The DCS Unit is not existing or alive.  
 function UNIT:GetFuel()
-  self:F2( self.UnitName )
+  self:F( self.UnitName )
 
   local DCSUnit = self:GetDCSObject()
   
@@ -29400,7 +29542,7 @@ function ESCORT:_AttackTarget( DetectedItemID )
       end, Tasks
     )    
 
-    Tasks[#Tasks+1] = EscortGroup:TaskFunction( 1, 2, "_Resume", { "''" } )
+    Tasks[#Tasks+1] = EscortGroup:TaskFunction( "_Resume", { "''" } )
     
     EscortGroup:SetTask( 
       EscortGroup:TaskCombo(
@@ -36228,8 +36370,7 @@ function AI_A2A:onafterStatus()
     end
     
 
-    
-    local Fuel = self.Controllable:GetUnit(1):GetFuel()
+    local Fuel = self.Controllable:GetFuel()
     self:F({Fuel=Fuel})
     if Fuel < self.PatrolFuelThresholdPercentage then
       if self.TankerName then
@@ -36290,27 +36431,23 @@ end
 
 
 --- @param Wrapper.Group#GROUP AIGroup
-function AI_A2A.RTBRoute( AIGroup )
+function AI_A2A.RTBRoute( AIGroup, Fsm )
 
   AIGroup:F( { "AI_A2A.RTBRoute:", AIGroup:GetName() } )
   
   if AIGroup:IsAlive() then
-    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
-    _AI_A2A:__RTB( 0.5 )
-    local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
-    AIGroup:SetTask( Task )
+    Fsm:__RTB( 0.5 )
   end
   
 end
 
 --- @param Wrapper.Group#GROUP AIGroup
-function AI_A2A.RTBHold( AIGroup )
+function AI_A2A.RTBHold( AIGroup, Fsm )
 
   AIGroup:F( { "AI_A2A.RTBHold:", AIGroup:GetName() } )
   if AIGroup:IsAlive() then
-    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
-    _AI_A2A:__RTB( 0.5 )
-    _AI_A2A:Return()
+    Fsm:__RTB( 0.5 )
+    Fsm:Return()
     local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
     AIGroup:SetTask( Task )
   end
@@ -36349,7 +36486,7 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
       return
     end
     --- Create a route point of type air.
-    local ToPatrolRoutePoint = ToAirbaseCoord:RoutePointAir( 
+    local ToPatrolRoutePoint = ToAirbaseCoord:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -36370,11 +36507,11 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
     AIGroup:WayPointInitialize( EngageRoute )
   
     local Tasks = {}
-    Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A.RTBRoute" )
+    Tasks[#Tasks+1] = AIGroup:TaskFunction( "AI_A2A.RTBRoute", self )
     Tasks[#Tasks+1] = AIGroup:TaskOrbitCircle( 4000, 350 )
     EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( Tasks )
 
-    AIGroup:SetState( AIGroup, "AI_A2A", self )
+    --AIGroup:SetState( AIGroup, "AI_A2A", self )
 
     --- NOW ROUTE THE GROUP!
     AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
@@ -36408,11 +36545,11 @@ function AI_A2A:onafterHold( AIGroup, From, Event, To, HoldTime )
     local OrbitTask = AIGroup:TaskOrbitCircle( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ), self.PatrolMinSpeed )
     local TimedOrbitTask = AIGroup:TaskControlled( OrbitTask, AIGroup:TaskCondition( nil, nil, nil, nil, HoldTime , nil ) )
     
-    local RTBTask = AIGroup:TaskFunction( 1, 1, "AI_A2A.RTBHold" )
+    local RTBTask = AIGroup:TaskFunction( "AI_A2A.RTBHold", self )
     
     local OrbitHoldTask = AIGroup:TaskOrbitCircle( 4000, self.PatrolMinSpeed )
     
-    AIGroup:SetState( AIGroup, "AI_A2A", self )
+    --AIGroup:SetState( AIGroup, "AI_A2A", self )
     
     AIGroup:SetTask( AIGroup:TaskCombo( { TimedOrbitTask, RTBTask, OrbitHoldTask } ), 0 )
   end
@@ -36420,13 +36557,11 @@ function AI_A2A:onafterHold( AIGroup, From, Event, To, HoldTime )
 end
 
 --- @param Wrapper.Group#GROUP AIGroup
-function AI_A2A.Resume( AIGroup )
+function AI_A2A.Resume( AIGroup, Fsm )
 
   AIGroup:F( { "AI_A2A.Resume:", AIGroup:GetName() } )
   if AIGroup:IsAlive() then
-    local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
-    _AI_A2A:__RTB( 0.5 )
-    --_AI_A2A:Retur()
+    Fsm:__RTB( 0.5 )
   end
   
 end
@@ -36451,7 +36586,7 @@ function AI_A2A:onafterRefuel( AIGroup, From, Event, To )
       local ToRefuelSpeed = math.random( self.PatrolMinSpeed, self.PatrolMaxSpeed )
       
       --- Create a route point of type air.
-      local ToRefuelRoutePoint = ToRefuelCoord:RoutePointAir( 
+      local ToRefuelRoutePoint = ToRefuelCoord:WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -36469,9 +36604,9 @@ function AI_A2A:onafterRefuel( AIGroup, From, Event, To )
   
       local Tasks = {}
       Tasks[#Tasks+1] = AIGroup:TaskRefueling()
-      Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, self:GetClassName() .. ".Resume" )
+      Tasks[#Tasks+1] = AIGroup:TaskFunction( self:GetClassName() .. ".Resume", self )
       RefuelRoute[#RefuelRoute].task = AIGroup:TaskCombo( Tasks )
-      AIGroup:SetState( AIGroup, "AI_A2A", self )
+      --AIGroup:SetState( AIGroup, "AI_A2A", self )
   
       --- NOW ROUTE THE GROUP!
       AIGroup:SetTask( AIGroup:TaskRoute( RefuelRoute ), 1 )
@@ -36839,13 +36974,12 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 -- This statis method is called from the route path within the last task at the last waaypoint of the Controllable.
 -- Note that this method is required, as triggers the next route when patrolling for the Controllable.
-function AI_A2A_PATROL.PatrolRoute( AIGroup )
+function AI_A2A_PATROL.PatrolRoute( AIGroup, Fsm )
 
   AIGroup:F( { "AI_A2A_PATROL.PatrolRoute:", AIGroup:GetName() } )
 
   if AIGroup:IsAlive() then
-    local _AI_A2A_Patrol = AIGroup:GetState( AIGroup, "AI_A2A_PATROL" ) -- #AI_A2A_PATROL
-    _AI_A2A_Patrol:Route()
+    Fsm:Route()
   end
   
 end
@@ -36882,7 +37016,7 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     local ToTargetSpeed = math.random( self.PatrolMinSpeed, self.PatrolMaxSpeed )
     
     --- Create a route point of type air.
-    local ToPatrolRoutePoint = ToTargetCoord:RoutePointAir( 
+    local ToPatrolRoutePoint = ToTargetCoord:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -36894,12 +37028,12 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     
     local Tasks = {}
-    Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_PATROL.PatrolRoute" )
+    Tasks[#Tasks+1] = AIGroup:TaskFunction( "AI_A2A_PATROL.PatrolRoute", self )
     
     PatrolRoute[#PatrolRoute].task = AIGroup:TaskCombo( Tasks )
     
     --- Do a trick, link the NewPatrolRoute function of the PATROLGROUP object to the AIControllable in a temporary variable ...
-    AIGroup:SetState( AIGroup, "AI_A2A_PATROL", self )
+    --AIGroup:SetState( AIGroup, "AI_A2A_PATROL", self )
 
     AIGroup:OptionROEReturnFire()
     AIGroup:OptionROTPassiveDefense()
@@ -37271,16 +37405,12 @@ end
 -- todo: need to fix this global function
 
 --- @param Wrapper.Group#GROUP AIGroup
-function AI_A2A_CAP.AttackRoute( AIGroup )
+function AI_A2A_CAP.AttackRoute( AIGroup, Fsm )
 
   AIGroup:F( { "AI_A2A_CAP.AttackRoute:", AIGroup:GetName() } )
 
   if AIGroup:IsAlive() then
-    local _AI_A2A_CAP = AIGroup:GetState( AIGroup, "AI_A2A_CAP" ) -- AI.AI_Cap#AI_A2A_CAP
-    _AI_A2A_CAP:__Engage( 0.5 )
-
-    --local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
-    --AIGroup:SetTask( Task )
+    Fsm:__Engage( 0.5 )
   end
 end
 
@@ -37333,7 +37463,7 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       local ToInterceptAngle = CurrentCoord:GetAngleDegrees( CurrentCoord:GetDirectionVec3( ToTargetCoord ) )
       
       --- Create a route point of type air.
-      local ToPatrolRoutePoint = CurrentCoord:Translate( 5000, ToInterceptAngle ):RoutePointAir( 
+      local ToPatrolRoutePoint = CurrentCoord:Translate( 5000, ToInterceptAngle ):WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -37364,13 +37494,12 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROEOpenFire()
         AIGroup:OptionROTPassiveDefense()
 
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_CAP.AttackRoute" )
-        --AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( AIGroup:GetHeight(), self.PatrolMinSpeed )
+        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( "AI_A2A_CAP.AttackRoute", self )
         
         EngageRoute[1].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-        AIGroup:SetState( AIGroup, "AI_A2A_CAP", self )
+        --AIGroup:SetState( AIGroup, "AI_A2A_CAP", self )
       end
       
       --- NOW ROUTE THE GROUP!
@@ -37741,13 +37870,12 @@ end
 -- todo: need to fix this global function
 
 --- @param Wrapper.Group#GROUP AIControllable
-function AI_A2A_GCI.InterceptRoute( AIGroup )
+function AI_A2A_GCI.InterceptRoute( AIGroup, Fsm )
 
   AIGroup:F( { "AI_A2A_GCI.InterceptRoute:", AIGroup:GetName() } )
   
   if AIGroup:IsAlive() then
-    local _AI_A2A_GCI = AIGroup:GetState( AIGroup, "AI_A2A_GCI" ) -- AI.AI_Cap#AI_A2A_GCI
-    _AI_A2A_GCI:__Engage( 0.5 )
+    Fsm:__Engage( 0.5 )
   
     --local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
     --AIGroup:SetTask( Task )
@@ -37811,7 +37939,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       local ToInterceptAngle = CurrentCoord:GetAngleDegrees( CurrentCoord:GetDirectionVec3( ToTargetCoord ) )
       
       --- Create a route point of type air.
-      local ToPatrolRoutePoint = CurrentCoord:Translate( 10000, ToInterceptAngle ):RoutePointAir( 
+      local ToPatrolRoutePoint = CurrentCoord:Translate( 10000, ToInterceptAngle ):WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -37847,12 +37975,11 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROEOpenFire()
         AIGroup:OptionROTPassiveDefense()
 
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_GCI.InterceptRoute" )
-        --AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( AIGroup:GetHeight(), self.EngageMinSpeed )
+        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( "AI_A2A_GCI.InterceptRoute", self )
         EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
         
         --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-        AIGroup:SetState( AIGroup, "AI_A2A_GCI", self )
+        --AIGroup:SetState( AIGroup, "AI_A2A_GCI", self )
       end
       
       --- NOW ROUTE THE GROUP!
@@ -40824,7 +40951,7 @@ do -- AI_A2A_DISPATCHER
         for Defender, DefenderTask in pairs( self:GetDefenderTasks() ) do
           local Defender = Defender -- Wrapper.Group#GROUP
            if DefenderTask.Target and DefenderTask.Target.Index == DetectedItem.Index then
-             local Fuel = Defender:GetUnit(1):GetFuel() * 100
+             local Fuel = Defender:GetFuel() * 100
              local Damage = Defender:GetLife() / Defender:GetLife0() * 100
              Report:Add( string.format( "   - %s ( %s - %s ): ( #%d ) F: %3d, D:%3d - %s", 
                                         Defender:GetName(), 
@@ -40847,7 +40974,7 @@ do -- AI_A2A_DISPATCHER
         local Defender = Defender -- Wrapper.Group#GROUP
         if not DefenderTask.Target then
           local DefenderHasTask = Defender:HasTask()
-          local Fuel = Defender:GetUnit(1):GetFuel() * 100
+          local Fuel = Defender:GetFuel() * 100
           local Damage = Defender:GetLife() / Defender:GetLife0() * 100
           Report:Add( string.format( "   - %s ( %s - %s ): ( #%d ) F: %3d, D:%3d - %s", 
                                      Defender:GetName(), 
@@ -42291,7 +42418,7 @@ function AI_PATROL_ZONE:onafterRoute( Controllable, From, Event, To )
       local CurrentAltitude = self.Controllable:GetUnit(1):GetAltitude()
       local CurrentPointVec3 = POINT_VEC3:New( CurrentVec2.x, CurrentAltitude, CurrentVec2.y )
       local ToPatrolZoneSpeed = self.PatrolMaxSpeed
-      local CurrentRoutePoint = CurrentPointVec3:RoutePointAir( 
+      local CurrentRoutePoint = CurrentPointVec3:WaypointAir( 
           self.PatrolAltType, 
           POINT_VEC3.RoutePointType.TakeOffParking, 
           POINT_VEC3.RoutePointAction.FromParkingArea, 
@@ -42306,7 +42433,7 @@ function AI_PATROL_ZONE:onafterRoute( Controllable, From, Event, To )
       local CurrentAltitude = self.Controllable:GetUnit(1):GetAltitude()
       local CurrentPointVec3 = POINT_VEC3:New( CurrentVec2.x, CurrentAltitude, CurrentVec2.y )
       local ToPatrolZoneSpeed = self.PatrolMaxSpeed
-      local CurrentRoutePoint = CurrentPointVec3:RoutePointAir( 
+      local CurrentRoutePoint = CurrentPointVec3:WaypointAir( 
           self.PatrolAltType, 
           POINT_VEC3.RoutePointType.TurningPoint, 
           POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -42332,7 +42459,7 @@ function AI_PATROL_ZONE:onafterRoute( Controllable, From, Event, To )
     local ToTargetPointVec3 = POINT_VEC3:New( ToTargetVec2.x, ToTargetAltitude, ToTargetVec2.y )
     
     --- Create a route point of type air.
-    local ToTargetRoutePoint = ToTargetPointVec3:RoutePointAir( 
+    local ToTargetRoutePoint = ToTargetPointVec3:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -42420,7 +42547,7 @@ function AI_PATROL_ZONE:onafterRTB()
     local CurrentAltitude = self.Controllable:GetUnit(1):GetAltitude()
     local CurrentPointVec3 = POINT_VEC3:New( CurrentVec2.x, CurrentAltitude, CurrentVec2.y )
     local ToPatrolZoneSpeed = self.PatrolMaxSpeed
-    local CurrentRoutePoint = CurrentPointVec3:RoutePointAir( 
+    local CurrentRoutePoint = CurrentPointVec3:WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -42917,7 +43044,7 @@ function AI_CAP_ZONE:onafterEngage( Controllable, From, Event, To )
     local CurrentAltitude = self.Controllable:GetUnit(1):GetAltitude()
     local CurrentPointVec3 = POINT_VEC3:New( CurrentVec2.x, CurrentAltitude, CurrentVec2.y )
     local ToEngageZoneSpeed = self.PatrolMaxSpeed
-    local CurrentRoutePoint = CurrentPointVec3:RoutePointAir( 
+    local CurrentRoutePoint = CurrentPointVec3:WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -42941,7 +43068,7 @@ function AI_CAP_ZONE:onafterEngage( Controllable, From, Event, To )
     local ToTargetPointVec3 = POINT_VEC3:New( ToTargetVec2.x, ToTargetAltitude, ToTargetVec2.y )
     
     --- Create a route point of type air.
-    local ToPatrolRoutePoint = ToTargetPointVec3:RoutePointAir( 
+    local ToPatrolRoutePoint = ToTargetPointVec3:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -43515,7 +43642,7 @@ function AI_CAS_ZONE:onafterEngage( Controllable, From, Event, To,
     local CurrentAltitude = self.Controllable:GetUnit(1):GetAltitude()
     local CurrentPointVec3 = POINT_VEC3:New( CurrentVec2.x, CurrentAltitude, CurrentVec2.y )
     local ToEngageZoneSpeed = self.PatrolMaxSpeed
-    local CurrentRoutePoint = CurrentPointVec3:RoutePointAir( 
+    local CurrentRoutePoint = CurrentPointVec3:WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -43557,7 +43684,7 @@ function AI_CAS_ZONE:onafterEngage( Controllable, From, Event, To,
     local ToTargetPointVec3 = POINT_VEC3:New( ToTargetVec2.x, self.EngageAltitude, ToTargetVec2.y )
     
     --- Create a route point of type air.
-    local ToTargetRoutePoint = ToTargetPointVec3:RoutePointAir( 
+    local ToTargetRoutePoint = ToTargetPointVec3:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -44159,7 +44286,7 @@ function AI_BAI_ZONE:onafterEngage( Controllable, From, Event, To,
     local CurrentAltitude = self.Controllable:GetUnit(1):GetAltitude()
     local CurrentPointVec3 = POINT_VEC3:New( CurrentVec2.x, CurrentAltitude, CurrentVec2.y )
     local ToEngageZoneSpeed = self.PatrolMaxSpeed
-    local CurrentRoutePoint = CurrentPointVec3:RoutePointAir( 
+    local CurrentRoutePoint = CurrentPointVec3:WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -44216,7 +44343,7 @@ function AI_BAI_ZONE:onafterEngage( Controllable, From, Event, To,
     local ToTargetPointVec3 = POINT_VEC3:New( ToTargetVec2.x, self.EngageAltitude, ToTargetVec2.y )
     
     --- Create a route point of type air.
-    local ToTargetRoutePoint = ToTargetPointVec3:RoutePointAir( 
+    local ToTargetRoutePoint = ToTargetPointVec3:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
