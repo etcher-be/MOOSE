@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170808_2139' )
+env.info( 'Moose Generation Timestamp: 20170811_1452' )
 
 --- Various routines
 -- @module routines
@@ -3859,7 +3859,93 @@ end
 --  -- will be invoked and the destructor called
 --  rawset( self, '__proxy', proxy )
 --  
---end--- **Core** -- SCHEDULER prepares and handles the **execution of functions over scheduled time (intervals)**.
+--end--- The REPORT class
+-- @type REPORT
+-- @extends Core.Base#BASE
+REPORT = {
+  ClassName = "REPORT",
+  Title = "",
+}
+
+--- Create a new REPORT.
+-- @param #REPORT self
+-- @param #string Title
+-- @return #REPORT
+function REPORT:New( Title )
+
+  local self = BASE:Inherit( self, BASE:New() ) -- #REPORT
+
+  self.Report = {}
+
+  self:SetTitle( Title or "" )  
+  self:SetIndent( 3 )
+
+  return self
+end
+
+--- Has the REPORT Text?
+-- @param #REPORT self
+-- @return #boolean
+function REPORT:HasText() --R2.1
+  
+  return #self.Report > 0
+end
+
+
+--- Set indent of a REPORT.
+-- @param #REPORT self
+-- @param #number Indent
+-- @return #REPORT
+function REPORT:SetIndent( Indent ) --R2.1
+  self.Indent = Indent
+  return self
+end
+
+
+--- Add a new line to a REPORT.
+-- @param #REPORT self
+-- @param #string Text
+-- @return #REPORT
+function REPORT:Add( Text )
+  self.Report[#self.Report+1] = Text
+  return self
+end
+
+--- Add a new line to a REPORT.
+-- @param #REPORT self
+-- @param #string Text
+-- @return #REPORT
+function REPORT:AddIndent( Text ) --R2.1
+  self.Report[#self.Report+1] = string.rep(" ", self.Indent ) .. Text:gsub("\n","\n"..string.rep( " ", self.Indent ) )
+  return self
+end
+
+--- Produces the text of the report, taking into account an optional delimeter, which is \n by default.
+-- @param #REPORT self
+-- @param #string Delimiter (optional) A delimiter text.
+-- @return #string The report text.
+function REPORT:Text( Delimiter )
+  Delimiter = Delimiter or "\n"
+  local ReportText = ( self.Title ~= "" and self.Title .. Delimiter or self.Title ) .. table.concat( self.Report, Delimiter ) or ""
+  return ReportText
+end
+
+--- Sets the title of the report.
+-- @param #REPORT self
+-- @param #string Title The title of the report.
+-- @return #REPORT
+function REPORT:SetTitle( Title )
+  self.Title = Title  
+  return self
+end
+
+--- Gets the amount of report items contained in the report.
+-- @param #REPORT self
+-- @return #number Returns the number of report items contained in the report. 0 is returned if no report items are contained in the report. The title is not counted for.
+function REPORT:GetCount()
+  return #self.Report
+end
+--- **Core** -- SCHEDULER prepares and handles the **execution of functions over scheduled time (intervals)**.
 --
 -- ![Banner Image](..\Presentations\SCHEDULER\Dia1.JPG)
 -- 
@@ -4232,6 +4318,7 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
   self:F2( { Scheduler, ScheduleFunction, ScheduleArguments, Start, Repeat, Randomize, Stop } )
 
   self.CallID = self.CallID + 1
+  local CallID = self.CallID .. "#" .. ( Scheduler.MasterObject and Scheduler.MasterObject:GetClassNameAndID() or "" ) or ""
 
   -- Initialize the ObjectSchedulers array, which is a weakly coupled table.
   -- If the object used as the key is nil, then the garbage collector will remove the item from the Functions array.
@@ -4242,27 +4329,27 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
   self.ObjectSchedulers = self.ObjectSchedulers or setmetatable( {}, { __mode = "v" } ) 
   
   if Scheduler.MasterObject then
-    self.ObjectSchedulers[self.CallID] = Scheduler
-    self:F3( { CallID = self.CallID, ObjectScheduler = tostring(self.ObjectSchedulers[self.CallID]), MasterObject = tostring(Scheduler.MasterObject) } )
+    self.ObjectSchedulers[CallID] = Scheduler
+    self:F3( { CallID = CallID, ObjectScheduler = tostring(self.ObjectSchedulers[CallID]), MasterObject = tostring(Scheduler.MasterObject) } )
   else
-    self.PersistentSchedulers[self.CallID] = Scheduler
-    self:F3( { CallID = self.CallID, PersistentScheduler = self.PersistentSchedulers[self.CallID] } )
+    self.PersistentSchedulers[CallID] = Scheduler
+    self:F3( { CallID = CallID, PersistentScheduler = self.PersistentSchedulers[CallID] } )
   end
   
   self.Schedule = self.Schedule or setmetatable( {}, { __mode = "k" } )
   self.Schedule[Scheduler] = self.Schedule[Scheduler] or {}
-  self.Schedule[Scheduler][self.CallID] = {}
-  self.Schedule[Scheduler][self.CallID].Function = ScheduleFunction
-  self.Schedule[Scheduler][self.CallID].Arguments = ScheduleArguments
-  self.Schedule[Scheduler][self.CallID].StartTime = timer.getTime() + ( Start or 0 )
-  self.Schedule[Scheduler][self.CallID].Start = Start + .1
-  self.Schedule[Scheduler][self.CallID].Repeat = Repeat or 0
-  self.Schedule[Scheduler][self.CallID].Randomize = Randomize or 0
-  self.Schedule[Scheduler][self.CallID].Stop = Stop
+  self.Schedule[Scheduler][CallID] = {}
+  self.Schedule[Scheduler][CallID].Function = ScheduleFunction
+  self.Schedule[Scheduler][CallID].Arguments = ScheduleArguments
+  self.Schedule[Scheduler][CallID].StartTime = timer.getTime() + ( Start or 0 )
+  self.Schedule[Scheduler][CallID].Start = Start + .1
+  self.Schedule[Scheduler][CallID].Repeat = Repeat or 0
+  self.Schedule[Scheduler][CallID].Randomize = Randomize or 0
+  self.Schedule[Scheduler][CallID].Stop = Stop
 
-  self:T3( self.Schedule[Scheduler][self.CallID] )
+  self:T3( self.Schedule[Scheduler][CallID] )
 
-  self.Schedule[Scheduler][self.CallID].CallHandler = function( CallID )
+  self.Schedule[Scheduler][CallID].CallHandler = function( CallID )
     self:F2( CallID )
 
     local ErrorHandler = function( errmsg )
@@ -4341,9 +4428,9 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
     return nil
   end
   
-  self:Start( Scheduler, self.CallID )
+  self:Start( Scheduler, CallID )
   
-  return self.CallID
+  return CallID
 end
 
 function SCHEDULEDISPATCHER:RemoveSchedule( Scheduler, CallID )
@@ -5530,7 +5617,6 @@ do -- SETTINGS
   -- @param #SETTINGS self
   -- @return #boolean true if metric.
   function SETTINGS:IsMetric()
-    self:E( {Metric = ( self.Metric ~= nil and self.Metric == true ) or ( self.Metric == nil and _SETTINGS:IsMetric() ) } )
     return ( self.Metric ~= nil and self.Metric == true ) or ( self.Metric == nil and _SETTINGS:IsMetric() )
   end
 
@@ -5544,7 +5630,6 @@ do -- SETTINGS
   -- @param #SETTINGS self
   -- @return #boolean true if imperial.
   function SETTINGS:IsImperial()
-    self:E( {Metric = ( self.Metric ~= nil and self.Metric == false ) or ( self.Metric == nil and _SETTINGS:IsMetric() ) } )
     return ( self.Metric ~= nil and self.Metric == false ) or ( self.Metric == nil and _SETTINGS:IsMetric() )
   end
 
@@ -5635,7 +5720,6 @@ do -- SETTINGS
   -- @param #SETTINGS self
   -- @return #boolean true if BRA
   function SETTINGS:IsA2G_BR()
-    self:E( { BRA = ( self.A2GSystem and self.A2GSystem == "BR" ) or ( not self.A2GSystem and _SETTINGS:IsA2G_BR() ) } )
     return ( self.A2GSystem and self.A2GSystem == "BR" ) or ( not self.A2GSystem and _SETTINGS:IsA2G_BR() )
   end
 
@@ -6113,6 +6197,7 @@ do -- MENU_COMMAND_BASE
   -- ----------------------------------------------------------
   -- The MENU_COMMAND_BASE class defines the main MENU class where other MENU COMMAND_ 
   -- classes are derived from, in order to set commands.
+  -- 
   -- @field #MENU_COMMAND_BASE
   MENU_COMMAND_BASE = {
     ClassName = "MENU_COMMAND_BASE",
@@ -6126,15 +6211,37 @@ do -- MENU_COMMAND_BASE
   -- @return #MENU_COMMAND_BASE
   function MENU_COMMAND_BASE:New( MenuText, ParentMenu, CommandMenuFunction, CommandMenuArguments )
   
-  	local self = BASE:Inherit( self, MENU_BASE:New( MenuText, ParentMenu ) )
+  	local self = BASE:Inherit( self, MENU_BASE:New( MenuText, ParentMenu ) ) -- #MENU_COMMAND_BASE
   
-    self.CommandMenuFunction = CommandMenuFunction
-    self.CommandMenuArguments = CommandMenuArguments
+    self:SetCommandMenuFunction( CommandMenuFunction )
+    self:SetCommandMenuArguments( CommandMenuArguments )
     self.MenuCallHandler = function()
       self.CommandMenuFunction( unpack( self.CommandMenuArguments ) )
     end
   	
   	return self
+  end
+  
+  --- This sets the new command function of a menu, 
+  -- so that if a menu is regenerated, or if command function changes,
+  -- that the function set for the menu is loosely coupled with the menu itself!!!
+  -- If the function changes, no new menu needs to be generated if the menu text is the same!!!
+  -- @param #MENU_COMMAND_BASE
+  -- @return #MENU_COMMAND_BASE
+  function MENU_COMMAND_BASE:SetCommandMenuFunction( CommandMenuFunction )
+    self.CommandMenuFunction = CommandMenuFunction
+    return self
+  end
+
+  --- This sets the new command arguments of a menu, 
+  -- so that if a menu is regenerated, or if command arguments change,
+  -- that the arguments set for the menu are loosely coupled with the menu itself!!!
+  -- If the arguments change, no new menu needs to be generated if the menu text is the same!!!
+  -- @param #MENU_COMMAND_BASE
+  -- @return #MENU_COMMAND_BASE
+  function MENU_COMMAND_BASE:SetCommandMenuArguments( CommandMenuArguments )
+    self.CommandMenuArguments = CommandMenuArguments
+    return self
   end
 
 end
@@ -6246,7 +6353,7 @@ do -- MENU_MISSION_COMMAND
     self:T( { MenuText, CommandMenuFunction, arg } )
     
   
-    self.MenuPath = missionCommands.addCommand( MenuText, self.MenuParentPath, self.MenuCallHandler, arg )
+    self.MenuPath = missionCommands.addCommand( MenuText, self.MenuParentPath, self.MenuCallHandler )
    
     ParentMenu.Menus[self.MenuPath] = self
     
@@ -6419,7 +6526,7 @@ do -- MENU_COALITION_COMMAND
     self:T( { MenuText, CommandMenuFunction, arg } )
     
   
-    self.MenuPath = missionCommands.addCommandForCoalition( self.MenuCoalition, MenuText, self.MenuParentPath, self.MenuCallHandler, arg )
+    self.MenuPath = missionCommands.addCommandForCoalition( self.MenuCoalition, MenuText, self.MenuParentPath, self.MenuCallHandler )
    
     ParentMenu.Menus[self.MenuPath] = self
     
@@ -6652,7 +6759,7 @@ do -- MENU_CLIENT
       missionCommands.removeItemForGroup( self.MenuClient:GetClientGroupID(), MenuPath[MenuPathID] )
     end
     
-  	self.MenuPath = missionCommands.addCommandForGroup( self.MenuClient:GetClientGroupID(), MenuText, MenuParentPath, self.MenuCallHandler, arg )
+  	self.MenuPath = missionCommands.addCommandForGroup( self.MenuClient:GetClientGroupID(), MenuText, MenuParentPath, self.MenuCallHandler )
     MenuPath[MenuPathID] = self.MenuPath
    
     if ParentMenu and ParentMenu.Menus then
@@ -6806,7 +6913,7 @@ do
   -- @param MenuTime
   -- @param MenuTag A Tag or Key to filter the menus to be refreshed with the Tag set.
   -- @return #MENU_GROUP self
-  function MENU_GROUP:RemoveSubMenus( MenuTime, Menutag )
+  function MENU_GROUP:RemoveSubMenus( MenuTime, MenuTag )
     --self:F2( { self.MenuPath, MenuTime, self.MenuTime } )
   
     self:T( { "Removing Group SubMenus:", MenuTime, MenuTag, self.MenuGroup:GetName(), self.MenuPath } )
@@ -6855,7 +6962,7 @@ do
   
   
   --- @type MENU_GROUP_COMMAND
-  -- @extends Core.Menu#MENU_BASE
+  -- @extends Core.Menu#MENU_COMMAND_BASE
   
   --- # MENU_GROUP_COMMAND class, extends @{Menu#MENU_COMMAND_BASE}
   -- 
@@ -6879,12 +6986,14 @@ do
   function MENU_GROUP_COMMAND:New( MenuGroup, MenuText, ParentMenu, CommandMenuFunction, ... )
    
     MenuGroup._Menus = MenuGroup._Menus or {}
-    local Path = ( ParentMenu and ( table.concat( ParentMenu.MenuPath or {}, "@" ) .. "@" .. MenuText ) ) or MenuText 
+    local Path = ( ParentMenu and ( table.concat( ParentMenu.MenuPath or {}, "@" ) .. "@" .. MenuText ) ) or MenuText
     if MenuGroup._Menus[Path] then
       self = MenuGroup._Menus[Path]
-      self:F2( { "Re-using Group Command Menu:", MenuGroup:GetName(), MenuText } )
-      missionCommands.removeItemForGroup( self.MenuGroupID, self.MenuPath )
-      
+      --self:E( { Path=Path } ) 
+      --self:E( { self.MenuTag, self.MenuTime, "Re-using Group Command Menu:", MenuGroup:GetName(), MenuText } )
+      self:SetCommandMenuFunction( CommandMenuFunction )
+      self:SetCommandMenuArguments( arg )
+      return self
     end
     self = BASE:Inherit( self, MENU_COMMAND_BASE:New( MenuText, ParentMenu, CommandMenuFunction, arg ) )
     
@@ -6892,6 +7001,7 @@ do
       MenuGroup._Menus[Path] = self
     --end
 
+    --self:E({Path=Path}) 
     self.Path = Path
     self.MenuGroup = MenuGroup
     self.MenuGroupID = MenuGroup:GetID()
@@ -6899,7 +7009,7 @@ do
     self.ParentMenu = ParentMenu
 
     self:F( { "Adding Group Command Menu:", MenuGroup = MenuGroup:GetName(), MenuText = MenuText, MenuPath = self.MenuParentPath } )
-    self.MenuPath = missionCommands.addCommandForGroup( self.MenuGroupID, MenuText, self.MenuParentPath, self.MenuCallHandler, arg )
+    self.MenuPath = missionCommands.addCommandForGroup( self.MenuGroupID, MenuText, self.MenuParentPath, self.MenuCallHandler )
 
     if self.ParentMenu and self.ParentMenu.Menus then
       self.ParentMenu.Menus[MenuText] = self
@@ -6919,13 +7029,14 @@ do
   function MENU_GROUP_COMMAND:Remove( MenuTime, MenuTag )
     --self:F2( { self.MenuGroupID, self.MenuPath, MenuTime, self.MenuTime } )
 
+    --self:E( { MenuTag = MenuTag, MenuTime = self.MenuTime, Path = self.Path } )
     if not MenuTime or self.MenuTime ~= MenuTime then
       if ( not MenuTag ) or ( MenuTag and self.MenuTag and MenuTag == self.MenuTag ) then
         if self.MenuGroup._Menus[self.Path] then
           self = self.MenuGroup._Menus[self.Path]
       
           missionCommands.removeItemForGroup( self.MenuGroupID, self.MenuPath )
-          self:T( { "Removing Group Command Menu:", MenuGroup = self.MenuGroup:GetName(), MenuText = self.MenuText, MenuPath = self.Path } )
+          --self:E( { "Removing Group Command Menu:", MenuGroup = self.MenuGroup:GetName(), MenuText = self.MenuText, MenuPath = self.Path } )
   
           self.ParentMenu.Menus[self.MenuText] = nil
           self.ParentMenu.MenuCount = self.ParentMenu.MenuCount - 1
@@ -9025,7 +9136,7 @@ end
 -- @param #string PlayerName
 -- @return Core.Settings#SETTINGS
 function DATABASE:GetPlayerSettings( PlayerName )
-  self:E({PlayerName})
+  self:F2( { PlayerName } )
   return self.PLAYERSETTINGS[PlayerName]
 end
 
@@ -9036,7 +9147,7 @@ end
 -- @param Core.Settings#SETTINGS Settings
 -- @return Core.Settings#SETTINGS
 function DATABASE:SetPlayerSettings( PlayerName, Settings )
-  self:E({PlayerName, Settings})
+  self:F2( { PlayerName, Settings } )
   self.PLAYERSETTINGS[PlayerName] = Settings
 end
 
@@ -12979,7 +13090,7 @@ do -- COORDINATE
   -- @return #string The coordinate Text in the configured coordinate system.
   function COORDINATE:ToString( Controllable, Settings, Task ) -- R2.2
   
-    self:E( { Controllable = Controllable } )
+    self:F( { Controllable = Controllable and Controllable:GetName() } )
 
     local Settings = Settings or ( Controllable and _DATABASE:GetPlayerSettings( Controllable:GetPlayerName() ) ) or _SETTINGS
 
@@ -29876,7 +29987,7 @@ function ESCORT:_ReportTargetsScheduler()
 
           if ClientEscortGroupName == EscortGroupName then
           
-            DetectedMsgs[#DetectedMsgs+1] = DetectedItemReportSummary
+            DetectedMsgs[#DetectedMsgs+1] = DetectedItemReportSummary:Text("\n")
   
             MENU_CLIENT_COMMAND:New( self.EscortClient,
               DetectedItemReportSummary,
@@ -32688,6 +32799,8 @@ do -- DETECTION_BASE
               self.DetectedObjects[DetectedObjectName].Distance = Distance
               self.DetectedObjects[DetectedObjectName].DetectionTimeStamp = DetectionTimeStamp
               
+              self:F( { DetectedObject = self.DetectedObjects[DetectedObjectName] } )
+              
               local DetectedUnit = UNIT:FindByName( DetectedObjectName )
               
               DetectedUnits[DetectedObjectName] = DetectedUnit
@@ -33489,6 +33602,7 @@ do -- DETECTION_BASE
     
     for UnitName, UnitData in pairs( DetectedItem.Set:GetSet() ) do
       local DetectedObject = self.DetectedObjects[UnitName]
+      self:F({UnitName = UnitName, IsDetected = DetectedObject.IsDetected})
       if DetectedObject.IsDetected then
         IsDetected = true
         break
@@ -33510,37 +33624,6 @@ do -- DETECTION_BASE
     return DetectedItem.IsDetected
   end
   
-  do -- Coordinates
-
-    --- Get the COORDINATE of a detection item using a given numeric index.
-    -- @param #DETECTION_BASE self
-    -- @param #number Index
-    -- @return Core.Point#COORDINATE
-    function DETECTION_BASE:GetDetectedItemCoordinate( Index )
-    
-      -- If the Zone is set, return the coordinate of the Zone.
-      local DetectedItemSet = self:GetDetectedSet( Index )
-      local FirstUnit = DetectedItemSet:GetFirst()
-
-      local DetectedZone = self:GetDetectedItemZone( Index )
-      if DetectedZone then
-        local Coordinate = DetectedZone:GetPointVec2()
-        Coordinate:SetHeading(FirstUnit:GetHeading())
-        Coordinate:SetAlt( FirstUnit:GetAltitude() )
-        return Coordinate
-      end
-      
-      -- If no Zone is set, return the coordinate of the first unit in the Set
-      if FirstUnit then
-        local Coordinate = FirstUnit:GetPointVec3()
-        FirstUnit:SetHeading(FirstUnit:GetHeading())
-        return Coordinate
-      end
-      
-      return nil
-    end
-  
-  end
 
   do -- Zones
   
@@ -33562,6 +33645,32 @@ do -- DETECTION_BASE
 
   end  
 
+  --- Get the detected item coordinate.
+  -- @param #DETECTION_BASE self
+  -- @param Index
+  -- @return Core.Point#COORDINATE
+  function DETECTION_BASE:GetDetectedItemCoordinate( Index )
+    self:F( { Index = Index } )
+    return nil
+  end
+
+
+  --- Has the detected item LOS (Line Of Sight) with one of the Recce?
+  -- @param #DETECTION_BASE self
+  -- @param Index
+  -- @return #boolean true is LOS, false if no LOS.
+  function DETECTION_BASE:HasDetectedItemLOS( Index )
+    self:F( { Index = Index } )
+    
+    local DetectedItem = self:GetDetectedItem( Index )
+    if DetectedItem then
+      return DetectedItem.LOS
+    end
+    
+    return nil
+  end
+
+
   --- Menu of a detected item using a given numeric index.
   -- @param #DETECTION_BASE self
   -- @param Index
@@ -33577,7 +33686,7 @@ do -- DETECTION_BASE
   -- @param Index
   -- @param Wrapper.Group#GROUP AttackGroup The group to generate the report for.
   -- @param Core.Settings#SETTINGS Settings Message formatting settings to use.
-  -- @return #string
+  -- @return Core.Report#REPORT
   function DETECTION_BASE:DetectedItemReportSummary( Index, AttackGroup, Settings )
     self:F( Index )
     return nil
@@ -33652,6 +33761,27 @@ do -- DETECTION_UNITS
     
     return self
   end
+
+  --- Get the detected item coordinate.
+  -- @param #DETECTION_UNITS self
+  -- @param Index
+  -- @return Core.Point#COORDINATE
+  function DETECTION_UNITS:GetDetectedItemCoordinate( Index )
+    self:F( { Index = Index } )
+  
+    local DetectedItem = self:GetDetectedItem( Index )
+    local DetectedSet = self:GetDetectedSet( Index )
+    
+    if DetectedSet then
+      local DetectedItemUnit = DetectedSet:GetFirst() -- Wrapper.Unit#UNIT
+      if DetectedItemUnit and DetectedItemUnit:IsAlive() then
+        local DetectedItemCoordinate = DetectedItemUnit:GetCoordinate()
+        DetectedItemCoordinate:SetHeading( DetectedItemUnit:GetHeading() )
+        return DetectedItemCoordinate
+      end
+    end
+  end
+
 
   --- Make text documenting the changes of the detected zone.
   -- @param #DETECTION_UNITS self
@@ -33823,7 +33953,7 @@ do -- DETECTION_UNITS
   -- @param Index
   -- @param Wrapper.Group#GROUP AttackGroup The group to generate the report for.
   -- @param Core.Settings#SETTINGS Settings Message formatting settings to use.
-  -- @return #string
+  -- @return Core.Report#REPORT The report of the detection items.
   function DETECTION_UNITS:DetectedItemReportSummary( Index, AttackGroup, Settings )
     self:F( { Index, self.DetectedItems } )
   
@@ -33870,20 +34000,14 @@ do -- DETECTION_UNITS
  
         local ThreatLevelA2G = DetectedItemUnit:GetThreatLevel( DetectedItem )
         
-        ReportSummary = string.format( 
-          "%s - %s\n - Threat: [%s]\n - Type: %s%s",
-          DetectedItemID,
-          DetectedItemCoordText,
-          string.rep(  "■", ThreatLevelA2G ),
-          UnitCategoryText,
-          UnitDistanceText
-        )
+        local Report = REPORT:New()
+        Report:Add(DetectedItemID .. ", " .. DetectedItemCoordText)
+        Report:Add( string.format( "Threat: [%s]", string.rep(  "■", ThreatLevelA2G ) ) )
+        Report:Add( string.format("Type: %s%s", UnitCategoryText, UnitDistanceText ) )
+        return Report
       end
-      
-      self:T( ReportSummary )
-    
-      return ReportSummary
     end
+    return nil
   end
 
   
@@ -33942,6 +34066,25 @@ do -- DETECTION_TYPES
     
     return self
   end
+
+  --- Get the detected item coordinate.
+  -- @param #DETECTION_TYPES self
+  -- @param DetectedTypeName
+  -- @return #Core.Point#COORDINATE
+  function DETECTION_TYPES:GetDetectedItemCoordinate( DetectedTypeName )
+    self:F( { DetectedTypeName = DetectedTypeName } )
+  
+    local DetectedItem = self:GetDetectedItem( DetectedTypeName )
+    local DetectedSet = self:GetDetectedSet( DetectedTypeName )
+    
+    if DetectedItem then
+      local DetectedItemUnit = DetectedSet:GetFirst()
+      local DetectedItemCoordinate = DetectedItemUnit:GetCoordinate()
+      DetectedItemCoordinate:SetHeading( DetectedItemUnit:GetHeading() )
+      return DetectedItemCoordinate
+    end
+  end
+  
   
   --- Make text documenting the changes of the detected zone.
   -- @param #DETECTION_TYPES self
@@ -34051,6 +34194,7 @@ do -- DETECTION_TYPES
       --self:NearestFAC( DetectedItem )
     end
     
+
   end
 
   --- Menu of a DetectedItem using a given numeric index.
@@ -34091,7 +34235,7 @@ do -- DETECTION_TYPES
   -- @param Index
   -- @param Wrapper.Group#GROUP AttackGroup The group to generate the report for.
   -- @param Core.Settings#SETTINGS Settings Message formatting settings to use.
-  -- @return #string
+  -- @return Core.Report#REPORT The report of the detection items.
   function DETECTION_TYPES:DetectedItemReportSummary( DetectedTypeName, AttackGroup, Settings )
     self:F( DetectedTypeName )
   
@@ -34111,17 +34255,11 @@ do -- DETECTION_TYPES
       local DetectedItemCoordinate = DetectedItemUnit:GetCoordinate()
       local DetectedItemCoordText = DetectedItemCoordinate:ToString( AttackGroup, Settings )
 
-      local ReportSummary = string.format( 
-        "%s - %s\n - Threat: [%s]\n - Type: %2d of %s", 
-        DetectedItemID,
-        DetectedItemCoordText,
-        string.rep(  "■", ThreatLevelA2G ),
-        DetectedItemsCount,
-        DetectedItemType
-      )
-      self:T( ReportSummary )
-    
-      return ReportSummary
+      local Report = REPORT:New()
+      Report:Add(DetectedItemID .. ", " .. DetectedItemCoordText)
+      Report:Add( string.format( "Threat: [%s]", string.rep(  "■", ThreatLevelA2G ) ) )
+      Report:Add( string.format("Type: %2d of %s", DetectedItemsCount, DetectedItemType ) )
+      return Report
     end
   end
   
@@ -34213,6 +34351,33 @@ do -- DETECTION_AREAS
     return self
   end
 
+  --- Get the detected item coordinate.
+  -- In this case, the coordinate is the center of the zone of the area, not the center unit!
+  -- So if units move, the retrieved coordinate can be different from the units positions.
+  -- @param #DETECTION_AREAS self
+  -- @param Index
+  -- @return Core.Point#COORDINATE The coordinate.
+  function DETECTION_AREAS:GetDetectedItemCoordinate( Index )
+    self:F( { Index = Index } )
+  
+    local DetectedItem = self:GetDetectedItem( Index )
+    local DetectedItemSet = self:GetDetectedSet( Index )
+    local FirstUnit = DetectedItemSet:GetFirst()
+    
+    if DetectedItem then
+      local DetectedZone = self:GetDetectedItemZone( Index )
+      -- TODO: Rework to COORDINATE. Problem with SetAlt.
+      local DetectedItemCoordinate = DetectedZone:GetPointVec2()
+      -- These need to be done to understand the heading and altitude of the first unit in the zone.
+      DetectedItemCoordinate:SetHeading( FirstUnit:GetHeading() )
+      DetectedItemCoordinate:SetAlt( FirstUnit:GetAltitude() )
+      
+      return DetectedItemCoordinate
+    end
+    
+    return nil
+  end
+
   --- Menu of a detected item using a given numeric index.
   -- @param #DETECTION_AREAS self
   -- @param Index
@@ -34248,7 +34413,7 @@ do -- DETECTION_AREAS
   -- @param Index
   -- @param Wrapper.Group#GROUP AttackGroup The group to get the settings for.
   -- @param Core.Settings#SETTINGS Settings (Optional) Message formatting settings to use.
-  -- @return #string
+  -- @return Core.Report#REPORT The report of the detection items.
   function DETECTION_AREAS:DetectedItemReportSummary( Index, AttackGroup, Settings )
     self:F( Index )
   
@@ -34267,16 +34432,12 @@ do -- DETECTION_AREAS
       local DetectedItemsCount = DetectedSet:Count()
       local DetectedItemsTypes = DetectedSet:GetTypeNames()
       
-      local ReportSummary = string.format( 
-        "%s - %s\n - Threat: [%s]\n - Type: %2d of %s", 
-        DetectedItemID,
-        DetectedItemCoordText,
-        string.rep(  "■", ThreatLevelA2G ),
-        DetectedItemsCount,
-        DetectedItemsTypes
-      )
+      local Report = REPORT:New()
+      Report:Add(DetectedItemID .. ", " .. DetectedItemCoordText)
+      Report:Add( string.format( "Threat: [%s]", string.rep(  "■", ThreatLevelA2G ) ) )
+      Report:Add( string.format("Type: %2d of %s", DetectedItemsCount, DetectedItemsTypes ) )
       
-      return ReportSummary
+      return Report
     end
     
     return nil
@@ -34711,7 +34872,7 @@ do -- DETECTION_AREAS
   end
   
 end  
---- **Functional** -- Management of target **Designation**.
+--- **Functional** -- Management of target **Designation**. Lase, smoke and illuminate targets.
 --
 -- --![Banner Image](..\Presentations\DESIGNATE\Dia1.JPG)
 --
@@ -34783,10 +34944,14 @@ do -- DESIGNATE
   -- The RecceSet is continuously detecting for potential Targets, executing its task as part of the DetectionObject.
   -- Once Targets have been detected, the DesignateObject will trigger the **Detect Event**.
   -- 
+  -- In order to prevent an overflow in the DesignateObject of detected targets, there is a maximum
+  -- amount of DetectionItems that can be put in **scope** of the DesignateObject.
+  -- We call this the **MaximumDesignations** term.
+  -- 
   -- As part of the Detect Event, the DetectionItems list is used by the DesignateObject to provide the Players with:
   -- 
   --   * The RecceGroups are reporting to each AttackGroup, sending **Messages** containing the Threat Level and the TargetSet composition.
-  --   * **Menu options** are created and updated for each AttackGroup, containing the Threat Level and the TargetSet composition.
+  --   * **Menu options** are created and updated for each AttackGroup, containing the Detection ID and the Coordinates.
   -- 
   -- A Player can then select an action from the Designate Menu. 
   -- 
@@ -34822,7 +34987,7 @@ do -- DESIGNATE
   -- 
   -- ### 2.1 DESIGNATE States
   -- 
-  --   * **Designating** ( Group ): The process is not started yet.
+  --   * **Designating** ( Group ): The designation process.
   -- 
   -- ### 2.2 DESIGNATE Events
   -- 
@@ -34832,9 +34997,17 @@ do -- DESIGNATE
   --   * **@{#DESIGNATE.Smoke}**: Smoke the targets with the specified Index.
   --   * **@{#DESIGNATE.Status}**: Report designation status.
   -- 
-  -- ## 3. Laser codes
+  -- ## 3. Maximum Designations
   -- 
-  -- ### 3.1 Set possible laser codes
+  -- In order to prevent an overflow of designations due to many Detected Targets, there is a 
+  -- Maximum Designations scope that is set in the DesignationObject.
+  -- 
+  -- The method @{#DESIGNATE.SetMaximumDesignations}() will put a limit on the amount of designations put in scope of the DesignationObject.
+  -- Using the menu system, the player can "forget" a designation, so that gradually a new designation can be put in scope when detected.
+  -- 
+  -- ## 4. Laser codes
+  -- 
+  -- ### 4.1 Set possible laser codes
   -- 
   -- An array of laser codes can be provided, that will be used by the DESIGNATE when lasing.
   -- The laser code is communicated by the Recce when it is lasing a larget.
@@ -34852,11 +35025,11 @@ do -- DESIGNATE
   --     
   -- The above sets a collection of possible laser codes that can be assigned. **Note the { } notation!**
   -- 
-  -- ### 3.2 Auto generate laser codes
+  -- ### 4.2 Auto generate laser codes
   -- 
   -- Use the method @{#DESIGNATE.GenerateLaserCodes}() to generate all possible laser codes. Logic implemented and advised by Ciribob!
   -- 
-  -- ## 4. Autolase to automatically lase detected targets.
+  -- ## 5. Autolase to automatically lase detected targets.
   -- 
   -- DetectionItems can be auto lased once detected by Recces. As such, there is almost no action required from the Players using the Designate Menu.
   -- The **auto lase** function can be activated through the Designation Menu.
@@ -34867,7 +35040,7 @@ do -- DESIGNATE
   -- 
   -- Activate the auto lasing.
   -- 
-  -- ## 5. Target prioritization on threat level
+  -- ## 6. Target prioritization on threat level
   -- 
   -- Targets can be detected of different types in one DetectionItem. Depending on the type of the Target, a different threat level applies in an Air to Ground combat context.
   -- SAMs are of a higher threat than normal tanks. So, if the Target type was recognized, the Recces will select those targets that form the biggest threat first,
@@ -35085,15 +35258,18 @@ do -- DESIGNATE
     self:SetMission( Mission )
     self:SetDesignateMenu()
     
-    self:SetLaserCodes( 1688 ) -- set self.LaserCodes
+    self:SetLaserCodes( { 1688, 1130, 4785, 6547, 1465, 4578 } ) -- set self.LaserCodes
     self:SetAutoLase( false ) -- set self.Autolase
     
     self:SetThreatLevelPrioritization( false ) -- self.ThreatLevelPrioritization, default is threat level priorization off
+    self:SetMaximumDesignations( 5 ) -- Sets the maximum designations. The default is 5 designations.
     
     self.LaserCodesUsed = {}
     
     
     self.Detection:__Start( 2 )
+    
+    self:__Detect( -15 )
     
     return self
   end
@@ -35118,6 +35294,16 @@ do -- DESIGNATE
   end
 
 
+  --- Set the maximum amount of designations.
+  -- @param #DESIGNATE self
+  -- @param #number MaximumDesignations
+  -- @return #DESIGNATE
+  function DESIGNATE:SetMaximumDesignations( MaximumDesignations )
+    self.MaximumDesignations = MaximumDesignations
+    return self
+  end
+  
+  
   --- Set an array of possible laser codes.
   -- Each new lase will select a code from this table.
   -- @param #DESIGNATE self
@@ -35126,7 +35312,7 @@ do -- DESIGNATE
   function DESIGNATE:SetLaserCodes( LaserCodes ) --R2.1
 
     self.LaserCodes = ( type( LaserCodes ) == "table" ) and LaserCodes or { LaserCodes }
-    self:E(self.LaserCodes)
+    self:E( { LaserCodes = self.LaserCodes } )
     
     self.LaserCodesUsed = {}
 
@@ -35203,7 +35389,7 @@ do -- DESIGNATE
       CC:MessageToSetGroup( "Auto Lase " .. AutoLaseOnOff .. ".", 15, self.AttackSet )
     end
 
-    self:ActivateAutoLase()
+    self:CoordinateLase()
     self:SetDesignateMenu()      
 
     return self
@@ -35238,14 +35424,92 @@ do -- DESIGNATE
   -- @return #DESIGNATE
   function DESIGNATE:onafterDetect()
     
-    self:__Detect( -60 )
+    self:__Detect( -math.random( 60 ) )
     
-    self:ActivateAutoLase()
+    self:DesignationScope()
+    self:CoordinateLase()
     self:SendStatus()
     self:SetDesignateMenu()      
   
     return self
   end
+
+
+  --- Adapt the designation scope according the detected items.
+  -- @param #DESIGNATE self
+  -- @return #DESIGNATE
+  function DESIGNATE:DesignationScope()
+
+    local DetectedItems = self.Detection:GetDetectedItems()
+    
+    local DetectedItemCount = 0
+    
+    for DesignateIndex, Designating in pairs( self.Designating ) do
+      local DetectedItem = DetectedItems[DesignateIndex]
+      if DetectedItem then
+        -- Check LOS...
+        local IsDetected = self.Detection:IsDetectedItemDetected( DetectedItem )
+        self:F({IsDetected = IsDetected, DetectedItem })
+        if IsDetected == false then
+          self:F("Removing")
+          -- This Detection is obsolete, remove from the designate scope
+          self.Designating[DesignateIndex] = nil
+          self.AttackSet:ForEachGroup(
+            function( AttackGroup )
+              local DetectionText = self.Detection:DetectedItemReportSummary( DesignateIndex, AttackGroup ):Text( ", " )
+              self.CC:GetPositionable():MessageToGroup( "Targets out of LOS\n" .. DetectionText, 10, AttackGroup, "Designate" )
+            end
+          )
+        else
+          DetectedItemCount = DetectedItemCount + 1
+        end
+      else
+        -- This Detection is obsolete, remove from the designate scope
+        self.Designating[DesignateIndex] = nil
+      end
+    end
+    
+    if DetectedItemCount < 5 then
+      for DesignateIndex, DetectedItem in pairs( DetectedItems ) do
+        local IsDetected = self.Detection:IsDetectedItemDetected( DetectedItem )
+        if IsDetected == true then
+          if self.Designating[DesignateIndex] == nil then
+            -- ok, we added one item to the designate scope.
+            self.AttackSet:ForEachGroup(
+              function( AttackGroup )
+                local DetectionText = self.Detection:DetectedItemReportSummary( DesignateIndex, AttackGroup ):Text( ", " )
+                self.CC:GetPositionable():MessageToGroup( "Targets detected at \n" .. DetectionText, 10, AttackGroup, "Designate" )
+              end
+            )
+            self.Designating[DesignateIndex] = ""
+            break
+          end
+        end
+      end
+    end
+    
+    return self
+  end
+
+  --- Coordinates the Auto Lase.
+  -- @param #DESIGNATE self
+  -- @return #DESIGNATE
+  function DESIGNATE:CoordinateLase()
+
+    local DetectedItems = self.Detection:GetDetectedItems()
+    
+    for DesignateIndex, Designating in pairs( self.Designating ) do
+      local DetectedItem = DetectedItems[DesignateIndex]
+      if DetectedItem then
+        if self.AutoLase then
+          self:LaseOn( DesignateIndex, self.LaseDuration )
+        end
+      end
+    end 
+    
+    return self
+  end
+
 
   --- Sends the status to the Attack Groups.
   -- @param #DESIGNATE self
@@ -35263,20 +35527,23 @@ do -- DESIGNATE
       
         if self.FlashStatusMenu[AttackGroup] or ( MenuAttackGroup and ( AttackGroup:GetName() == MenuAttackGroup:GetName() ) ) then
 
-          local DetectedReport = REPORT:New( "Targets designated:\n" )
+          local DetectedReport = REPORT:New( "Detected Targets: \n" )
           local DetectedItems = self.Detection:GetDetectedItems()
           
-          for Index, DetectedItemData in pairs( DetectedItems ) do
-            
-            local Report = self.Detection:DetectedItemReportSummary( Index, AttackGroup )
-            DetectedReport:Add(" - " .. Report)
+          for DesignateIndex, Designating in pairs( self.Designating ) do
+            local DetectedItem = DetectedItems[DesignateIndex]
+            if DetectedItem then
+              local Report = self.Detection:DetectedItemReportSummary( DesignateIndex, AttackGroup ):Text( ", " )
+              DetectedReport:Add( " - " .. Report )
+              DetectedReport:Add( string.rep( "-", 140 ) )
+            end
           end
           
           local CC = self.CC:GetPositionable()
       
           CC:MessageToGroup( DetectedReport:Text( "\n" ), Duration, AttackGroup )
           
-          local DesignationReport = REPORT:New( "Targets marked:\n" )
+          local DesignationReport = REPORT:New( "Marking Targets:\n" )
       
           self.RecceSet:ForEachGroup(
             function( RecceGroup )
@@ -35291,33 +35558,6 @@ do -- DESIGNATE
           )
       
           CC:MessageToGroup( DesignationReport:Text(), Duration, AttackGroup )
-        end
-      end
-    )
-    
-    return self
-  end
-
-  --- Coordinates the Auto Lase.
-  -- @param #DESIGNATE self
-  -- @return #DESIGNATE
-  function DESIGNATE:ActivateAutoLase()
-
-    self.AttackSet:Flush()
-
-    self.AttackSet:ForEachGroup(
-    
-      --- @param Wrapper.Group#GROUP GroupReport
-      function( AttackGroup )
-
-        local DetectedItems = self.Detection:GetDetectedItems()
-        
-        for Index, DetectedItemData in pairs( DetectedItems ) do
-          if self.AutoLase then
-            if not self.Designating[Index] then
-              self:LaseOn( Index, self.LaseDuration ) 
-            end
-          end
         end
       end
     )
@@ -35369,32 +35609,43 @@ do -- DESIGNATE
       
         local DetectedItems = self.Detection:GetDetectedItems()
         
-        for Index, DetectedItemData in pairs( DetectedItems ) do
+        local DetectedItemCount = 0
+        
+        for DesignateIndex, Designating in pairs( self.Designating ) do
+
+          local DetectedItem = DetectedItems[DesignateIndex]
+
+          if DetectedItem then
           
-          local Report = self.Detection:DetectedItemMenu( Index, AttackGroup )
-          
-          if not self.Designating[Index] then
-            local DetectedMenu = MENU_GROUP:New( AttackGroup, Report, MenuDesignate )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 60 secs", DetectedMenu, self.MenuLaseOn, self, Index, 60 ):SetTime( MenuTime ):SetTag( "Designate" )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 120 secs", DetectedMenu, self.MenuLaseOn, self, Index, 120 ):SetTime( MenuTime ):SetTag( "Designate" )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke red", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Red ):SetTime( MenuTime ):SetTag( "Designate" )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke blue", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Blue ):SetTime( MenuTime ):SetTag( "Designate" )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke green", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Green ):SetTime( MenuTime ):SetTag( "Designate" )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke white", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.White ):SetTime( MenuTime ):SetTag( "Designate" )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Smoke orange", DetectedMenu, self.MenuSmoke, self, Index, SMOKECOLOR.Orange ):SetTime( MenuTime ):SetTag( "Designate" )
-            MENU_GROUP_COMMAND:New( AttackGroup, "Illuminate", DetectedMenu, self.MenuIlluminate, self, Index ):SetTime( MenuTime ):SetTag( "Designate" )
-          else
-            if self.Designating[Index] == "Laser" then
-              Report = "Lasing " .. Report
-            elseif self.Designating[Index] == "Smoke" then
-              Report = "Smoking " .. Report
-            elseif self.Designating[Index] == "Illuminate" then
-              Report = "Illuminating " .. Report
-            end
-            local DetectedMenu = MENU_GROUP:New( AttackGroup, Report, MenuDesignate ):SetTime( MenuTime ):SetTag( "Designate" )
-            if self.Designating[Index] == "Laser" then
-              MENU_GROUP_COMMAND:New( AttackGroup, "Stop lasing", DetectedMenu, self.MenuLaseOff, self, Index ):SetTime( MenuTime ):SetTag( "Designate" )
+            local Coord = self.Detection:GetDetectedItemCoordinate( DesignateIndex )
+            local ID = self.Detection:GetDetectedItemID( DesignateIndex )
+            local MenuText =   ID .. ", " .. Coord:ToString( AttackGroup )
+            
+            if Designating == "" then
+              MenuText = "(-) " .. MenuText
+              local DetectedMenu = MENU_GROUP:New( AttackGroup, MenuText, MenuDesignate ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Search other target", DetectedMenu, self.MenuForget, self, DesignateIndex ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 60 secs", DetectedMenu, self.MenuLaseOn, self, DesignateIndex, 60 ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Lase target 120 secs", DetectedMenu, self.MenuLaseOn, self, DesignateIndex, 120 ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Smoke red", DetectedMenu, self.MenuSmoke, self, DesignateIndex, SMOKECOLOR.Red ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Smoke blue", DetectedMenu, self.MenuSmoke, self, DesignateIndex, SMOKECOLOR.Blue ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Smoke green", DetectedMenu, self.MenuSmoke, self, DesignateIndex, SMOKECOLOR.Green ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Smoke white", DetectedMenu, self.MenuSmoke, self, DesignateIndex, SMOKECOLOR.White ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Smoke orange", DetectedMenu, self.MenuSmoke, self, DesignateIndex, SMOKECOLOR.Orange ):SetTime( MenuTime ):SetTag( "Designate" )
+              MENU_GROUP_COMMAND:New( AttackGroup, "Illuminate", DetectedMenu, self.MenuIlluminate, self, DesignateIndex ):SetTime( MenuTime ):SetTag( "Designate" )
             else
+              if Designating == "Laser" then
+                MenuText = "(L) " .. MenuText
+              elseif Designating == "Smoke" then
+                MenuText = "(S) " .. MenuText
+              elseif Designating == "Illuminate" then
+                MenuText = "(I) " .. MenuText
+              end
+              local DetectedMenu = MENU_GROUP:New( AttackGroup, MenuText, MenuDesignate ):SetTime( MenuTime ):SetTag( "Designate" )
+              if Designating == "Laser" then
+                MENU_GROUP_COMMAND:New( AttackGroup, "Stop lasing", DetectedMenu, self.MenuLaseOff, self, DesignateIndex ):SetTime( MenuTime ):SetTag( "Designate" )
+              else
+              end
             end
           end
         end
@@ -35427,6 +35678,16 @@ do -- DESIGNATE
   
   --- 
   -- @param #DESIGNATE self
+  function DESIGNATE:MenuForget( Index )
+
+    self:E("Forget")
+
+    self.Designating[Index] = nil
+    self:SetDesignateMenu()
+  end
+
+  --- 
+  -- @param #DESIGNATE self
   function DESIGNATE:MenuAutoLase( AutoLase )
 
     self:E("AutoLase")
@@ -35441,7 +35702,7 @@ do -- DESIGNATE
     self:E("Designate through Smoke")
 
     self.Designating[Index] = "Smoke"
-    self:__Smoke( 1, Index, Color )    
+    self:Smoke( Index, Color )    
   end
 
   --- 
@@ -35462,6 +35723,7 @@ do -- DESIGNATE
     self:E("Designate through Lase")
     
     self:__LaseOn( 1, Index, Duration ) 
+    self:SetDesignateMenu()
   end
 
   --- 
@@ -35470,8 +35732,9 @@ do -- DESIGNATE
 
     self:E("Lasing off")
 
-    self.Designating[Index] = nil
+    self.Designating[Index] = ""
     self:__LaseOff( 1, Index ) 
+    self:SetDesignateMenu()
   end
 
   --- 
@@ -35492,10 +35755,13 @@ do -- DESIGNATE
     
     TargetSetUnit:Flush()
 
+    --self:F( { Recces = self.Recces } ) 
     for TargetUnit, RecceData in pairs( self.Recces ) do
       local Recce = RecceData -- Wrapper.Unit#UNIT
+      self:F( { TargetUnit = TargetUnit, Recce = Recce:GetName() } )
       if not Recce:IsLasing() then
         local LaserCode = Recce:GetLaserCode() --(Not deleted when stopping with lasing).
+        self:F( { ClearingLaserCode = LaserCode } )
         self.LaserCodesUsed[LaserCode] = nil
         self.Recces[TargetUnit] = nil
       end
@@ -35504,17 +35770,22 @@ do -- DESIGNATE
     TargetSetUnit:ForEachUnitPerThreatLevel( 10, 0,
       --- @param Wrapper.Unit#UNIT SmokeUnit
       function( TargetUnit )
-        self:E("In procedure")
+        self:F( { TargetUnit = TargetUnit:GetName() } )
         if TargetUnit:IsAlive() then
           local Recce = self.Recces[TargetUnit]
           if not Recce then
+            self.RecceSet:Flush()
             for RecceGroupID, RecceGroup in pairs( self.RecceSet:GetSet() ) do
               for UnitID, UnitData in pairs( RecceGroup:GetUnits() or {} ) do
                 local RecceUnit = UnitData -- Wrapper.Unit#UNIT
+                local RecceUnitDesc = RecceUnit:GetDesc()
+                --self:F( { RecceUnit = RecceUnit:GetName(), RecceDescription = RecceUnitDesc } )
                 if RecceUnit:IsLasing() == false then
+                  --self:F( { IsDetected = RecceUnit:IsDetected( TargetUnit ), IsLOS = RecceUnit:IsLOS( TargetUnit ) } )
                   if RecceUnit:IsDetected( TargetUnit ) and RecceUnit:IsLOS( TargetUnit ) then
                     local LaserCodeIndex = math.random( 1, #self.LaserCodes )
                     local LaserCode = self.LaserCodes[LaserCodeIndex]
+                    --self:F( { LaserCode = LaserCode, LaserCodeUsed = self.LaserCodesUsed[LaserCode] } )
                     if not self.LaserCodesUsed[LaserCode] then
                       self.LaserCodesUsed[LaserCode] = LaserCodeIndex
                       local Spot = RecceUnit:LaseUnit( TargetUnit, LaserCode, Duration )
@@ -35525,7 +35796,8 @@ do -- DESIGNATE
                       end
                       self.Recces[TargetUnit] = RecceUnit
                       RecceUnit:MessageToSetGroup( "Marking " .. TargetUnit:GetTypeName() .. " with laser " .. RecceUnit:GetSpot().LaserCode .. " for " .. Duration .. "s.", 5, self.AttackSet )
-                      break
+                      -- OK. We have assigned for the Recce a TargetUnit. We can exit the function.
+                      return
                     end
                   else
                     --RecceUnit:MessageToSetGroup( "Can't mark " .. TargetUnit:GetTypeName(), 5, self.AttackSet )
@@ -35536,7 +35808,7 @@ do -- DESIGNATE
                     local Recce = self.Recces[TargetUnit] -- Wrapper.Unit#UNIT
                     if Recce then
                       Recce:LaseOff()
-                      Recce:MessageToGroup( "Target " .. TargetUnit:GetTypeName() "out of LOS. Cancelling lase!", 5, self.AttackSet )
+                      Recce:MessageToSetGroup( "Target " .. TargetUnit:GetTypeName() "out of LOS. Cancelling lase!", 5, self.AttackSet )
                     end
                   end  
                 end
@@ -35549,7 +35821,7 @@ do -- DESIGNATE
       end
     )
 
-    self:__Lasing( 15, Index, Duration )
+    self:__Lasing( 30, Index, Duration )
     
     self:SetDesignateMenu()
 
@@ -35601,10 +35873,10 @@ do -- DESIGNATE
           local RecceUnit = RecceGroup:GetUnit( 1 )
           if RecceUnit then
             RecceUnit:MessageToSetGroup( "Smoking " .. SmokeUnit:GetTypeName() .. ".", 5, self.AttackSet )
-            SCHEDULER:New( self,
+            SCHEDULER:New( nil,
               function()
                 if SmokeUnit:IsAlive() then
-                  SmokeUnit:Smoke( Color, 150 )
+                  SmokeUnit:Smoke( Color, 50 )
                 end
               self:Done( Index )
               end, {}, math.random( 5, 20 ) 
@@ -46796,92 +47068,6 @@ end--- **Tasking** -- A COMMANDCENTER is the owner of multiple missions within M
 
 
 
---- The REPORT class
--- @type REPORT
--- @extends Core.Base#BASE
-REPORT = {
-  ClassName = "REPORT",
-  Title = "",
-}
-
---- Create a new REPORT.
--- @param #REPORT self
--- @param #string Title
--- @return #REPORT
-function REPORT:New( Title )
-
-  local self = BASE:Inherit( self, BASE:New() ) -- #REPORT
-
-  self.Report = {}
-
-  self:SetTitle( Title or "" )  
-  self:SetIndent( 3 )
-
-  return self
-end
-
---- Has the REPORT Text?
--- @param #REPORT self
--- @return #boolean
-function REPORT:HasText() --R2.1
-  
-  return #self.Report > 0
-end
-
-
---- Set indent of a REPORT.
--- @param #REPORT self
--- @param #number Indent
--- @return #REPORT
-function REPORT:SetIndent( Indent ) --R2.1
-  self.Indent = Indent
-  return self
-end
-
-
---- Add a new line to a REPORT.
--- @param #REPORT self
--- @param #string Text
--- @return #REPORT
-function REPORT:Add( Text )
-  self.Report[#self.Report+1] = Text
-  return self
-end
-
---- Add a new line to a REPORT.
--- @param #REPORT self
--- @param #string Text
--- @return #REPORT
-function REPORT:AddIndent( Text ) --R2.1
-  self.Report[#self.Report+1] = string.rep(" ", self.Indent ) .. Text:gsub("\n","\n"..string.rep( " ", self.Indent ) )
-  return self
-end
-
---- Produces the text of the report, taking into account an optional delimeter, which is \n by default.
--- @param #REPORT self
--- @param #string Delimiter (optional) A delimiter text.
--- @return #string The report text.
-function REPORT:Text( Delimiter )
-  Delimiter = Delimiter or "\n"
-  local ReportText = ( self.Title ~= "" and self.Title .. Delimiter or self.Title ) .. table.concat( self.Report, Delimiter ) or ""
-  return ReportText
-end
-
---- Sets the title of the report.
--- @param #REPORT self
--- @param #string Title The title of the report.
--- @return #REPORT
-function REPORT:SetTitle( Title )
-  self.Title = Title  
-  return self
-end
-
---- Gets the amount of report items contained in the report.
--- @param #REPORT self
--- @return #number Returns the number of report items contained in the report. 0 is returned if no report items are contained in the report. The title is not counted for.
-function REPORT:GetCount()
-  return #self.Report
-end
 
 
 --- The COMMANDCENTER class
@@ -50410,7 +50596,7 @@ do -- TASK_A2G_DISPATCHER
         local DetectedSet = DetectedItem.Set -- Core.Set#SET_UNIT
         local DetectedZone = DetectedItem.Zone
         --self:E( { "Targets in DetectedItem", DetectedItem.ItemID, DetectedSet:Count(), tostring( DetectedItem ) } )
-        DetectedSet:Flush()
+        --DetectedSet:Flush()
         
         local DetectedItemID = DetectedItem.ID
         local TaskIndex = DetectedItem.Index
