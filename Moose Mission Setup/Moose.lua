@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170811_1452' )
+env.info( 'Moose Generation Timestamp: 20170811_1646' )
 
 --- Various routines
 -- @module routines
@@ -33655,22 +33655,6 @@ do -- DETECTION_BASE
   end
 
 
-  --- Has the detected item LOS (Line Of Sight) with one of the Recce?
-  -- @param #DETECTION_BASE self
-  -- @param Index
-  -- @return #boolean true is LOS, false if no LOS.
-  function DETECTION_BASE:HasDetectedItemLOS( Index )
-    self:F( { Index = Index } )
-    
-    local DetectedItem = self:GetDetectedItem( Index )
-    if DetectedItem then
-      return DetectedItem.LOS
-    end
-    
-    return nil
-  end
-
-
   --- Menu of a detected item using a given numeric index.
   -- @param #DETECTION_BASE self
   -- @param Index
@@ -34517,25 +34501,24 @@ do -- DETECTION_AREAS
   -- @return Wrapper.Unit#UNIT The nearest FAC unit
   function DETECTION_AREAS:NearestFAC( DetectedItem )
     
-    local NearestFAC = nil
-    local MinDistance = 1000000000 -- Units are not further than 1000000 km away from an area :-)
+    local NearestRecce = nil
+    local DistanceRecce = 1000000000 -- Units are not further than 1000000 km away from an area :-)
     
-    for FACGroupName, FACGroupData in pairs( self.DetectionSetGroup:GetSet() ) do
-      for FACUnit, FACUnitData in pairs( FACGroupData:GetUnits() ) do
-        local FACUnit = FACUnitData -- Wrapper.Unit#UNIT
-        if FACUnit:IsActive() then
-          local Vec3 = FACUnit:GetVec3()
-          local PointVec3 = POINT_VEC3:NewFromVec3( Vec3 )
-          local Distance = PointVec3:Get2DDistance(POINT_VEC3:NewFromVec3( FACUnit:GetVec3() ) )
-          if Distance < MinDistance then
-            MinDistance = Distance
-            NearestFAC = FACUnit
+    for RecceGroupName, RecceGroup in pairs( self.DetectionSetGroup:GetSet() ) do
+      for RecceUnit, RecceUnit in pairs( RecceGroup:GetUnits() ) do
+        if RecceUnit:IsActive() then
+          local RecceUnitCoord = RecceUnit:GetCoordinate()
+          local Distance = RecceUnitCoord:Get2DDistance( self:GetDetectedItemCoordinate( DetectedItem.Index ) )
+          if Distance < DistanceRecce then
+            DistanceRecce = Distance
+            NearestRecce = RecceUnit
           end
         end
       end
     end
   
-    DetectedItem.NearestFAC = NearestFAC
+    DetectedItem.NearestFAC = NearestRecce
+    DetectedItem.DistanceRecce = DistanceRecce
     
   end
 
@@ -35263,9 +35246,9 @@ do -- DESIGNATE
     
     self:SetThreatLevelPrioritization( false ) -- self.ThreatLevelPrioritization, default is threat level priorization off
     self:SetMaximumDesignations( 5 ) -- Sets the maximum designations. The default is 5 designations.
+    self:SetMaximumDistanceDesignations( 12000 )  -- Sets the maximum distance on which designations can be accepted. The default is 8000 meters.
     
     self.LaserCodesUsed = {}
-    
     
     self.Detection:__Start( 2 )
     
@@ -35300,6 +35283,36 @@ do -- DESIGNATE
   -- @return #DESIGNATE
   function DESIGNATE:SetMaximumDesignations( MaximumDesignations )
     self.MaximumDesignations = MaximumDesignations
+    return self
+  end
+  
+
+  --- Set the maximum ground designation distance.
+  -- @param #DESIGNATE self
+  -- @param #number MaximumDistanceGroundDesignation Maximum ground designation distance in meters.
+  -- @return #DESIGNATE
+  function DESIGNATE:SetMaximumDistanceGroundDesignation( MaximumDistanceGroundDesignation )
+    self.MaximumDistanceGroundDesignation = MaximumDistanceGroundDesignation
+    return self
+  end
+  
+  
+  --- Set the maximum air designation distance.
+  -- @param #DESIGNATE self
+  -- @param #number MaximumDistanceAirDesignation Maximum air designation distance in meters.
+  -- @return #DESIGNATE
+  function DESIGNATE:SetMaximumDistanceAirDesignation( MaximumDistanceAirDesignation )
+    self.MaximumDistanceAirDesignation = MaximumDistanceAirDesignation
+    return self
+  end
+  
+  
+  --- Set the overall maximum distance when designations can be accepted.
+  -- @param #DESIGNATE self
+  -- @param #number MaximumDistanceDesignations Maximum distance in meters to accept designations.
+  -- @return #DESIGNATE
+  function DESIGNATE:SetMaximumDistanceDesignations( MaximumDistanceDesignations )
+    self.MaximumDistanceDesignations = MaximumDistanceDesignations
     return self
   end
   
@@ -35473,16 +35486,19 @@ do -- DESIGNATE
       for DesignateIndex, DetectedItem in pairs( DetectedItems ) do
         local IsDetected = self.Detection:IsDetectedItemDetected( DetectedItem )
         if IsDetected == true then
-          if self.Designating[DesignateIndex] == nil then
-            -- ok, we added one item to the designate scope.
-            self.AttackSet:ForEachGroup(
-              function( AttackGroup )
-                local DetectionText = self.Detection:DetectedItemReportSummary( DesignateIndex, AttackGroup ):Text( ", " )
-                self.CC:GetPositionable():MessageToGroup( "Targets detected at \n" .. DetectionText, 10, AttackGroup, "Designate" )
-              end
-            )
-            self.Designating[DesignateIndex] = ""
-            break
+          self:F( { DistanceRecce = DetectedItem.DistanceRecce } )
+          if DetectedItem.DistanceRecce <= self.MaximumDistanceDesignations then
+            if self.Designating[DesignateIndex] == nil then
+              -- ok, we added one item to the designate scope.
+              self.AttackSet:ForEachGroup(
+                function( AttackGroup )
+                  local DetectionText = self.Detection:DetectedItemReportSummary( DesignateIndex, AttackGroup ):Text( ", " )
+                  self.CC:GetPositionable():MessageToGroup( "Targets detected at \n" .. DetectionText, 10, AttackGroup, "Designate" )
+                end
+              )
+              self.Designating[DesignateIndex] = ""
+              break
+            end
           end
         end
       end
@@ -35608,8 +35624,6 @@ do -- DESIGNATE
         end        
       
         local DetectedItems = self.Detection:GetDetectedItems()
-        
-        local DetectedItemCount = 0
         
         for DesignateIndex, Designating in pairs( self.Designating ) do
 
