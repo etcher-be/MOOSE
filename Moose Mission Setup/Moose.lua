@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170812_0828' )
+env.info( 'Moose Generation Timestamp: 20170812_1708' )
 
 --- Various routines
 -- @module routines
@@ -3539,7 +3539,6 @@ function BASE:SetState( Object, Key, Value )
 
   self.States[ClassNameAndID] = self.States[ClassNameAndID] or {}
   self.States[ClassNameAndID][Key] = Value
-  self:T2( { ClassNameAndID, Key, Value } )
   
   return self.States[ClassNameAndID][Key]
 end
@@ -3557,7 +3556,6 @@ function BASE:GetState( Object, Key )
 
   if self.States[ClassNameAndID] then
     local Value = self.States[ClassNameAndID][Key] or false
-    self:E( { ClassNameAndID, Key, Value } )
     return Value
   end
   
@@ -4319,7 +4317,7 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
   self:F2( { Scheduler, ScheduleFunction, ScheduleArguments, Start, Repeat, Randomize, Stop } )
 
   self.CallID = self.CallID + 1
-  local CallID = self.CallID .. "#" .. ( Scheduler.MasterObject and Scheduler.MasterObject:GetClassNameAndID() or "" ) or ""
+  local CallID = self.CallID .. "#" .. ( Scheduler.MasterObject and Scheduler.MasterObject.GetClassNameAndID and Scheduler.MasterObject:GetClassNameAndID() or "" ) or ""
 
   -- Initialize the ObjectSchedulers array, which is a weakly coupled table.
   -- If the object used as the key is nil, then the garbage collector will remove the item from the Functions array.
@@ -35564,7 +35562,7 @@ do -- DESIGNATE
       
         if self.FlashStatusMenu[AttackGroup] or ( MenuAttackGroup and ( AttackGroup:GetName() == MenuAttackGroup:GetName() ) ) then
 
-          local DetectedReport = REPORT:New( "Detected Targets: \n" )
+          local DetectedReport = REPORT:New( "Targets ready for Designation:" )
           local DetectedItems = self.Detection:GetDetectedItems()
           
           for DesignateIndex, Designating in pairs( self.Designating ) do
@@ -36867,7 +36865,7 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
       return
     end
     --- Create a route point of type air.
-    local ToPatrolRoutePoint = ToAirbaseCoord:WaypointAir( 
+    local ToRTBRoutePoint = ToAirbaseCoord:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -36878,7 +36876,8 @@ function AI_A2A:onafterRTB( AIGroup, From, Event, To )
     self:F( { Angle = ToAirbaseAngle, ToTargetSpeed = ToTargetSpeed } )
     self:T2( { self.MinSpeed, self.MaxSpeed, ToTargetSpeed } )
     
-    EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
+    EngageRoute[#EngageRoute+1] = ToRTBRoutePoint
+    EngageRoute[#EngageRoute+1] = ToRTBRoutePoint
     
     AIGroup:OptionROEHoldFire()
     AIGroup:OptionROTEvadeFire()
@@ -36973,6 +36972,7 @@ function AI_A2A:onafterRefuel( AIGroup, From, Event, To )
   
       self:F( { ToRefuelSpeed = ToRefuelSpeed } )
       
+      RefuelRoute[#RefuelRoute+1] = ToRefuelRoutePoint
       RefuelRoute[#RefuelRoute+1] = ToRefuelRoutePoint
       
       AIGroup:OptionROEHoldFire()
@@ -37397,6 +37397,7 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
       true 
     )
 
+    PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     
     local Tasks = {}
@@ -37841,6 +37842,7 @@ function AI_A2A_CAP:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       self:F( { Angle = ToInterceptAngle, ToTargetSpeed = ToTargetSpeed } )
       self:T2( { self.MinSpeed, self.MaxSpeed, ToTargetSpeed } )
       
+      EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
       EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
 
       local AttackTasks = {}
@@ -38311,7 +38313,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       self:F( { Angle = ToInterceptAngle, ToTargetSpeed = ToTargetSpeed } )
       self:F( { self.EngageMinSpeed, self.EngageMaxSpeed, ToTargetSpeed } )
       
-      --EngageRoute[#EngageRoute+1] = CurrentCoord:WaypointAir()
+      EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
       EngageRoute[#EngageRoute+1] = ToPatrolRoutePoint
       
       local AttackTasks = {}
