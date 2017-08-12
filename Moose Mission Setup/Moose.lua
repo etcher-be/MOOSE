@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170811_1646' )
+env.info( 'Moose Generation Timestamp: 20170812_0828' )
 
 --- Various routines
 -- @module routines
@@ -4157,7 +4157,8 @@ SCHEDULER = {
 -- @return #SCHEDULER self.
 -- @return #number The ScheduleID of the planned schedule.
 function SCHEDULER:New( SchedulerObject, SchedulerFunction, SchedulerArguments, Start, Repeat, RandomizeFactor, Stop )
-  local self = BASE:Inherit( self, BASE:New() )
+  
+  local self = BASE:Inherit( self, BASE:New() ) -- #SCHEDULER
   self:F2( { Start, Repeat, RandomizeFactor, Stop } )
 
   local ScheduleID = nil
@@ -18762,11 +18763,18 @@ end
 
 --- Smoke the POSITIONABLE.
 -- @param #POSITIONABLE self
-function POSITIONABLE:Smoke( SmokeColor, Range )
+-- @param Utilities.Utils#SMOKECOLOR SmokeColor The color to smoke to positionable.
+-- @param #number Range The range in meters to randomize the smoking around the positionable.
+-- @param #number AddHeight The height in meters to add to the altitude of the positionable.
+function POSITIONABLE:Smoke( SmokeColor, Range, AddHeight )
   self:F2()
   if Range then
-    trigger.action.smoke( self:GetRandomVec3( Range ), SmokeColor )
+    local Vec3 = self:GetRandomVec3( Range )
+    Vec3.y = Vec3.y + AddHeight or 0
+    trigger.action.smoke( Vec3, SmokeColor )
   else
+    local Vec3 = self:GetVec3()
+    Vec3.y = Vec3.y + AddHeight or 0
     trigger.action.smoke( self:GetVec3(), SmokeColor )
   end
   
@@ -35247,12 +35255,15 @@ do -- DESIGNATE
     self:SetThreatLevelPrioritization( false ) -- self.ThreatLevelPrioritization, default is threat level priorization off
     self:SetMaximumDesignations( 5 ) -- Sets the maximum designations. The default is 5 designations.
     self:SetMaximumDistanceDesignations( 12000 )  -- Sets the maximum distance on which designations can be accepted. The default is 8000 meters.
+    self:SetMaximumMarkings( 2 ) -- Per target group, a maximum of 2 markings will be made by default.
     
     self.LaserCodesUsed = {}
     
     self.Detection:__Start( 2 )
     
     self:__Detect( -15 )
+    
+    self.MarkScheduler = SCHEDULER:New( self )
     
     return self
   end
@@ -35313,6 +35324,16 @@ do -- DESIGNATE
   -- @return #DESIGNATE
   function DESIGNATE:SetMaximumDistanceDesignations( MaximumDistanceDesignations )
     self.MaximumDistanceDesignations = MaximumDistanceDesignations
+    return self
+  end
+  
+  
+  --- Set the maximum amount of markings FACs will do, per designated target group.
+  -- @param #DESIGNATE self
+  -- @param #number MaximumMarkings Maximum markings FACs will do, per designated target group.
+  -- @return #DESIGNATE
+  function DESIGNATE:SetMaximumMarkings( MaximumMarkings )
+    self.MaximumMarkings = MaximumMarkings
     return self
   end
   
@@ -35550,8 +35571,8 @@ do -- DESIGNATE
             local DetectedItem = DetectedItems[DesignateIndex]
             if DetectedItem then
               local Report = self.Detection:DetectedItemReportSummary( DesignateIndex, AttackGroup ):Text( ", " )
-              DetectedReport:Add( " - " .. Report )
               DetectedReport:Add( string.rep( "-", 140 ) )
+              DetectedReport:Add( " - " .. Report )
             end
           end
           
@@ -35766,6 +35787,8 @@ do -- DESIGNATE
   function DESIGNATE:onafterLasing( From, Event, To, Index, Duration )
   
     local TargetSetUnit = self.Detection:GetDetectedSet( Index )
+
+    local MarkedCount = 0
     
     TargetSetUnit:Flush()
 
@@ -35784,52 +35807,76 @@ do -- DESIGNATE
     TargetSetUnit:ForEachUnitPerThreatLevel( 10, 0,
       --- @param Wrapper.Unit#UNIT SmokeUnit
       function( TargetUnit )
+      
         self:F( { TargetUnit = TargetUnit:GetName() } )
-        if TargetUnit:IsAlive() then
-          local Recce = self.Recces[TargetUnit]
-          if not Recce then
-            self.RecceSet:Flush()
-            for RecceGroupID, RecceGroup in pairs( self.RecceSet:GetSet() ) do
-              for UnitID, UnitData in pairs( RecceGroup:GetUnits() or {} ) do
-                local RecceUnit = UnitData -- Wrapper.Unit#UNIT
-                local RecceUnitDesc = RecceUnit:GetDesc()
-                --self:F( { RecceUnit = RecceUnit:GetName(), RecceDescription = RecceUnitDesc } )
-                if RecceUnit:IsLasing() == false then
-                  --self:F( { IsDetected = RecceUnit:IsDetected( TargetUnit ), IsLOS = RecceUnit:IsLOS( TargetUnit ) } )
-                  if RecceUnit:IsDetected( TargetUnit ) and RecceUnit:IsLOS( TargetUnit ) then
-                    local LaserCodeIndex = math.random( 1, #self.LaserCodes )
-                    local LaserCode = self.LaserCodes[LaserCodeIndex]
-                    --self:F( { LaserCode = LaserCode, LaserCodeUsed = self.LaserCodesUsed[LaserCode] } )
-                    if not self.LaserCodesUsed[LaserCode] then
-                      self.LaserCodesUsed[LaserCode] = LaserCodeIndex
-                      local Spot = RecceUnit:LaseUnit( TargetUnit, LaserCode, Duration )
-                      local AttackSet = self.AttackSet
-                      function Spot:OnAfterDestroyed( From, Event, To )
-                        self:E( "Destroyed Message" )
-                        self.Recce:MessageToSetGroup( "Target " .. TargetUnit:GetTypeName() .. " destroyed. " .. TargetSetUnit:Count() .. " targets left.", 5, AttackSet )
+
+        if MarkedCount < self.MaximumMarkings then
+
+          if TargetUnit:IsAlive() then
+  
+            local Recce = self.Recces[TargetUnit]
+  
+            if not Recce then
+  
+              self:E( "Lasing..." )
+              self.RecceSet:Flush()
+  
+              for RecceGroupID, RecceGroup in pairs( self.RecceSet:GetSet() ) do
+                for UnitID, UnitData in pairs( RecceGroup:GetUnits() or {} ) do
+  
+                  local RecceUnit = UnitData -- Wrapper.Unit#UNIT
+                  local RecceUnitDesc = RecceUnit:GetDesc()
+                  --self:F( { RecceUnit = RecceUnit:GetName(), RecceDescription = RecceUnitDesc } )
+  
+                  if RecceUnit:IsLasing() == false then
+                    --self:F( { IsDetected = RecceUnit:IsDetected( TargetUnit ), IsLOS = RecceUnit:IsLOS( TargetUnit ) } )
+  
+                    if RecceUnit:IsDetected( TargetUnit ) and RecceUnit:IsLOS( TargetUnit ) then
+  
+                      local LaserCodeIndex = math.random( 1, #self.LaserCodes )
+                      local LaserCode = self.LaserCodes[LaserCodeIndex]
+                      --self:F( { LaserCode = LaserCode, LaserCodeUsed = self.LaserCodesUsed[LaserCode] } )
+  
+                      if not self.LaserCodesUsed[LaserCode] then
+  
+                        self.LaserCodesUsed[LaserCode] = LaserCodeIndex
+                        local Spot = RecceUnit:LaseUnit( TargetUnit, LaserCode, Duration )
+                        local AttackSet = self.AttackSet
+  
+                        function Spot:OnAfterDestroyed( From, Event, To )
+                          self:E( "Destroyed Message" )
+                          self.Recce:MessageToSetGroup( "Target " .. TargetUnit:GetTypeName() .. " destroyed. " .. TargetSetUnit:Count() .. " targets left.", 5, AttackSet )
+                        end
+  
+                        self.Recces[TargetUnit] = RecceUnit
+                        RecceUnit:MessageToSetGroup( "Marking " .. TargetUnit:GetTypeName() .. " with laser " .. RecceUnit:GetSpot().LaserCode .. " for " .. Duration .. "s.", 5, self.AttackSet )
+                        -- OK. We have assigned for the Recce a TargetUnit. We can exit the function.
+                        return
                       end
-                      self.Recces[TargetUnit] = RecceUnit
-                      RecceUnit:MessageToSetGroup( "Marking " .. TargetUnit:GetTypeName() .. " with laser " .. RecceUnit:GetSpot().LaserCode .. " for " .. Duration .. "s.", 5, self.AttackSet )
-                      -- OK. We have assigned for the Recce a TargetUnit. We can exit the function.
-                      return
+                    else
+                      --RecceUnit:MessageToSetGroup( "Can't mark " .. TargetUnit:GetTypeName(), 5, self.AttackSet )
                     end
                   else
-                    --RecceUnit:MessageToSetGroup( "Can't mark " .. TargetUnit:GetTypeName(), 5, self.AttackSet )
+                    -- The Recce is lasing, but the Target is not detected or within LOS. So stop lasing and send a report.
+  
+                    if not RecceUnit:IsDetected( TargetUnit ) or not RecceUnit:IsLOS( TargetUnit ) then
+  
+                      local Recce = self.Recces[TargetUnit] -- Wrapper.Unit#UNIT
+  
+                      if Recce then
+                        Recce:LaseOff()
+                        Recce:MessageToSetGroup( "Target " .. TargetUnit:GetTypeName() "out of LOS. Cancelling lase!", 5, self.AttackSet )
+                      end
+                    else
+                      MarkedCount = MarkedCount + 1
+                    end  
                   end
-                else
-                  -- The Recce is lasing, but the Target is not detected or within LOS. So stop lasing and send a report.
-                  if not RecceUnit:IsDetected( TargetUnit ) or not RecceUnit:IsLOS( TargetUnit ) then
-                    local Recce = self.Recces[TargetUnit] -- Wrapper.Unit#UNIT
-                    if Recce then
-                      Recce:LaseOff()
-                      Recce:MessageToSetGroup( "Target " .. TargetUnit:GetTypeName() "out of LOS. Cancelling lase!", 5, self.AttackSet )
-                    end
-                  end  
                 end
               end
+            else
+              MarkedCount = MarkedCount + 1
+              Recce:MessageToSetGroup( "Marking " .. TargetUnit:GetTypeName() .. " with laser " .. Recce.LaserCode .. ".", 5, self.AttackSet )
             end
-          else
-            Recce:MessageToSetGroup( "Marking " .. TargetUnit:GetTypeName() .. " with laser " .. Recce.LaserCode .. ".", 5, self.AttackSet )
           end
         end
       end
@@ -35878,19 +35925,29 @@ do -- DESIGNATE
     local TargetSetUnit = self.Detection:GetDetectedSet( Index )
     local TargetSetUnitCount = TargetSetUnit:Count()
   
-    TargetSetUnit:ForEachUnit(
+    local MarkedCount = 0
+  
+    TargetSetUnit:ForEachUnitPerThreatLevel( 10, 0,
       --- @param Wrapper.Unit#UNIT SmokeUnit
       function( SmokeUnit )
-        self:E("In procedure")
-        if math.random( 1, TargetSetUnitCount ) == math.random( 1, TargetSetUnitCount ) then
+
+        if MarkedCount < self.MaximumMarkings then
+      
+          MarkedCount = MarkedCount + 1        
+      
+          self:E( "Smoking ..." )
+
           local RecceGroup = self.RecceSet:FindNearestGroupFromPointVec2(SmokeUnit:GetPointVec2())
           local RecceUnit = RecceGroup:GetUnit( 1 )
+
           if RecceUnit then
+
             RecceUnit:MessageToSetGroup( "Smoking " .. SmokeUnit:GetTypeName() .. ".", 5, self.AttackSet )
-            SCHEDULER:New( nil,
+
+            self.MarkScheduler:Schedule( self,
               function()
                 if SmokeUnit:IsAlive() then
-                  SmokeUnit:Smoke( Color, 50 )
+                  SmokeUnit:Smoke( Color, 50, 2 )
                 end
               self:Done( Index )
               end, {}, math.random( 5, 20 ) 
@@ -35916,7 +35973,7 @@ do -- DESIGNATE
       local RecceUnit = RecceGroup:GetUnit( 1 )
       if RecceUnit then
         RecceUnit:MessageToSetGroup( "Illuminating " .. TargetUnit:GetTypeName() .. ".", 5, self.AttackSet )
-        SCHEDULER:New( self,
+        self.MarkScheduler:Schedule( self,
           function()
             if TargetUnit:IsAlive() then
               TargetUnit:GetPointVec3():AddY(300):IlluminationBomb()
@@ -49888,6 +49945,7 @@ end
 -- @return #string
 function TASK:ReportOverview( ReportGroup ) --R2.1 fixed report. Now nicely formatted and contains the info required.
 
+  self:UpdateTaskInfo()
   
   -- List the name of the Task.
   local TaskName = self:GetName()
@@ -49984,6 +50042,8 @@ end
 -- @param Wrapper.Group#GROUP TaskGroup
 -- @return #string
 function TASK:ReportDetails( ReportGroup )
+
+  self:UpdateTaskInfo()
 
   local Report = REPORT:New():SetIndent( 3 )
   
