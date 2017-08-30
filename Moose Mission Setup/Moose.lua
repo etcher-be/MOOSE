@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170829_2254' )
+env.info( 'Moose Generation Timestamp: 20170830_0932' )
 
 --- Various routines
 -- @module routines
@@ -33300,7 +33300,7 @@ do -- DETECTION_BASE
   
   end
   
-  do -- Threat
+  do -- NearBy calculations
   
     --- Returns if there are friendlies nearby the FAC units ...
     -- @param #DETECTION_BASE self
@@ -33316,6 +33316,15 @@ do -- DETECTION_BASE
     function DETECTION_BASE:GetFriendliesNearBy( DetectedItem )
       
       return DetectedItem.FriendliesNearBy
+    end
+    
+    --- Filters friendly units by unit category.
+    -- @param #DETECTION_BASE self
+    -- @param FriendliesCategory
+    -- @return #DETECTION_BASE
+    function DETECTION_BASE:FilterFriendliesCategory( FriendliesCategory )
+      self.FriendliesCategory = FriendliesCategory
+      return self
     end
   
     --- Returns if there are friendlies nearby the intercept ...
@@ -33405,15 +33414,18 @@ do -- DETECTION_BASE
           --self:F( { "Friendlies search:", FoundUnitName, FoundUnitCoalition, EnemyUnitName, EnemyCoalition, FoundUnitInReportSetGroup } )
           
           if FoundUnitCoalition ~= EnemyCoalition and FoundUnitInReportSetGroup == false then
-            DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
             local FriendlyUnit = UNIT:Find( FoundDCSUnit )
             local FriendlyUnitName = FriendlyUnit:GetName()
-
-            DetectedItem.FriendliesNearBy[FriendlyUnitName] = FriendlyUnit
+            local FriendlyUnitCategory = FriendlyUnit:GetDesc().category
+            self:T( { FriendlyUnitCategory = FriendlyUnitCategory, FriendliesCategory = self.FriendliesCategory } )
             
-            local Distance = DetectedUnitCoord:Get2DDistance( FriendlyUnit:GetCoordinate() )
-            DetectedItem.FriendliesDistance = DetectedItem.FriendliesDistance or {}
-            DetectedItem.FriendliesDistance[Distance] = FriendlyUnit
+            if ( not self.FriendliesCategory ) or ( self.FriendliesCategory and ( self.FriendliesCategory == FriendlyUnitCategory ) ) then
+              DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
+              DetectedItem.FriendliesNearBy[FriendlyUnitName] = FriendlyUnit
+              local Distance = DetectedUnitCoord:Get2DDistance( FriendlyUnit:GetCoordinate() )
+              DetectedItem.FriendliesDistance = DetectedItem.FriendliesDistance or {}
+              DetectedItem.FriendliesDistance[Distance] = FriendlyUnit
+            end
             return true
           end
           
@@ -33429,23 +33441,28 @@ do -- DETECTION_BASE
           --- @param Wrapper.Unit#UNIT PlayerUnit
           function( PlayerUnitName )
             local PlayerUnit = UNIT:FindByName( PlayerUnitName )
-    
+            local PlayerUnitCategory = PlayerUnit:GetDesc().category
+
             if PlayerUnit and PlayerUnit:IsInZone(DetectionZone) then
     
-              DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
-              local PlayerUnitName = PlayerUnit:GetName()
-    
-              DetectedItem.PlayersNearBy = DetectedItem.PlayersNearBy or {}
-              DetectedItem.PlayersNearBy[PlayerUnitName] = PlayerUnit
-    
-              DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
-              DetectedItem.FriendliesNearBy[PlayerUnitName] = PlayerUnit
-    
-              local CenterCoord = DetectedUnit:GetCoordinate()
+              if ( not self.FriendliesCategory ) or ( self.FriendliesCategory and ( self.FriendliesCategory == PlayerUnitCategory ) ) then
 
-              local Distance = CenterCoord:Get2DDistance( PlayerUnit:GetCoordinate() )
-              DetectedItem.FriendliesDistance = DetectedItem.FriendliesDistance or {}
-              DetectedItem.FriendliesDistance[Distance] = PlayerUnit
+                DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
+                local PlayerUnitName = PlayerUnit:GetName()
+      
+                DetectedItem.PlayersNearBy = DetectedItem.PlayersNearBy or {}
+                DetectedItem.PlayersNearBy[PlayerUnitName] = PlayerUnit
+      
+                DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
+                DetectedItem.FriendliesNearBy[PlayerUnitName] = PlayerUnit
+      
+                local CenterCoord = DetectedUnit:GetCoordinate()
+  
+                local Distance = CenterCoord:Get2DDistance( PlayerUnit:GetCoordinate() )
+                DetectedItem.FriendliesDistance = DetectedItem.FriendliesDistance or {}
+                DetectedItem.FriendliesDistance[Distance] = PlayerUnit
+
+              end
             end
           end
         )
@@ -36914,7 +36931,7 @@ function AI_A2A:onafterStatus()
       end
     end
     
-    if self:Is( "Damaged" ) or self:Is( "LostControl" ) then
+    if self:Is( "Fuel" ) or self:Is( "Damaged" ) or self:Is( "LostControl" ) then
       if DistanceFromHomeBase < 5000 then
         self:E( self.Controllable:GetName() .. " is too far from home base, RTB!" )
         self:Home( "Destroy" )
@@ -36922,25 +36939,27 @@ function AI_A2A:onafterStatus()
     end
     
 
-    local Fuel = self.Controllable:GetFuel()
-    self:F({Fuel=Fuel})
-    if Fuel < self.PatrolFuelThresholdPercentage then
-      if self.TankerName then
-        self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... Refuelling at Tanker!" )
-        self:Refuel()
+    if not self:Is( "Fuel" ) and not self:Is( "Home" ) then
+      local Fuel = self.Controllable:GetFuel()
+      self:F({Fuel=Fuel})
+      if Fuel < self.PatrolFuelThresholdPercentage then
+        if self.TankerName then
+          self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... Refuelling at Tanker!" )
+          self:Refuel()
+        else
+          self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... RTB!" )
+          local OldAIControllable = self.Controllable
+          local AIControllableTemplate = self.Controllable:GetTemplate()
+          
+          local OrbitTask = OldAIControllable:TaskOrbitCircle( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ), self.PatrolMinSpeed )
+          local TimedOrbitTask = OldAIControllable:TaskControlled( OrbitTask, OldAIControllable:TaskCondition(nil,nil,nil,nil,self.PatrolOutOfFuelOrbitTime,nil ) )
+          OldAIControllable:SetTask( TimedOrbitTask, 10 )
+    
+          self:Fuel()
+          RTB = true
+        end
       else
-        self:E( self.Controllable:GetName() .. " is out of fuel: " .. Fuel .. " ... RTB!" )
-        local OldAIControllable = self.Controllable
-        local AIControllableTemplate = self.Controllable:GetTemplate()
-        
-        local OrbitTask = OldAIControllable:TaskOrbitCircle( math.random( self.PatrolFloorAltitude, self.PatrolCeilingAltitude ), self.PatrolMinSpeed )
-        local TimedOrbitTask = OldAIControllable:TaskControlled( OrbitTask, OldAIControllable:TaskCondition(nil,nil,nil,nil,self.PatrolOutOfFuelOrbitTime,nil ) )
-        OldAIControllable:SetTask( TimedOrbitTask, 10 )
-  
-        self:Fuel()
-        RTB = true
       end
-    else
     end
     
     -- TODO: Check GROUP damage function.
@@ -36951,6 +36970,7 @@ function AI_A2A:onafterStatus()
       self:E( self.Controllable:GetName() .. " is damaged: " .. Damage .. " ... RTB!" )
       self:Damaged()
       RTB = true
+      self:SetStatusOff()
     end
 
     -- Check if planes went RTB and are out of control.
@@ -39557,7 +39577,7 @@ do -- AI_A2A_DISPATCHER
   --- @param #AI_A2A_DISPATCHER self
   -- @param Core.Event#EVENTDATA EventData
   function AI_A2A_DISPATCHER:OnEventLand( EventData )
-    self:F( "Landed" )
+    self:E( "Landed" )
     local DefenderUnit = EventData.IniUnit
     local Defender = EventData.IniGroup
     local Squadron = self:GetSquadronFromDefender( Defender )
@@ -39576,7 +39596,11 @@ do -- AI_A2A_DISPATCHER
         -- Damaged units cannot be repaired anymore.
         DefenderUnit:Destroy()
         return
-      end        
+      end
+      if DefenderUnit:GetFuel() <= self.DefenderDefault.FuelThreshold then
+        DefenderUnit:Destroy()
+        return
+      end
     end 
   end
   
@@ -39792,7 +39816,7 @@ do -- AI_A2A_DISPATCHER
 
 
   --- Set the default CAP limit for squadrons, which will be used to determine how many CAP can be airborne at the same time for the squadron.
-  -- The default CAP time interval is 1 CAP.
+  -- The default CAP limit is 1 CAP, which means one CAP group being spawned.
   -- @param #AI_A2A_DISPATCHER self
   -- @param #number CapLimit The maximum amount of CAP that can be airborne at the same time for the squadron.
   -- @return #AI_A2A_DISPATCHER
@@ -40050,7 +40074,7 @@ do -- AI_A2A_DISPATCHER
   end
 
   
-  ---
+  --- Set a CAP for a Squadron.
   -- @param #AI_A2A_DISPATCHER self
   -- @param #string SquadronName The squadron name.
   -- @param Core.Zone#ZONE_BASE Zone The @{Zone} object derived from @{Zone#ZONE_BASE} that defines the zone wherein the CAP will be executed.
@@ -40102,9 +40126,13 @@ do -- AI_A2A_DISPATCHER
     return self
   end
   
-  ---
+  --- Set the squadron CAP parameters.  
   -- @param #AI_A2A_DISPATCHER self
   -- @param #string SquadronName The squadron name.
+  -- @param #number CapLimit (optional) The maximum amount of CAP groups to be spawned. Note that a CAP is a group, so can consist out of 1 to 4 airplanes. The default is 1 CAP group.
+  -- @param #number LowInterval (optional) The minimum time boundary in seconds when a new CAP will be spawned. The default is 180 seconds.
+  -- @param #number HighInterval (optional) The maximum time boundary in seconds when a new CAP will be spawned. The default is 600 seconds.
+  -- @param #number Probability Is not in use, you can skip this parameter.
   -- @return #AI_A2A_DISPATCHER
   -- @usage
   -- 
@@ -40130,10 +40158,10 @@ do -- AI_A2A_DISPATCHER
 
     local Cap = self.DefenderSquadrons[SquadronName].Cap
     if Cap then
-      Cap.LowInterval = LowInterval or 300
+      Cap.LowInterval = LowInterval or 180
       Cap.HighInterval = HighInterval or 600
       Cap.Probability = Probability or 1
-      Cap.CapLimit = CapLimit
+      Cap.CapLimit = CapLimit or 1
       Cap.Scheduler = Cap.Scheduler or SCHEDULER:New( self ) 
       local Scheduler = Cap.Scheduler -- Core.Scheduler#SCHEDULER
       local ScheduleID = Cap.ScheduleID
@@ -41154,6 +41182,33 @@ do -- AI_A2A_DISPATCHER
           Fsm:__Patrol( 2 )
   
           self:SetDefenderTask( SquadronName, DefenderCAP, "CAP", Fsm )
+
+          function Fsm:onafterRTB( Defender, From, Event, To )
+            self:F({"CAP RTB", Defender:GetName()})
+            self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
+            local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
+            Dispatcher:ClearDefenderTaskTarget( Defender )
+          end
+  
+          --- @param #AI_A2A_DISPATCHER self
+          function Fsm:onafterHome( Defender, From, Event, To, Action )
+            self:E({"CAP Home", Defender:GetName()})
+            self:GetParent(self).onafterHome( self, Defender, From, Event, To )
+            
+            local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
+            local Squadron = Dispatcher:GetSquadronFromDefender( Defender )
+  
+            if Action and Action == "Destroy" then
+              Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
+              Defender:Destroy()
+            end
+            
+            if Dispatcher:GetSquadronLanding( Squadron.Name ) == AI_A2A_DISPATCHER.Landing.NearAirbase then
+              Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
+              Defender:Destroy()
+            end
+          end
+
         end
       end
     end
@@ -41173,32 +41228,6 @@ do -- AI_A2A_DISPATCHER
         Fsm:__Engage( 1, Target.Set ) -- Engage on the TargetSetUnit
         
         self:SetDefenderTaskTarget( Defender, Target )
-
-        function Fsm:onafterRTB( Defender, From, Event, To )
-          self:F({"CAP RTB", Defender:GetName()})
-          self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
-          local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
-          Dispatcher:ClearDefenderTaskTarget( Defender )
-        end
-
-        --- @param #AI_A2A_DISPATCHER self
-        function Fsm:onafterHome( Defender, From, Event, To, Action )
-          self:F({"CAP Home", Defender:GetName()})
-          self:GetParent(self).onafterHome( self, Defender, From, Event, To )
-          
-          local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
-          local Squadron = Dispatcher:GetSquadronFromDefender( Defender )
-
-          if Action and Action == "Destroy" then
-            Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
-            Defender:Destroy()
-          end
-          
-          if Dispatcher:GetSquadronLanding( Squadron.Name ) == AI_A2A_DISPATCHER.Landing.NearAirbase then
-            Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
-            Defender:Destroy()
-          end
-        end
 
       end
     end
@@ -50715,6 +50744,7 @@ do -- TASK_A2G_DISPATCHER
     self.Mission = Mission
     
     self.Detection:FilterCategories( Unit.Category.GROUND_UNIT, Unit.Category.SHIP )
+    self.Detection:FilterFriendliesCategory( Unit.Category.GROUND_UNIT )
     
     self:AddTransition( "Started", "Assign", "Started" )
     
