@@ -1000,7 +1000,7 @@ do -- AI_A2A_DISPATCHER
   --- @param #AI_A2A_DISPATCHER self
   -- @param Core.Event#EVENTDATA EventData
   function AI_A2A_DISPATCHER:OnEventLand( EventData )
-    self:F( "Landed" )
+    self:E( "Landed" )
     local DefenderUnit = EventData.IniUnit
     local Defender = EventData.IniGroup
     local Squadron = self:GetSquadronFromDefender( Defender )
@@ -1019,7 +1019,11 @@ do -- AI_A2A_DISPATCHER
         -- Damaged units cannot be repaired anymore.
         DefenderUnit:Destroy()
         return
-      end        
+      end
+      if DefenderUnit:GetFuel() <= self.DefenderDefault.FuelThreshold then
+        DefenderUnit:Destroy()
+        return
+      end
     end 
   end
   
@@ -1235,7 +1239,7 @@ do -- AI_A2A_DISPATCHER
 
 
   --- Set the default CAP limit for squadrons, which will be used to determine how many CAP can be airborne at the same time for the squadron.
-  -- The default CAP time interval is 1 CAP.
+  -- The default CAP limit is 1 CAP, which means one CAP group being spawned.
   -- @param #AI_A2A_DISPATCHER self
   -- @param #number CapLimit The maximum amount of CAP that can be airborne at the same time for the squadron.
   -- @return #AI_A2A_DISPATCHER
@@ -1493,7 +1497,7 @@ do -- AI_A2A_DISPATCHER
   end
 
   
-  ---
+  --- Set a CAP for a Squadron.
   -- @param #AI_A2A_DISPATCHER self
   -- @param #string SquadronName The squadron name.
   -- @param Core.Zone#ZONE_BASE Zone The @{Zone} object derived from @{Zone#ZONE_BASE} that defines the zone wherein the CAP will be executed.
@@ -1545,9 +1549,13 @@ do -- AI_A2A_DISPATCHER
     return self
   end
   
-  ---
+  --- Set the squadron CAP parameters.  
   -- @param #AI_A2A_DISPATCHER self
   -- @param #string SquadronName The squadron name.
+  -- @param #number CapLimit (optional) The maximum amount of CAP groups to be spawned. Note that a CAP is a group, so can consist out of 1 to 4 airplanes. The default is 1 CAP group.
+  -- @param #number LowInterval (optional) The minimum time boundary in seconds when a new CAP will be spawned. The default is 180 seconds.
+  -- @param #number HighInterval (optional) The maximum time boundary in seconds when a new CAP will be spawned. The default is 600 seconds.
+  -- @param #number Probability Is not in use, you can skip this parameter.
   -- @return #AI_A2A_DISPATCHER
   -- @usage
   -- 
@@ -1573,10 +1581,10 @@ do -- AI_A2A_DISPATCHER
 
     local Cap = self.DefenderSquadrons[SquadronName].Cap
     if Cap then
-      Cap.LowInterval = LowInterval or 300
+      Cap.LowInterval = LowInterval or 180
       Cap.HighInterval = HighInterval or 600
       Cap.Probability = Probability or 1
-      Cap.CapLimit = CapLimit
+      Cap.CapLimit = CapLimit or 1
       Cap.Scheduler = Cap.Scheduler or SCHEDULER:New( self ) 
       local Scheduler = Cap.Scheduler -- Core.Scheduler#SCHEDULER
       local ScheduleID = Cap.ScheduleID
@@ -2597,6 +2605,33 @@ do -- AI_A2A_DISPATCHER
           Fsm:__Patrol( 2 )
   
           self:SetDefenderTask( SquadronName, DefenderCAP, "CAP", Fsm )
+
+          function Fsm:onafterRTB( Defender, From, Event, To )
+            self:F({"CAP RTB", Defender:GetName()})
+            self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
+            local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
+            Dispatcher:ClearDefenderTaskTarget( Defender )
+          end
+  
+          --- @param #AI_A2A_DISPATCHER self
+          function Fsm:onafterHome( Defender, From, Event, To, Action )
+            self:E({"CAP Home", Defender:GetName()})
+            self:GetParent(self).onafterHome( self, Defender, From, Event, To )
+            
+            local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
+            local Squadron = Dispatcher:GetSquadronFromDefender( Defender )
+  
+            if Action and Action == "Destroy" then
+              Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
+              Defender:Destroy()
+            end
+            
+            if Dispatcher:GetSquadronLanding( Squadron.Name ) == AI_A2A_DISPATCHER.Landing.NearAirbase then
+              Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
+              Defender:Destroy()
+            end
+          end
+
         end
       end
     end
@@ -2616,32 +2651,6 @@ do -- AI_A2A_DISPATCHER
         Fsm:__Engage( 1, Target.Set ) -- Engage on the TargetSetUnit
         
         self:SetDefenderTaskTarget( Defender, Target )
-
-        function Fsm:onafterRTB( Defender, From, Event, To )
-          self:F({"CAP RTB", Defender:GetName()})
-          self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
-          local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
-          Dispatcher:ClearDefenderTaskTarget( Defender )
-        end
-
-        --- @param #AI_A2A_DISPATCHER self
-        function Fsm:onafterHome( Defender, From, Event, To, Action )
-          self:F({"CAP Home", Defender:GetName()})
-          self:GetParent(self).onafterHome( self, Defender, From, Event, To )
-          
-          local Dispatcher = self:GetDispatcher() -- #AI_A2A_DISPATCHER
-          local Squadron = Dispatcher:GetSquadronFromDefender( Defender )
-
-          if Action and Action == "Destroy" then
-            Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
-            Defender:Destroy()
-          end
-          
-          if Dispatcher:GetSquadronLanding( Squadron.Name ) == AI_A2A_DISPATCHER.Landing.NearAirbase then
-            Dispatcher:RemoveDefenderFromSquadron( Squadron, Defender )
-            Defender:Destroy()
-          end
-        end
 
       end
     end
