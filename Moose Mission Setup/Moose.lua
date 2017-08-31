@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170830_0932' )
+env.info( 'Moose Generation Timestamp: 20170831_0923' )
 
 --- Various routines
 -- @module routines
@@ -33300,11 +33300,31 @@ do -- DETECTION_BASE
   
   end
   
-  do -- NearBy calculations
+  do -- Friendly calculations
+  
+    --- This will allow during friendly search any recce or detection unit to be also considered as a friendly.
+    -- By default, recce aren't considered friendly, because that would mean that a recce would be also an attacking friendly,
+    -- and this is wrong.
+    -- However, in a CAP situation, when the CAP is part of an EWR network, the CAP is also an attacker.
+    -- This, this method allows to register for a detection the CAP unit name prefixes to be considered CAP.
+    -- @param #DETECTION_BASE self
+    -- @param #string FriendlyPrefixes A string or a list of prefixes.
+    -- @return #DETECTION_BASE 
+    function DETECTION_BASE:SetFriendlyPrefixes( FriendlyPrefixes )
+
+      self.FriendlyPrefixes = FriendlyPrefixes or {}
+      if type( FriendlyPrefixes ) ~= "table" then
+        FriendlyPrefixes = { FriendlyPrefixes }
+      end
+      for PrefixID, Prefix in pairs( FriendlyPrefixes ) do
+        self.FriendlyPrefixes[Prefix] = Prefix
+      end
+      return self    
+    end
   
     --- Returns if there are friendlies nearby the FAC units ...
     -- @param #DETECTION_BASE self
-    -- @return #boolean trhe if there are friendlies nearby 
+    -- @return #boolean true if there are friendlies nearby 
     function DETECTION_BASE:IsFriendliesNearBy( DetectedItem )
       
       return DetectedItem.FriendliesNearBy ~= nil or false
@@ -33409,9 +33429,26 @@ do -- DETECTION_BASE
           local FoundUnitName = FoundDCSUnit:getName()
           local FoundUnitGroupName = FoundDCSUnit:getGroup():getName()
           local EnemyUnitName = DetectedUnit:GetName()
+
           local FoundUnitInReportSetGroup = ReportSetGroup:FindGroup( FoundUnitGroupName ) ~= nil
+          self:T( { "Friendlies search:", FoundUnitName, FoundUnitCoalition, EnemyUnitName, EnemyCoalition, FoundUnitInReportSetGroup } )
           
-          --self:F( { "Friendlies search:", FoundUnitName, FoundUnitCoalition, EnemyUnitName, EnemyCoalition, FoundUnitInReportSetGroup } )
+          if FoundUnitInReportSetGroup == true then
+            -- If the recce was part of the friendlies found, then check if the recce is part of the allowed friendly unit prefixes.
+            for PrefixID, Prefix in pairs( self.FriendlyPrefixes or {} ) do
+              self:F( { "FriendlyPrefix:", Prefix } )
+              -- In case a match is found (so a recce unit name is part of the friendly prefixes), then report that recce to be part of the friendlies.
+              -- This is important if CAP planes (so planes using their own radar) to be scanning for targets as part of the EWR network.
+              -- But CAP planes are also attackers, so they need to be considered friendlies too!
+              -- I chose to use prefixes because it is the fastest way to check.
+              if string.find( FoundUnitName, Prefix:gsub ("-", "%%-"), 1 ) then
+                FoundUnitInReportSetGroup = false
+                break
+              end
+            end
+          end
+
+          self:F( { "Friendlies search:", FoundUnitName, FoundUnitCoalition, EnemyUnitName, EnemyCoalition, FoundUnitInReportSetGroup } )
           
           if FoundUnitCoalition ~= EnemyCoalition and FoundUnitInReportSetGroup == false then
             local FriendlyUnit = UNIT:Find( FoundDCSUnit )
@@ -33419,13 +33456,14 @@ do -- DETECTION_BASE
             local FriendlyUnitCategory = FriendlyUnit:GetDesc().category
             self:T( { FriendlyUnitCategory = FriendlyUnitCategory, FriendliesCategory = self.FriendliesCategory } )
             
-            if ( not self.FriendliesCategory ) or ( self.FriendliesCategory and ( self.FriendliesCategory == FriendlyUnitCategory ) ) then
+            --if ( not self.FriendliesCategory ) or ( self.FriendliesCategory and ( self.FriendliesCategory == FriendlyUnitCategory ) ) then
               DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
               DetectedItem.FriendliesNearBy[FriendlyUnitName] = FriendlyUnit
               local Distance = DetectedUnitCoord:Get2DDistance( FriendlyUnit:GetCoordinate() )
               DetectedItem.FriendliesDistance = DetectedItem.FriendliesDistance or {}
               DetectedItem.FriendliesDistance[Distance] = FriendlyUnit
-            end
+              self:T( { FriendlyUnitName = FriendlyUnitName, Distance = Distance } )
+            --end
             return true
           end
           
@@ -33441,9 +33479,10 @@ do -- DETECTION_BASE
           --- @param Wrapper.Unit#UNIT PlayerUnit
           function( PlayerUnitName )
             local PlayerUnit = UNIT:FindByName( PlayerUnitName )
-            local PlayerUnitCategory = PlayerUnit:GetDesc().category
 
             if PlayerUnit and PlayerUnit:IsInZone(DetectionZone) then
+
+              local PlayerUnitCategory = PlayerUnit:GetDesc().category
     
               if ( not self.FriendliesCategory ) or ( self.FriendliesCategory and ( self.FriendliesCategory == PlayerUnitCategory ) ) then
 
@@ -39995,7 +40034,7 @@ do -- AI_A2A_DISPATCHER
   --    * Nevada or NTTR: @{Airbase#AIRBASE.Nevada}
   --    * Normandy: @{Airbase#AIRBASE.Normandy}
   -- 
-  -- @param #string SpawnTemplates A string or an array of strings specifying the **prefix names of the templates** (not going to explain what is templates here again). 
+  -- @param #string TemplatePrefixes A string or an array of strings specifying the **prefix names of the templates** (not going to explain what is templates here again). 
   -- Examples are `{ "104th", "105th" }` or `"104th"` or `"Template 1"` or `"BLUE PLANES"`. 
   -- Just remember that your template (groups late activated) need to start with the prefix you have specified in your code.
   -- If you have only one prefix name for a squadron, you don't need to use the `{ }`, otherwise you need to use the brackets.
@@ -40029,7 +40068,7 @@ do -- AI_A2A_DISPATCHER
   --   
   --   
   -- @return #AI_A2A_DISPATCHER
-  function AI_A2A_DISPATCHER:SetSquadron( SquadronName, AirbaseName, SpawnTemplates, Resources )
+  function AI_A2A_DISPATCHER:SetSquadron( SquadronName, AirbaseName, TemplatePrefixes, Resources )
   
   
     self.DefenderSquadrons[SquadronName] = self.DefenderSquadrons[SquadronName] or {} 
@@ -40043,19 +40082,20 @@ do -- AI_A2A_DISPATCHER
     end
     
     DefenderSquadron.Spawn = {}
-    if type( SpawnTemplates ) == "string" then
-      local SpawnTemplate = SpawnTemplates
+    if type( TemplatePrefixes ) == "string" then
+      local SpawnTemplate = TemplatePrefixes
       self.DefenderSpawns[SpawnTemplate] = self.DefenderSpawns[SpawnTemplate] or SPAWN:New( SpawnTemplate ) -- :InitCleanUp( 180 )
       DefenderSquadron.Spawn[1] = self.DefenderSpawns[SpawnTemplate]
     else
-      for TemplateID, SpawnTemplate in pairs( SpawnTemplates ) do
+      for TemplateID, SpawnTemplate in pairs( TemplatePrefixes ) do
         self.DefenderSpawns[SpawnTemplate] = self.DefenderSpawns[SpawnTemplate] or SPAWN:New( SpawnTemplate ) -- :InitCleanUp( 180 )
         DefenderSquadron.Spawn[#DefenderSquadron.Spawn+1] = self.DefenderSpawns[SpawnTemplate]
       end
     end
     DefenderSquadron.Resources = Resources
+    DefenderSquadron.TemplatePrefixes = TemplatePrefixes
 
-    self:E( { Squadron = {SquadronName, AirbaseName, SpawnTemplates, Resources } } )
+    self:E( { Squadron = {SquadronName, AirbaseName, TemplatePrefixes, Resources } } )
     
     return self
   end
@@ -40122,6 +40162,13 @@ do -- AI_A2A_DISPATCHER
     self:SetSquadronCapInterval( SquadronName, self.DefenderDefault.CapLimit, self.DefenderDefault.CapMinSeconds, self.DefenderDefault.CapMaxSeconds, 1 )
 
     self:E( { CAP = { SquadronName, Zone, FloorAltitude, CeilingAltitude, PatrolMinSpeed, PatrolMaxSpeed, EngageMinSpeed, EngageMaxSpeed, AltType } } )
+   
+    -- Add the CAP to the EWR network.
+    
+    local RecceSet = self.Detection:GetDetectionSetGroup()
+    RecceSet:FilterPrefixes( DefenderSquadron.TemplatePrefixes )
+    
+    self.Detection:SetFriendlyPrefixes( DefenderSquadron.TemplatePrefixes )
     
     return self
   end
