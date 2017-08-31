@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170831_0923' )
+env.info( 'Moose Generation Timestamp: 20170831_2356' )
 
 --- Various routines
 -- @module routines
@@ -39892,7 +39892,7 @@ do -- AI_A2A_DISPATCHER
   -- @return #number, Core.CommandCenter#REPORT
   function AI_A2A_DISPATCHER:GetAIFriendliesNearBy( DetectedItem )
   
-    local FriendliesNearBy = self.Detection:GetFriendliesNearBy( DetectedItem )
+    local FriendliesNearBy = self.Detection:GetFriendliesDistance( DetectedItem )
     
     return FriendliesNearBy
   end
