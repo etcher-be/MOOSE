@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170901_1223' )
+env.info( 'Moose Generation Timestamp: 20170901_1302' )
 
 --- Various routines
 -- @module routines
@@ -40167,6 +40167,7 @@ do -- AI_A2A_DISPATCHER
     
     local RecceSet = self.Detection:GetDetectionSetGroup()
     RecceSet:FilterPrefixes( DefenderSquadron.TemplatePrefixes )
+    RecceSet:FilterStart()
     
     self.Detection:SetFriendlyPrefixes( DefenderSquadron.TemplatePrefixes )
     
