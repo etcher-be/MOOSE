@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170831_2356' )
+env.info( 'Moose Generation Timestamp: 20170901_1223' )
 
 --- Various routines
 -- @module routines
@@ -32482,7 +32482,7 @@ do -- DETECTION_BASE
     
     self.DetectionSetGroup = DetectionSetGroup
     
-    self.DetectionInterval = 30
+    self.RefreshTimeInterval = 30
     
     self:InitDetectVisual( nil )
     self:InitDetectOptical( nil )
@@ -32667,7 +32667,7 @@ do -- DETECTION_BASE
     -- @param #string Event The Event string.
     -- @param #string To The To State string.
     function DETECTION_BASE:onafterStart(From,Event,To)
-      self:__Detect(0.1)
+      self:__Detect( 1 )
     end
 
     --- @param #DETECTION_BASE self
@@ -32902,7 +32902,7 @@ do -- DETECTION_BASE
           self:CleanDetectionItem( DetectedItem, DetectedItemID ) -- Any DetectionItem that has a Set with zero elements in it, must be removed from the DetectionItems list.
         end
  
-        self:__Detect( self.DetectionInterval )
+        self:__Detect( self.RefreshTimeInterval )
       end
 
     end
@@ -33082,12 +33082,12 @@ do -- DETECTION_BASE
   
     --- Set the detection interval time in seconds.
     -- @param #DETECTION_BASE self
-    -- @param #number DetectionInterval Interval in seconds.
+    -- @param #number RefreshTimeInterval Interval in seconds.
     -- @return #DETECTION_BASE self
-    function DETECTION_BASE:SetDetectionInterval( DetectionInterval )
+    function DETECTION_BASE:SetRefreshTimeInterval( RefreshTimeInterval )
       self:F2()
     
-      self.DetectionInterval = DetectionInterval
+      self.RefreshTimeInterval = RefreshTimeInterval
       
       return self
     end
@@ -37382,7 +37382,7 @@ end
 --   * @{#AI_A2A_PATROL.SetDetectionOn}(): Set the detection on. The AI will detect for targets.
 --   * @{#AI_A2A_PATROL.SetDetectionOff}(): Set the detection off, the AI will not detect for targets. The existing target list will NOT be erased.
 -- 
--- The detection frequency can be set with @{#AI_A2A_PATROL.SetDetectionInterval}( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
+-- The detection frequency can be set with @{#AI_A2A_PATROL.SetRefreshTimeInterval}( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
 -- Use the method @{#AI_A2A_PATROL.GetDetectedUnits}() to obtain a list of the @{Unit}s detected by the AI.
 -- 
 -- The detection can be filtered to potential targets in a specific zone.
@@ -39480,7 +39480,7 @@ do -- AI_A2A_DISPATCHER
     -- TODO: Check detection through radar.
     self.Detection:FilterCategories( { Unit.Category.AIRPLANE, Unit.Category.HELICOPTER } )
     --self.Detection:InitDetectRadar( true )
-    self.Detection:SetDetectionInterval( 30 )
+    self.Detection:SetRefreshTimeInterval( 30 )
 
     self:SetEngageRadius()
     self:SetGciRadius()
@@ -42421,7 +42421,7 @@ end
 --   * @{#AI_PATROL_ZONE.SetDetectionOn}(): Set the detection on. The AI will detect for targets.
 --   * @{#AI_PATROL_ZONE.SetDetectionOff}(): Set the detection off, the AI will not detect for targets. The existing target list will NOT be erased.
 -- 
--- The detection frequency can be set with @{#AI_PATROL_ZONE.SetDetectionInterval}( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
+-- The detection frequency can be set with @{#AI_PATROL_ZONE.SetRefreshTimeInterval}( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
 -- Use the method @{#AI_PATROL_ZONE.GetDetectedUnits}() to obtain a list of the @{Unit}s detected by the AI.
 -- 
 -- The detection can be filtered to potential targets in a specific zone.
@@ -42480,7 +42480,7 @@ function AI_PATROL_ZONE:New( PatrolZone, PatrolFloorAltitude, PatrolCeilingAltit
   -- defafult PatrolAltType to "RADIO" if not specified
   self.PatrolAltType = PatrolAltType or "RADIO"
   
-  self:SetDetectionInterval( 30 )
+  self:SetRefreshTimeInterval( 30 )
   
   self.CheckStatus = true
   
@@ -42837,7 +42837,7 @@ end
 -- @param #AI_PATROL_ZONE self
 -- @param #number Seconds The interval in seconds.
 -- @return #AI_PATROL_ZONE self
-function AI_PATROL_ZONE:SetDetectionInterval( Seconds )
+function AI_PATROL_ZONE:SetRefreshTimeInterval( Seconds )
   self:F2()
 
   if Seconds then  
@@ -44331,7 +44331,7 @@ function AI_CAS_ZONE:onafterEngage( Controllable, From, Event, To,
     Controllable:OptionROEOpenFire()
     Controllable:OptionROTVertical()
     
-    self:SetDetectionInterval( 2 )
+    self:SetRefreshTimeInterval( 2 )
     self:SetDetectionActivated()
     self:__Target( -2 ) -- Start Targetting
   end
@@ -44990,7 +44990,7 @@ function AI_BAI_ZONE:onafterEngage( Controllable, From, Event, To,
     --- NOW ROUTE THE GROUP!
     Controllable:WayPointExecute( 1 )
 
-    self:SetDetectionInterval( 2 )
+    self:SetRefreshTimeInterval( 2 )
     self:SetDetectionActivated()
     self:__Target( -2 ) -- Start Targetting
   end
@@ -50475,7 +50475,7 @@ end
 -- ---------------------------------
 -- Derived DETECTION_MANAGER classes will reports detected units using the method @{DetectionManager#DETECTION_MANAGER.ReportDetected}(). This method implements polymorphic behaviour.
 -- 
--- The time interval in seconds of the reporting can be changed using the methods @{DetectionManager#DETECTION_MANAGER.SetReportInterval}(). 
+-- The time interval in seconds of the reporting can be changed using the methods @{DetectionManager#DETECTION_MANAGER.SetRefreshTimeInterval}(). 
 -- To control how long a reporting message is displayed, use @{DetectionManager#DETECTION_MANAGER.SetReportDisplayTime}().
 -- Derived classes need to implement the method @{DetectionManager#DETECTION_MANAGER.GetReportDisplayTime}() to use the correct display time for displayed messages during a report.
 -- 
@@ -50586,7 +50586,7 @@ do -- DETECTION MANAGER
 
     self:AddTransition( "Started", "Report", "Started" )
     
-    self:SetReportInterval( 30 )
+    self:SetRefreshTimeInterval( 30 )
     self:SetReportDisplayTime( 25 )
   
     self:E( { Detection = Detection } )
@@ -50603,19 +50603,19 @@ do -- DETECTION MANAGER
 
     self:E( "onafterReport" )
 
-    self:__Report( -self._ReportInterval )
+    self:__Report( -self._RefreshTimeInterval )
     
     self:ProcessDetected( self.Detection )
   end
   
   --- Set the reporting time interval.
   -- @param #DETECTION_MANAGER self
-  -- @param #number ReportInterval The interval in seconds when a report needs to be done.
+  -- @param #number RefreshTimeInterval The interval in seconds when a report needs to be done.
   -- @return #DETECTION_MANAGER self
-  function DETECTION_MANAGER:SetReportInterval( ReportInterval )
+  function DETECTION_MANAGER:SetRefreshTimeInterval( RefreshTimeInterval )
     self:F2()
   
-    self._ReportInterval = ReportInterval
+    self._RefreshTimeInterval = RefreshTimeInterval
   end
   
   
@@ -51946,7 +51946,7 @@ do -- TASK_A2A_DISPATCHER
   --
   --     local EWRDetection = DETECTION_AREAS:New( EWRSet, 6000 )
   --     EWRDetection:SetFriendliesRange( 10000 )
-  --     EWRDetection:SetDetectionInterval(30)
+  --     EWRDetection:SetRefreshTimeInterval(30)
   --
   --     -- Setup the A2A dispatcher, and initialize it.
   --     A2ADispatcher = TASK_A2A_DISPATCHER:New( Mission, AttackGroups, EWRDetection )
@@ -52050,7 +52050,7 @@ do -- TASK_A2A_DISPATCHER
     -- TODO: Check detection through radar.
     self.Detection:FilterCategories( Unit.Category.AIRPLANE, Unit.Category.HELICOPTER )
     self.Detection:InitDetectRadar( true )
-    self.Detection:SetDetectionInterval( 30 )
+    self.Detection:SetRefreshTimeInterval( 30 )
     
     self:AddTransition( "Started", "Assign", "Started" )
     
