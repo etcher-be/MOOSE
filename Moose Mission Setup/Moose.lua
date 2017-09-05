@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170902_1027' )
+env.info( 'Moose Generation Timestamp: 20170905_2148' )
 
 --- Various routines
 -- @module routines
@@ -33312,11 +33312,12 @@ do -- DETECTION_BASE
     -- @return #DETECTION_BASE 
     function DETECTION_BASE:SetFriendlyPrefixes( FriendlyPrefixes )
 
-      self.FriendlyPrefixes = FriendlyPrefixes or {}
+      self.FriendlyPrefixes = self.FriendlyPrefixes or {}
       if type( FriendlyPrefixes ) ~= "table" then
         FriendlyPrefixes = { FriendlyPrefixes }
       end
       for PrefixID, Prefix in pairs( FriendlyPrefixes ) do
+        self:F( { FriendlyPrefix = Prefix } )
         self.FriendlyPrefixes[Prefix] = Prefix
       end
       return self    
@@ -40292,7 +40293,7 @@ do -- AI_A2A_DISPATCHER
     self:F({SquadronName = SquadronName})
   
     self.DefenderSquadrons[SquadronName] = self.DefenderSquadrons[SquadronName] or {} 
-    self.DefenderSquadrons[SquadronName].Cap = self.DefenderSquadrons[SquadronName].Cap or {}
+    self.DefenderSquadrons[SquadronName].Gci = self.DefenderSquadrons[SquadronName].Gci or {}
 
     local DefenderSquadron = self:GetSquadron( SquadronName )
 
@@ -41310,6 +41311,7 @@ do -- AI_A2A_DISPATCHER
         DefenderCount = DefenderCount + DefenderGroup:GetSize()
       end
   
+      self:F( { DefenderCount = DefenderCount, DefendersMissing = DefendersMissing } )
       DefenderCount = DefendersMissing
   
       local ClosestDistance = 0
@@ -41318,9 +41320,13 @@ do -- AI_A2A_DISPATCHER
       local BreakLoop = false
       
       while( DefenderCount > 0 and not BreakLoop ) do
+      
         self:F( { DefenderSquadrons = self.DefenderSquadrons } )
+
         for SquadronName, DefenderSquadron in pairs( self.DefenderSquadrons or {} ) do
+
           self:F( { GCI = DefenderSquadron.Gci } )
+
           for InterceptID, Intercept in pairs( DefenderSquadron.Gci or {} ) do
       
             self:F( { DefenderSquadron } )
@@ -41359,8 +41365,8 @@ do -- AI_A2A_DISPATCHER
               local DefenderGrouping = DefenderSquadron.Grouping or self.DefenderDefault.Grouping
               local DefendersNeeded = math.ceil( DefenderCount * DefenderOverhead )
               
-              self:F( { DefaultOverhead = self.DefenderDefault.Overhead, Overhead = DefenderOverhead } )
-              self:F( { DefaultGrouping = self.DefenderDefault.Grouping, Grouping = DefenderGrouping } )
+              self:F( { Overhead = DefenderOverhead, SquadronOverhead = DefenderSquadron.Overhead , DefaultOverhead = self.DefenderDefault.Overhead } )
+              self:F( { Grouping = DefenderGrouping, SquadronGrouping = DefenderSquadron.Grouping, DefaultGrouping = self.DefenderDefault.Grouping } )
               self:F( { DefendersCount = DefenderCount, DefendersNeeded = DefendersNeeded } )
               
               while ( DefendersNeeded > 0 ) do
@@ -41382,9 +41388,9 @@ do -- AI_A2A_DISPATCHER
                 self:AddDefenderToSquadron( DefenderSquadron, DefenderGCI, DefenderGrouping )
           
                 if DefenderGCI then
-        
+
                   DefenderCount = DefenderCount - DefenderGrouping
-                  
+        
                   local Fsm = AI_A2A_GCI:New( DefenderGCI, Gci.EngageMinSpeed, Gci.EngageMaxSpeed )
                   Fsm:SetDispatcher( self )
                   Fsm:SetHomeAirbase( DefenderSquadron.Airbase )
