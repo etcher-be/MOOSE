@@ -713,7 +713,7 @@ Per one, two, three, four?</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefenderTask">AI_A2A_DISPATCHER:SetDefenderTask(Defender, Type, Fsm, Target)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetDefenderTask">AI_A2A_DISPATCHER:SetDefenderTask(SquadronName, Defender, Type, Fsm, Target)</a></td>
 		<td class="summary">
 
 </td>
@@ -749,7 +749,7 @@ Per one, two, three, four?</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetSquadron">AI_A2A_DISPATCHER:SetSquadron(SquadronName, AirbaseName, SpawnTemplates, Resources)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetSquadron">AI_A2A_DISPATCHER:SetSquadron(SquadronName, AirbaseName, TemplatePrefixes, Resources)</a></td>
 		<td class="summary">
 <p>This is the main method to define Squadrons programmatically.</p>
 </td>
@@ -757,13 +757,13 @@ Per one, two, three, four?</p>
 		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetSquadronCap">AI_A2A_DISPATCHER:SetSquadronCap(SquadronName, Zone, FloorAltitude, CeilingAltitude, PatrolMinSpeed, PatrolMaxSpeed, EngageMinSpeed, EngageMaxSpeed, AltType)</a></td>
 		<td class="summary">
-
+<p>Set a CAP for a Squadron.</p>
 </td>
 		</tr>
 		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).SetSquadronCapInterval">AI_A2A_DISPATCHER:SetSquadronCapInterval(SquadronName, CapLimit, LowInterval, HighInterval, Probability)</a></td>
 		<td class="summary">
-
+<p>Set the squadron CAP parameters.</p>
 </td>
 		</tr>
 		<tr>
@@ -905,7 +905,7 @@ Per one, two, three, four?</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).onafterENGAGE">AI_A2A_DISPATCHER:onafterENGAGE(From, Event, To, Target, AIGroups)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(AI_A2A_DISPATCHER).onafterENGAGE">AI_A2A_DISPATCHER:onafterENGAGE(From, Event, To, Target, Defenders)</a></td>
 		<td class="summary">
 
 </td>
@@ -969,17 +969,13 @@ Per one, two, three, four?</p>
 
 <h1>Demo Missions</h1>
 
-<h3><a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-100%20-%20AI_A2A%20-%20Demonstration">AI_A2A_DISPATCHER Demo Mission</a></h3>
-
-<h3><a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/master/AID%20-%20AI%20Dispatching/AID-100%20-%20AI_A2A%20-%20Demonstration">AI_A2A_DISPATCHER Mission, only for beta testers</a></h3>
-
-<h3><a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/releases">ALL Demo Missions pack of the last release</a></h3>
+<h3><a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching">AI_A2A_DISPATCHER Demo Missions</a></h3>
 
 <hr/>
 
 <h1>YouTube Channel</h1>
 
-<h3><a href="">---</a></h3>
+<h3><a href="https://www.youtube.com/playlist?list=PL7ZUrU4zZUl0S4KMNUUJpaUs6zZHjLKNx">DCS WORLD - MOOSE - A2A GCICAP - Build an automatic A2A Defense System</a></h3>
 
 <hr/>
 
@@ -1042,7 +1038,7 @@ DetectionSetGroup = SET_GROUP:New()
 DetectionSetGroup:FilterPrefixes( { "DF CCCP AWACS", "DF CCCP EWR" } )
 DetectionSetGroup:FilterStart()
 
--- Setup the detection.
+-- Setup the detection and group targets to a 30km range!
 Detection = DETECTION_AREAS:New( DetectionSetGroup, 30000 )
 
 -- Setup the A2A dispatcher, and initialize it.
@@ -1058,8 +1054,8 @@ The <strong>Detection</strong> object is then passed to the <a href="##(AI_A2A_D
 
 <p>You could build a <strong>mutual defense system</strong> like this:</p>
 
-<pre><code> A2ADispatcher_Red = AI_A2A_DISPATCHER:New( EWR_Red )
- A2ADispatcher_Blue = AI_A2A_DISPATCHER:New( EWR_Blue )
+<pre><code>A2ADispatcher_Red = AI_A2A_DISPATCHER:New( EWR_Red )
+A2ADispatcher_Blue = AI_A2A_DISPATCHER:New( EWR_Blue )
 </code></pre>
 
 <h3>2. Define the detected <strong>target grouping radius</strong>:</h3>
@@ -1072,40 +1068,67 @@ Typically I suggest to use 30000 for new generation planes and 10000 for older e
 <p>Note that detected targets are constantly re-grouped, that is, when certain detected aircraft are moving further than the group radius, then these aircraft will become a separate
 group being detected. This may result in additional GCI being started by the dispatcher! So don't make this value too small!</p>
 
-<h2>3. Set the <strong>Engage radius</strong>:</h2>
+<h2>3. Set the <strong>Engage Radius</strong>:</h2>
 
-<p>Define the radius to engage any target by airborne friendlies, which are executing cap or returning from an intercept mission.</p>
+<p>Define the <strong>Engage Radius</strong> to <strong>engage any target by airborne friendlies</strong>, 
+which are executing <strong>cap</strong> or <strong>returning</strong> from an intercept mission.</p>
 
 <p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia10.JPG" alt="Banner Image"/></p>
 
-<p>So, if there is a target area detected and reported, 
+<p>If there is a target area detected and reported, 
 then any friendlies that are airborne near this target area, 
-will be commanded to (re-)engage that target when available (if no other tasks were commanded).
-For example, if 100000 is given as a value, then any friendly that is airborne within 100km from the detected target, 
-will be considered to receive the command to engage that target area.
-You need to evaluate the value of this parameter carefully.
-If too small, more intercept missions may be triggered upon detected target areas.
-If too large, any airborne cap may not be able to reach the detected target area in time, because it is too far.</p>
+will be commanded to (re-)engage that target when available (if no other tasks were commanded).</p>
 
-<p>In this example an engage radius is set to 80 km.</p>
+<p>For example, if <strong>50000</strong> or <strong>50km</strong> is given as a value, then any friendly that is airborne within <strong>50km</strong> from the detected target, 
+will be considered to receive the command to engage that target area.</p>
 
-<pre><code>-- Initialize the dispatcher, setting up a radius of 80km where any airborne friendly 
--- without an assignment within 80km radius from a detected target, will engage that target.
-A2ADispatcher:SetEngageRadius( 80000 )
+<p>You need to evaluate the value of this parameter carefully:</p>
+
+<ul>
+    <li>If too small, more intercept missions may be triggered upon detected target areas.</li>
+    <li>If too large, any airborne cap may not be able to reach the detected target area in time, because it is too far.</li>
+</ul>
+
+<p>The <strong>default</strong> Engage Radius is defined as <strong>100000</strong> or <strong>100km</strong>. 
+Use the method <a href="##(AI_A2A_DISPATCHER).SetEngageRadius">AI<em>A2A</em>DISPATCHER.SetEngageRadius</a>() to set a specific Engage Radius.
+<strong>The Engage Radius is defined for ALL squadrons which are operational.</strong></p>
+
+<p>Demonstration Mission: <a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-019%20-%20AI_A2A%20-%20Engage%20Range%20Test">AID-019 - AI_A2A - Engage Range Test</a></p>
+
+<p>In this example an Engage Radius is set to various values.</p>
+
+<pre><code>-- Set 50km as the radius to engage any target by airborne friendlies.
+A2ADispatcher:SetEngageRadius( 50000 )
+
+-- Set 100km as the radius to engage any target by airborne friendlies.
+A2ADispatcher:SetEngageRadius() -- 100000 is the default value.
 </code></pre>
 
-<h2>4. Set the <strong>Intercept radius</strong> or <strong>Gci radius</strong>:</h2>
+
+<h2>4. Set the <strong>Ground Controlled Intercept Radius</strong> or <strong>Gci radius</strong>:</h2>
 
 <p>When targets are detected that are still really far off, you don't want the AI<em>A2A</em>DISPATCHER to launch intercepts just yet.
-You want it to wait until a certain intercept range is reached, which is the distance of the closest airbase to targer being smaller than the <strong>Gci radius</strong>.
-The Gci radius is by default defined as 200km. This value can be overridden using the method <a href="##(AI_A2A_DISPATCHER).SetGciRadius">AI<em>A2A</em>DISPATCHER.SetGciRadius</a>().
-Override the default Gci radius when the era of the warfare is early, or, when you don't want to let the AI<em>A2A</em>DISPATCHER react immediately when
-a certain border or area is not being crossed.</p>
+You want it to wait until a certain Gci range is reached, which is the <strong>distance of the closest airbase to target</strong> 
+being <strong>smaller</strong> than the <strong>Ground Controlled Intercept radius</strong> or <strong>Gci radius</strong>.</p>
 
-<p>In this example, the GCI radius is setto 150 km:</p>
+<p>The <strong>default</strong> Gci radius is defined as <strong>200000</strong> or <strong>200km</strong>. Override the default Gci radius when the era of the warfare is early, or, 
+when you don't want to let the AI<em>A2A</em>DISPATCHER react immediately when a certain border or area is not being crossed.</p>
 
-<pre><code>-- Initialize the dispatcher, setting up a GCI radius of 150km where no GCI will be started if the target is further than 150 km from the closest airabse.
-A2ADispatcher:SetGciRadius( 80000 )
+<p>Use the method <a href="##(AI_A2A_DISPATCHER).SetGciRadius">AI<em>A2A</em>DISPATCHER.SetGciRadius</a>() to set a specific controlled ground intercept radius.
+<strong>The Ground Controlled Intercept radius is defined for ALL squadrons which are operational.</strong></p>
+
+<p>Demonstration Mission: <a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-013%20-%20AI_A2A%20-%20Intercept%20Test">AID-013 - AI_A2A - Intercept Test</a></p>
+
+<p>In these examples, the Gci Radius is set to various values:</p>
+
+<pre><code>-- Now Setup the A2A dispatcher, and initialize it using the Detection object.
+A2ADispatcher = AI_A2A_DISPATCHER:New( Detection ) 
+
+-- Set 100km as the radius to ground control intercept detected targets from the nearest airbase.
+A2ADispatcher:SetGciRadius( 100000 )
+
+-- Set 200km as the radius to ground control intercept.
+A2ADispatcher:SetGciRadius() -- 200000 is the default value.
 </code></pre>
 
 <h2>5. Set the <strong>borders</strong>:</h2>
@@ -1115,7 +1138,8 @@ They should be laid out such that a border area is created between the two coali
 
 <p><img src="..\Presentations\AI_A2A_DISPATCHER\Dia4.JPG" alt="Banner Image"/></p>
 
-<p>Define a border area to simulate a <strong>cold war</strong> scenario and use the method <a href="##(AI_A2A_DISPATCHER).SetBorderZone">AI<em>A2A</em>DISPATCHER.SetBorderZone</a>() to create a border zone for the dispatcher.</p>
+<p><strong>Define a border area to simulate a cold war scenario.</strong>
+Use the method <a href="##(AI_A2A_DISPATCHER).SetBorderZone">AI<em>A2A</em>DISPATCHER.SetBorderZone</a>() to create a border zone for the dispatcher.</p>
 
 <p>A <strong>cold war</strong> is one where CAP aircraft patrol their territory but will not attack enemy aircraft or launch GCI aircraft unless enemy aircraft enter their territory. In other words the EWR may detect an enemy aircraft but will only send aircraft to attack it if it crosses the border.
 A <strong>hot war</strong> is one where CAP aircraft will intercept any detected enemy aircraft and GCI aircraft will launch against detected enemy aircraft without regard for territory. In other words if the ground radar can detect the enemy aircraft then it will send CAP and GCI aircraft to attack it.</p>
@@ -1126,6 +1150,8 @@ A <strong>hot war</strong> is one where CAP aircraft will intercept any detected
 If a hot war is chosen then <strong>no borders</strong> actually need to be defined using the helicopter units other than 
 it makes it easier sometimes for the mission maker to envisage where the red and blue territories roughly are. 
 In a hot war the borders are effectively defined by the ground based radar coverage of a coalition.</p>
+
+<p>Demonstration Mission: <a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-009 - AI_A2A - Border Test">AID-009 - AI_A2A - Border Test</a></p>
 
 <p>In this example a border is set for the CCCP A2A dispatcher:</p>
 
@@ -1229,7 +1255,7 @@ And for a couple of squadrons overrides this default method.</p>
 </code></pre>
 
 
-<h4>6.1.1. Takeoff Altitude when spawning new aircraft in the air.</h4>
+<h3>6.1. Set Squadron takeoff altitude when spawning new aircraft in the air.</h3>
 
 <p>In the case of the <a href="##(AI_A2A_DISPATCHER).SetSquadronTakeoffInAir">AI<em>A2A</em>DISPATCHER.SetSquadronTakeoffInAir</a>() there is also an other parameter that can be applied.
 That is modifying or setting the <strong>altitude</strong> from where planes spawn in the air.
@@ -1585,12 +1611,12 @@ This time can easily take 2 to 3 minutes, and even then the defenders still need
 
 <p>Use the method <a href="##(AI_A2A_DISPATCHER).SetIntercept">AI<em>A2A</em>DISPATCHER.SetIntercept</a>() to modify the assumed intercept delay time to calculate a valid interception.</p>
 
-<h2>10.8.2. Default disengage radius.</h2>
+<h2>10.8.2. Default Disengage Radius.</h2>
 
 <p>The radius to <strong>disengage any target</strong> when the <strong>distance</strong> of the defender to the <strong>home base</strong> is larger than the specified meters.
-The default disengage radius is <strong>300km</strong> (300000 meters). Note that the disengage radius is applicable to ALL squadrons!</p>
+The default Disengage Radius is <strong>300km</strong> (300000 meters). Note that the Disengage Radius is applicable to ALL squadrons!</p>
 
-<p>Use the method <a href="##(AI_A2A_DISPATCHER).SetDisengageRadius">AI<em>A2A</em>DISPATCHER.SetDisengageRadius</a>() to modify the default disengage radius to another distance setting.</p>
+<p>Use the method <a href="##(AI_A2A_DISPATCHER).SetDisengageRadius">AI<em>A2A</em>DISPATCHER.SetDisengageRadius</a>() to modify the default Disengage Radius to another distance setting.</p>
 
 
 <h2>11. Q &amp; A:</h2>
@@ -1650,7 +1676,7 @@ Therefore if F4s are wanted as a coalition’s CAP or GCI aircraft Germany will 
 
 <h1>YouTube Channel</h1>
 
-<h3><a href="">---</a></h3>
+<h3><a href="https://www.youtube.com/playlist?list=PL7ZUrU4zZUl0S4KMNUUJpaUs6zZHjLKNx">DCS WORLD - MOOSE - A2A GCICAP - Build an automatic A2A Defense System</a></h3>
 
 <hr/>
 
@@ -2445,10 +2471,10 @@ Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown<
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights by default despawn near the airbase when returning.
-  local LandingMethod = Dispatcher:GetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
+  local LandingMethod = A2ADispatcher:GetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
   if LandingMethod == AI_A2A_Dispatcher.Landing.NearAirbase then
    ...
   end
@@ -2475,10 +2501,10 @@ Takeoff From the airbase hot, from the airbase cold, in the air, from the runway
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights by default take-off in the air.
-  local TakeoffMethod = Dispatcher:GetDefaultTakeoff()
+  local TakeoffMethod = A2ADispatcher:GetDefaultTakeoff()
   if TakeOffMethod == , AI_A2A_Dispatcher.Takeoff.InAir then
     ...
   end
@@ -2694,10 +2720,10 @@ Landing The landing method which can be NearAirbase, AtRunway, AtEngineShutdown<
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights despawn near the airbase when returning.
-  local LandingMethod = Dispatcher:GetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
+  local LandingMethod = A2ADispatcher:GetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
   if LandingMethod == AI_A2A_Dispatcher.Landing.NearAirbase then
    ...
   end
@@ -2733,10 +2759,10 @@ Takeoff From the airbase hot, from the airbase cold, in the air, from the runway
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights take-off in the air.
-  local TakeoffMethod = Dispatcher:GetSquadronTakeoff( "SquadronName" )
+  local TakeoffMethod = A2ADispatcher:GetSquadronTakeoff( "SquadronName" )
   if TakeOffMethod == , AI_A2A_Dispatcher.Takeoff.InAir then
     ...
   end
@@ -3267,7 +3293,7 @@ or
 <p>Set the default CAP limit for squadrons, which will be used to determine how many CAP can be airborne at the same time for the squadron.</p>
 
 	
-<p>The default CAP time interval is 1 CAP.</p>
+<p>The default CAP limit is 1 CAP, which means one CAP group being spawned.</p>
 
 		<h3>Parameter</h3>
 		<ul>
@@ -3448,10 +3474,10 @@ The level of grouping that will be applied of the CAP or GCI defenders. </p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Set a grouping by default per 2 airplanes.
-  Dispatcher:SetDefaultGrouping( 2 )
+  A2ADispatcher:SetDefaultGrouping( 2 )
 
 </code></pre>
 
@@ -3485,16 +3511,16 @@ The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights by default despawn near the airbase when returning.
-  Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
+  A2ADispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.NearAirbase )
   
   -- Let new flights by default despawn after landing land at the runway.
-  Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtRunway )
+  A2ADispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtRunway )
   
   -- Let new flights by default despawn after landing and parking, and after engine shutdown.
-  Dispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtEngineShutdown )
+  A2ADispatcher:SetDefaultLanding( AI_A2A_Dispatcher.Landing.AtEngineShutdown )
 </code></pre>
 
 </dd>
@@ -3518,10 +3544,10 @@ The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let flights by default land and despawn at engine shutdown.
-  Dispatcher:SetDefaultLandingAtEngineShutdown()
+  A2ADispatcher:SetDefaultLandingAtEngineShutdown()
   </code></pre>
 
 </dd>
@@ -3545,10 +3571,10 @@ The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let flights by default land at the runway and despawn.
-  Dispatcher:SetDefaultLandingAtRunway()
+  A2ADispatcher:SetDefaultLandingAtRunway()
   </code></pre>
 
 </dd>
@@ -3572,10 +3598,10 @@ The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let flights by default to land near the airbase and despawn.
-  Dispatcher:SetDefaultLandingNearAirbase()
+  A2ADispatcher:SetDefaultLandingNearAirbase()
   </code></pre>
 
 </dd>
@@ -3625,14 +3651,14 @@ multiplied by the Overhead and rounded up to the smallest integer. </p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- An overhead of 1,5 with 1 planes detected, will allocate 2 planes ( 1 * 1,5 ) = 1,5 =&gt; rounded up gives 2.
   -- An overhead of 1,5 with 2 planes detected, will allocate 3 planes ( 2 * 1,5 ) = 3 =&gt;  rounded up gives 3.
   -- An overhead of 1,5 with 3 planes detected, will allocate 5 planes ( 3 * 1,5 ) = 4,5 =&gt; rounded up gives 5 planes.
   -- An overhead of 1,5 with 4 planes detected, will allocate 6 planes ( 4 * 1,5 ) = 6  =&gt; rounded up gives 6 planes.
   
-  Dispatcher:SetDefaultOverhead( 1.5 )
+  A2ADispatcher:SetDefaultOverhead( 1.5 )
 </code></pre>
 
 </dd>
@@ -3665,19 +3691,19 @@ From the airbase hot, from the airbase cold, in the air, from the runway.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights by default take-off in the air.
-  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Air )
+  A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Air )
   
   -- Let new flights by default take-off from the runway.
-  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Runway )
+  A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Runway )
   
   -- Let new flights by default take-off from the airbase hot.
-  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Hot )
+  A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Hot )
 
   -- Let new flights by default take-off from the airbase cold.
-  Dispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Cold )
+  A2ADispatcher:SetDefaultTakeoff( AI_A2A_Dispatcher.Takeoff.Cold )
 
 </code></pre>
 
@@ -3702,10 +3728,10 @@ From the airbase hot, from the airbase cold, in the air, from the runway.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights take-off from a cold parking spot.
-  Dispatcher:SetDefaultTakeoffFromParkingCold()
+  A2ADispatcher:SetDefaultTakeoffFromParkingCold()
   </code></pre>
 
 </dd>
@@ -3729,10 +3755,10 @@ From the airbase hot, from the airbase cold, in the air, from the runway.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights by default take-off at a hot parking spot.
-  Dispatcher:SetDefaultTakeoffFromParkingHot()
+  A2ADispatcher:SetDefaultTakeoffFromParkingHot()
   </code></pre>
 
 </dd>
@@ -3756,10 +3782,10 @@ From the airbase hot, from the airbase cold, in the air, from the runway.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights by default take-off from the runway.
-  Dispatcher:SetDefaultTakeoffFromRunway()
+  A2ADispatcher:SetDefaultTakeoffFromRunway()
   </code></pre>
 
 </dd>
@@ -3783,10 +3809,10 @@ From the airbase hot, from the airbase cold, in the air, from the runway.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights by default take-off in the air.
-  Dispatcher:SetDefaultTakeoffInAir()
+  A2ADispatcher:SetDefaultTakeoffInAir()
   </code></pre>
 
 </dd>
@@ -3869,7 +3895,7 @@ A string defining the group name of the Tanker as defined within the Mission Edi
 <dt>
 
 <a id="#(AI_A2A_DISPATCHER).SetDefenderTask" >
-<strong>AI_A2A_DISPATCHER:SetDefenderTask(Defender, Type, Fsm, Target)</strong>
+<strong>AI_A2A_DISPATCHER:SetDefenderTask(SquadronName, Defender, Type, Fsm, Target)</strong>
 </a>
 </dt>
 <dd>
@@ -3878,6 +3904,11 @@ A string defining the group name of the Tanker as defined within the Mission Edi
 
 		<h3>Parameters</h3>
 		<ul>
+				<li>
+				
+<p><code><em> SquadronName </em></code>: </p>
+
+				</li>
 				<li>
 				
 <p><code><em> Defender </em></code>: </p>
@@ -3959,11 +3990,11 @@ A string defining the group name of the Tanker as defined within the Mission Edi
 
 			<h3>Usage:</h3>
 		<pre class="example"><code>
-  -- Set 50km as the disengage radius.
-  Dispatcher:SetDisengageRadius( 50000 )
+  -- Set 50km as the Disengage Radius.
+  A2ADispatcher:SetDisengageRadius( 50000 )
   
-  -- Set 100km as the disengage radius.
-  Dispatcher:SetDisngageRadius() -- 300000 is the default value.
+  -- Set 100km as the Disengage Radius.
+  A2ADispatcher:SetDisngageRadius() -- 300000 is the default value.
   </code></pre>
 
 </dd>
@@ -3980,14 +4011,23 @@ A string defining the group name of the Tanker as defined within the Mission Edi
 <p>Define the radius to engage any target by airborne friendlies, which are executing cap or returning from an intercept mission.</p>
 
 	
-<p>So, if there is a target area detected and reported, 
-then any friendlies that are airborne near this target area, 
-will be commanded to (re-)engage that target when available (if no other tasks were commanded).
-For example, if 100000 is given as a value, then any friendly that is airborne within 100km from the detected target, 
-will be considered to receive the command to engage that target area.
-You need to evaluate the value of this parameter carefully.
-If too small, more intercept missions may be triggered upon detected target areas.
-If too large, any airborne cap may not be able to reach the detected target area in time, because it is too far.</p>
+<p>If there is a target area detected and reported, then any friendlies that are airborne near this target area, 
+will be commanded to (re-)engage that target when available (if no other tasks were commanded).</p>
+
+<p>For example, if 100000 is given as a value, then any friendly that is airborne within 100km from the detected target, 
+will be considered to receive the command to engage that target area.</p>
+
+<p>You need to evaluate the value of this parameter carefully:</p>
+
+<ul>
+    <li>If too small, more intercept missions may be triggered upon detected target areas.</li>
+    <li>If too large, any airborne cap may not be able to reach the detected target area in time, because it is too far.</li>
+</ul>
+
+<p>**Use the method <a href="##(AI_A2A_DISPATCHER).SetEngageRadius">AI<em>A2A</em>DISPATCHER.SetEngageRadius</a>() to modify the default Engage Radius for ALL squadrons.**</p>
+
+<p>Demonstration Mission: <a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-019%20-%20AI_A2A%20-%20Engage%20Range%20Test">AID-019 - AI_A2A - Engage Range Test</a></p>
+
 
 		<h3>Parameter</h3>
 		<ul>
@@ -4006,10 +4046,10 @@ If too large, any airborne cap may not be able to reach the detected target area
 			<h3>Usage:</h3>
 		<pre class="example"><code>
   -- Set 50km as the radius to engage any target by airborne friendlies.
-  Dispatcher:SetEngageRadius( 50000 )
+  A2ADispatcher:SetEngageRadius( 50000 )
   
   -- Set 100km as the radius to engage any target by airborne friendlies.
-  Dispatcher:SetEngageRadius() -- 100000 is the default value.
+  A2ADispatcher:SetEngageRadius() -- 100000 is the default value.
   </code></pre>
 
 </dd>
@@ -4026,14 +4066,18 @@ If too large, any airborne cap may not be able to reach the detected target area
 <p>Define the radius to check if a target can be engaged by an ground controlled intercept.</p>
 
 	
-<p>So, if there is a target area detected and reported, 
-and a GCI is to be executed, 
-then it will be check if the target is within the GCI from the nearest airbase.
-For example, if 150000 is given as a value, then any airbase within 150km from the detected target, 
-will be considered to receive the command to GCI.
-You need to evaluate the value of this parameter carefully.
-If too small, intercept missions may be triggered too late.
-If too large, intercept missions may be triggered when the detected target is too far.</p>
+<p>When targets are detected that are still really far off, you don't want the AI<em>A2A</em>DISPATCHER to launch intercepts just yet.
+You want it to wait until a certain Gci range is reached, which is the <strong>distance of the closest airbase to target</strong> 
+being <strong>smaller</strong> than the <strong>Ground Controlled Intercept radius</strong> or <strong>Gci radius</strong>.</p>
+
+<p>The <strong>default</strong> Gci radius is defined as <strong>200000</strong> or <strong>200km</strong>. Override the default Gci radius when the era of the warfare is early, or, 
+when you don't want to let the AI<em>A2A</em>DISPATCHER react immediately when a certain border or area is not being crossed.</p>
+
+<p>Use the method <a href="##(AI_A2A_DISPATCHER).SetGciRadius">AI<em>A2A</em>DISPATCHER.SetGciRadius</a>() to set a specific controlled ground intercept radius.
+<strong>The Ground Controlled Intercept radius is defined for ALL squadrons which are operational.</strong></p>
+
+<p>Demonstration Mission: <a href="https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/AID%20-%20AI%20Dispatching/AID-013%20-%20AI_A2A%20-%20Intercept%20Test">AID-013 - AI_A2A - Intercept Test</a></p>
+
 
 		<h3>Parameter</h3>
 		<ul>
@@ -4052,7 +4096,7 @@ If too large, intercept missions may be triggered when the detected target is to
 			<h3>Usage:</h3>
 		<pre class="example"><code>
   -- Now Setup the A2A dispatcher, and initialize it using the Detection object.
-  A2ADispatcher = AI_A2A_DISPATCHER:New( Detection )  --   
+  A2ADispatcher = AI_A2A_DISPATCHER:New( Detection ) 
   
   -- Set 100km as the radius to ground control intercept detected targets from the nearest airbase.
   A2ADispatcher:SetGciRadius( 100000 )
@@ -4088,7 +4132,7 @@ If too large, intercept missions may be triggered when the detected target is to
 <dt>
 
 <a id="#(AI_A2A_DISPATCHER).SetSquadron" >
-<strong>AI_A2A_DISPATCHER:SetSquadron(SquadronName, AirbaseName, SpawnTemplates, Resources)</strong>
+<strong>AI_A2A_DISPATCHER:SetSquadron(SquadronName, AirbaseName, TemplatePrefixes, Resources)</strong>
 </a>
 </dt>
 <dd>
@@ -4150,7 +4194,7 @@ To ease the airbase naming when using the LDT editor and IntelliSense, the <a hr
 				</li>
 				<li>
 				
-<p><code><em>#string SpawnTemplates </em></code>: 
+<p><code><em>#string TemplatePrefixes </em></code>: 
 A string or an array of strings specifying the <strong>prefix names of the templates</strong> (not going to explain what is templates here again). 
 Examples are <code>{ "104th", "105th" }</code> or <code>"104th"</code> or <code>"Template 1"</code> or <code>"BLUE PLANES"</code>. 
 Just remember that your template (groups late activated) need to start with the prefix you have specified in your code.
@@ -4207,7 +4251,7 @@ If you have only one prefix name for a squadron, you don't need to use the <code
 </dt>
 <dd>
 	
-
+<p>Set a CAP for a Squadron.</p>
 
 		<h3>Parameters</h3>
 		<ul>
@@ -4298,7 +4342,10 @@ The altitude type, which is a string "BARO" defining Barometric or "RADIO" defin
 </dt>
 <dd>
 	
+<p>Set the squadron CAP parameters.</p>
 
+	
+<p> </p>
 
 		<h3>Parameters</h3>
 		<ul>
@@ -4310,22 +4357,26 @@ The squadron name.</p>
 				</li>
 				<li>
 				
-<p><code><em> CapLimit </em></code>: </p>
+<p><code><em>#number CapLimit </em></code>: 
+(optional) The maximum amount of CAP groups to be spawned. Note that a CAP is a group, so can consist out of 1 to 4 airplanes. The default is 1 CAP group.</p>
 
 				</li>
 				<li>
 				
-<p><code><em> LowInterval </em></code>: </p>
+<p><code><em>#number LowInterval </em></code>: 
+(optional) The minimum time boundary in seconds when a new CAP will be spawned. The default is 180 seconds.</p>
 
 				</li>
 				<li>
 				
-<p><code><em> HighInterval </em></code>: </p>
+<p><code><em>#number HighInterval </em></code>: 
+(optional) The maximum time boundary in seconds when a new CAP will be spawned. The default is 600 seconds.</p>
 
 				</li>
 				<li>
 				
-<p><code><em> Probability </em></code>: </p>
+<p><code><em>#number Probability </em></code>: 
+Is not in use, you can skip this parameter.</p>
 
 				</li>
 		</ul>
@@ -4482,10 +4533,10 @@ The level of grouping that will be applied of the CAP or GCI defenders. </p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Set a grouping per 2 airplanes.
-  Dispatcher:SetSquadronGrouping( "SquadronName", 2 )
+  A2ADispatcher:SetSquadronGrouping( "SquadronName", 2 )
 
 </code></pre>
 
@@ -4525,16 +4576,16 @@ The landing method which can be NearAirbase, AtRunway, AtEngineShutdown</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights despawn near the airbase when returning.
-  Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
+  A2ADispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.NearAirbase )
   
   -- Let new flights despawn after landing land at the runway.
-  Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtRunway )
+  A2ADispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtRunway )
   
   -- Let new flights despawn after landing and parking, and after engine shutdown.
-  Dispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtEngineShutdown )
+  A2ADispatcher:SetSquadronLanding( "SquadronName", AI_A2A_Dispatcher.Landing.AtEngineShutdown )
 </code></pre>
 
 </dd>
@@ -4567,10 +4618,10 @@ The name of the squadron.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let flights land and despawn at engine shutdown.
-  Dispatcher:SetSquadronLandingAtEngineShutdown( "SquadronName" )
+  A2ADispatcher:SetSquadronLandingAtEngineShutdown( "SquadronName" )
   </code></pre>
 
 </dd>
@@ -4603,10 +4654,10 @@ The name of the squadron.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let flights land at the runway and despawn.
-  Dispatcher:SetSquadronLandingAtRunway( "SquadronName" )
+  A2ADispatcher:SetSquadronLandingAtRunway( "SquadronName" )
   </code></pre>
 
 </dd>
@@ -4639,10 +4690,10 @@ The name of the squadron.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let flights to land near the airbase and despawn.
-  Dispatcher:SetSquadronLandingNearAirbase( "SquadronName" )
+  A2ADispatcher:SetSquadronLandingNearAirbase( "SquadronName" )
   </code></pre>
 
 </dd>
@@ -4698,14 +4749,14 @@ multiplied by the Overhead and rounded up to the smallest integer. </p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- An overhead of 1,5 with 1 planes detected, will allocate 2 planes ( 1 * 1,5 ) = 1,5 =&gt; rounded up gives 2.
   -- An overhead of 1,5 with 2 planes detected, will allocate 3 planes ( 2 * 1,5 ) = 3 =&gt;  rounded up gives 3.
   -- An overhead of 1,5 with 3 planes detected, will allocate 5 planes ( 3 * 1,5 ) = 4,5 =&gt; rounded up gives 5 planes.
   -- An overhead of 1,5 with 4 planes detected, will allocate 6 planes ( 4 * 1,5 ) = 6  =&gt; rounded up gives 6 planes.
   
-  Dispatcher:SetSquadronOverhead( "SquadronName", 1.5 )
+  A2ADispatcher:SetSquadronOverhead( "SquadronName", 1.5 )
 </code></pre>
 
 </dd>
@@ -4744,19 +4795,19 @@ From the airbase hot, from the airbase cold, in the air, from the runway.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights take-off in the air.
-  Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Air )
+  A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Air )
   
   -- Let new flights take-off from the runway.
-  Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Runway )
+  A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Runway )
   
   -- Let new flights take-off from the airbase hot.
-  Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Hot )
+  A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Hot )
 
   -- Let new flights take-off from the airbase cold.
-  Dispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Cold )
+  A2ADispatcher:SetSquadronTakeoff( "SquadronName", AI_A2A_Dispatcher.Takeoff.Cold )
 
 </code></pre>
 
@@ -4790,10 +4841,10 @@ The name of the squadron.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights take-off from a cold parking spot.
-  Dispatcher:SetSquadronTakeoffFromParkingCold( "SquadronName" )
+  A2ADispatcher:SetSquadronTakeoffFromParkingCold( "SquadronName" )
   </code></pre>
 
 </dd>
@@ -4826,10 +4877,10 @@ The name of the squadron.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights take-off in the air.
-  Dispatcher:SetSquadronTakeoffFromParkingHot( "SquadronName" )
+  A2ADispatcher:SetSquadronTakeoffFromParkingHot( "SquadronName" )
   </code></pre>
 
 </dd>
@@ -4862,10 +4913,10 @@ The name of the squadron.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights take-off from the runway.
-  Dispatcher:SetSquadronTakeoffFromRunway( "SquadronName" )
+  A2ADispatcher:SetSquadronTakeoffFromRunway( "SquadronName" )
   </code></pre>
 
 </dd>
@@ -4904,10 +4955,10 @@ The name of the squadron.</p>
 			<h3>Usage:</h3>
 		<pre class="example"><code>
 
-  local Dispatcher = AI_A2A_DISPATCHER:New( ... )
+  local A2ADispatcher = AI_A2A_DISPATCHER:New( ... )
   
   -- Let new flights take-off in the air.
-  Dispatcher:SetSquadronTakeoffInAir( "SquadronName" )
+  A2ADispatcher:SetSquadronTakeoffInAir( "SquadronName" )
   </code></pre>
 
 </dd>
@@ -5171,7 +5222,7 @@ Provide a value of <strong>true</strong> to display every 30 seconds a tactical 
 <dt>
 
 <a id="#(AI_A2A_DISPATCHER).onafterENGAGE" >
-<strong>AI_A2A_DISPATCHER:onafterENGAGE(From, Event, To, Target, AIGroups)</strong>
+<strong>AI_A2A_DISPATCHER:onafterENGAGE(From, Event, To, Target, Defenders)</strong>
 </a>
 </dt>
 <dd>
@@ -5202,7 +5253,7 @@ Provide a value of <strong>true</strong> to display every 30 seconds a tactical 
 				</li>
 				<li>
 				
-<p><code><em> AIGroups </em></code>: </p>
+<p><code><em> Defenders </em></code>: </p>
 
 				</li>
 		</ul>

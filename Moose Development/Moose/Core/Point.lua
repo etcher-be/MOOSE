@@ -54,8 +54,8 @@ do -- COORDINATE
   --
   -- A COORDINATE can prepare waypoints for Ground and Air groups to be embedded into a Route.
   --
-  --   * @{#COORDINATE.RoutePointAir}(): Build an air route point.
-  --   * @{#COORDINATE.RoutePointGround}(): Build a ground route point.
+  --   * @{#COORDINATE.WaypointAir}(): Build an air route point.
+  --   * @{#COORDINATE.WaypointGround}(): Build a ground route point.
   --
   -- Route points can be used in the Route methods of the @{Group#GROUP} class.
   --
@@ -477,19 +477,19 @@ do -- COORDINATE
   -- @param Dcs.DCSTypes#Speed Speed Airspeed in km/h.
   -- @param #boolean SpeedLocked true means the speed is locked.
   -- @return #table The route point.
-  function COORDINATE:RoutePointAir( AltType, Type, Action, Speed, SpeedLocked )
+  function COORDINATE:WaypointAir( AltType, Type, Action, Speed, SpeedLocked )
     self:F2( { AltType, Type, Action, Speed, SpeedLocked } )
 
     local RoutePoint = {}
     RoutePoint.x = self.x
     RoutePoint.y = self.z
     RoutePoint.alt = self.y
-    RoutePoint.alt_type = AltType
+    RoutePoint.alt_type = AltType or "RADIO"
 
-    RoutePoint.type = Type
-    RoutePoint.action = Action
+    RoutePoint.type = Type or nil
+    RoutePoint.action = Action or nil
 
-    RoutePoint.speed = Speed / 3.6
+    RoutePoint.speed = ( Speed and Speed / 3.6 ) or ( 500 / 3.6 )
     RoutePoint.speed_locked = true
 
     --  ["task"] =
@@ -515,10 +515,10 @@ do -- COORDINATE
 
   --- Build an ground type route point.
   -- @param #COORDINATE self
-  -- @param Dcs.DCSTypes#Speed Speed Speed in km/h.
-  -- @param #COORDINATE.RoutePointAction Formation The route point Formation.
+  -- @param #number Speed (optional) Speed in km/h. The default speed is 999 km/h.
+  -- @param #string Formation (optional) The route point Formation, which is a text string that specifies exactly the Text in the Type of the route point, like "Vee", "Echelon Right".
   -- @return #table The route point.
-  function COORDINATE:RoutePointGround( Speed, Formation )
+  function COORDINATE:WaypointGround( Speed, Formation )
     self:F2( { Formation, Speed } )
 
     local RoutePoint = {}
@@ -528,7 +528,7 @@ do -- COORDINATE
     RoutePoint.action = Formation or ""
 
 
-    RoutePoint.speed = Speed / 3.6
+    RoutePoint.speed = ( Speed or 999 ) / 3.6
     RoutePoint.speed_locked = true
 
     --  ["task"] =
@@ -733,16 +733,26 @@ do -- COORDINATE
     return ""
   end
 
-  --- Provides a Lat Lon string
+  --- Provides a Lat Lon string in Degree Minute Second format.
   -- @param #COORDINATE self
   -- @param Core.Settings#SETTINGS Settings (optional) Settings
-  -- @return #string The LL Text
-  function COORDINATE:ToStringLL( Settings ) --R2.1 Fixes issue #424.
+  -- @return #string The LL DMS Text
+  function COORDINATE:ToStringLLDMS( Settings ) 
 
     local LL_Accuracy = Settings and Settings.LL_Accuracy or _SETTINGS.LL_Accuracy
-    local LL_DMS = Settings and Settings.LL_DMS or _SETTINGS.LL_DMS
     local lat, lon = coord.LOtoLL( self:GetVec3() )
-    return "LL, " .. UTILS.tostringLL( lat, lon, LL_Accuracy, LL_DMS )
+    return "LL DMS, " .. UTILS.tostringLL( lat, lon, LL_Accuracy, true )
+  end
+
+  --- Provides a Lat Lon string in Degree Decimal Minute format.
+  -- @param #COORDINATE self
+  -- @param Core.Settings#SETTINGS Settings (optional) Settings
+  -- @return #string The LL DDM Text
+  function COORDINATE:ToStringLLDDM( Settings )
+
+    local LL_Accuracy = Settings and Settings.LL_Accuracy or _SETTINGS.LL_Accuracy
+    local lat, lon = coord.LOtoLL( self:GetVec3() )
+    return "LL DDM, " .. UTILS.tostringLL( lat, lon, LL_Accuracy, false )
   end
 
   --- Provides a MGRS string
@@ -798,7 +808,7 @@ do -- COORDINATE
   -- @return #string The coordinate Text in the configured coordinate system.
   function COORDINATE:ToString( Controllable, Settings, Task ) -- R2.2
   
-    self:E( { Controllable = Controllable } )
+    self:F( { Controllable = Controllable and Controllable:GetName() } )
 
     local Settings = Settings or ( Controllable and _DATABASE:GetPlayerSettings( Controllable:GetPlayerName() ) ) or _SETTINGS
 
@@ -828,26 +838,41 @@ do -- COORDINATE
 
     if ModeA2A then
       if Settings:IsA2A_BRAA()  then
-        local Coordinate = Controllable:GetCoordinate()
-        return self:ToStringBRA( Coordinate, Settings ) 
+        if Controllable then
+          local Coordinate = Controllable:GetCoordinate()
+          return self:ToStringBRA( Coordinate, Settings ) 
+        else
+          return self:ToStringMGRS( Settings )
+        end
       end
       if Settings:IsA2A_BULLS() then
         local Coalition = Controllable:GetCoalition()
         return self:ToStringBULLS( Coalition, Settings )
       end
-      if Settings:IsA2A_LL()  then
-        return self:ToStringLL( Settings )
+      if Settings:IsA2A_LL_DMS()  then
+        return self:ToStringLLDMS( Settings )
+      end
+      if Settings:IsA2A_LL_DDM()  then
+        return self:ToStringLLDDM( Settings )
       end
       if Settings:IsA2A_MGRS() then
         return self:ToStringMGRS( Settings )
       end
     else
       if Settings:IsA2G_BR()  then
-        local Coordinate = Controllable:GetCoordinate()
-        return Controllable and self:ToStringBR( Coordinate, Settings ) or self:ToStringMGRS( Settings )
+        -- If no Controllable is given to calculate the BR from, then MGRS will be used!!!
+        if Controllable then
+          local Coordinate = Controllable:GetCoordinate()
+          return Controllable and self:ToStringBR( Coordinate, Settings ) or self:ToStringMGRS( Settings )
+        else
+          return self:ToStringMGRS( Settings )
+        end
       end
-      if Settings:IsA2G_LL()  then
-        return self:ToStringLL( Settings )
+      if Settings:IsA2G_LL_DMS()  then
+        return self:ToStringLLDMS( Settings )
+      end
+      if Settings:IsA2G_LL_DDM()  then
+        return self:ToStringLLDDM( Settings )
       end
       if Settings:IsA2G_MGRS() then
         return self:ToStringMGRS( Settings )

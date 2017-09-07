@@ -14,7 +14,7 @@
 -- @extends Wrapper.Identifiable#IDENTIFIABLE
 
 --- @type POSITIONABLE
--- @extends POSITIONABLE.__
+-- @extends Wrapper.Identifiable#IDENTIFIABLE
 
 
 --- # POSITIONABLE class, extends @{Identifiable#IDENTIFIABLE}
@@ -156,7 +156,6 @@ end
 --- Returns a COORDINATE object indicating the point in 3D of the POSITIONABLE within the mission.
 -- @param Wrapper.Positionable#POSITIONABLE self
 -- @return Core.Point#COORDINATE The COORDINATE of the POSITIONABLE.
--- @return #nil The POSITIONABLE is not existing or alive.  
 function POSITIONABLE:GetCoordinate()
   self:F2( self.PositionableName )
 
@@ -165,7 +164,7 @@ function POSITIONABLE:GetCoordinate()
   if DCSPositionable then
     local PositionableVec3 = self:GetPositionVec3()
     
-    local PositionableCoordinate = POINT_VEC3:NewFromVec3( PositionableVec3 )
+    local PositionableCoordinate = COORDINATE:NewFromVec3( PositionableVec3 )
     PositionableCoordinate:SetHeading( self:GetHeading() )
   
     self:T2( PositionableCoordinate )
@@ -766,11 +765,18 @@ end
 
 --- Smoke the POSITIONABLE.
 -- @param #POSITIONABLE self
-function POSITIONABLE:Smoke( SmokeColor, Range )
+-- @param Utilities.Utils#SMOKECOLOR SmokeColor The color to smoke to positionable.
+-- @param #number Range The range in meters to randomize the smoking around the positionable.
+-- @param #number AddHeight The height in meters to add to the altitude of the positionable.
+function POSITIONABLE:Smoke( SmokeColor, Range, AddHeight )
   self:F2()
   if Range then
-    trigger.action.smoke( self:GetRandomVec3( Range ), SmokeColor )
+    local Vec3 = self:GetRandomVec3( Range )
+    Vec3.y = Vec3.y + AddHeight or 0
+    trigger.action.smoke( Vec3, SmokeColor )
   else
+    local Vec3 = self:GetVec3()
+    Vec3.y = Vec3.y + AddHeight or 0
     trigger.action.smoke( self:GetVec3(), SmokeColor )
   end
   

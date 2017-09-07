@@ -120,7 +120,7 @@
 --   * @{#AI_A2A_PATROL.SetDetectionOn}(): Set the detection on. The AI will detect for targets.
 --   * @{#AI_A2A_PATROL.SetDetectionOff}(): Set the detection off, the AI will not detect for targets. The existing target list will NOT be erased.
 -- 
--- The detection frequency can be set with @{#AI_A2A_PATROL.SetDetectionInterval}( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
+-- The detection frequency can be set with @{#AI_A2A_PATROL.SetRefreshTimeInterval}( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
 -- Use the method @{#AI_A2A_PATROL.GetDetectedUnits}() to obtain a list of the @{Unit}s detected by the AI.
 -- 
 -- The detection can be filtered to potential targets in a specific zone.
@@ -317,13 +317,12 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 -- This statis method is called from the route path within the last task at the last waaypoint of the Controllable.
 -- Note that this method is required, as triggers the next route when patrolling for the Controllable.
-function AI_A2A_PATROL.PatrolRoute( AIGroup )
+function AI_A2A_PATROL.PatrolRoute( AIGroup, Fsm )
 
-  AIGroup:E( { "AI_A2A_PATROL.PatrolRoute:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_PATROL.PatrolRoute:", AIGroup:GetName() } )
 
   if AIGroup:IsAlive() then
-    local _AI_A2A_Patrol = AIGroup:GetState( AIGroup, "AI_A2A_PATROL" ) -- #AI_A2A_PATROL
-    _AI_A2A_Patrol:Route()
+    Fsm:Route()
   end
   
 end
@@ -360,7 +359,7 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     local ToTargetSpeed = math.random( self.PatrolMinSpeed, self.PatrolMaxSpeed )
     
     --- Create a route point of type air.
-    local ToPatrolRoutePoint = ToTargetCoord:RoutePointAir( 
+    local ToPatrolRoutePoint = ToTargetCoord:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -372,18 +371,13 @@ function AI_A2A_PATROL:onafterRoute( AIGroup, From, Event, To )
     PatrolRoute[#PatrolRoute+1] = ToPatrolRoutePoint
     
     local Tasks = {}
-    Tasks[#Tasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_PATROL.PatrolRoute" )
-    
+    Tasks[#Tasks+1] = AIGroup:TaskFunction( "AI_A2A_PATROL.PatrolRoute", self )
     PatrolRoute[#PatrolRoute].task = AIGroup:TaskCombo( Tasks )
     
-    --- Do a trick, link the NewPatrolRoute function of the PATROLGROUP object to the AIControllable in a temporary variable ...
-    AIGroup:SetState( AIGroup, "AI_A2A_PATROL", self )
-
     AIGroup:OptionROEReturnFire()
     AIGroup:OptionROTPassiveDefense()
 
-    --- NOW ROUTE THE GROUP!
-    AIGroup:SetTask( AIGroup:TaskRoute( PatrolRoute ), 0.5 )
+    AIGroup:Route( PatrolRoute, 0.5 )
   end
 
 end
@@ -391,7 +385,7 @@ end
 --- @param Wrapper.Group#GROUP AIGroup
 function AI_A2A_PATROL.Resume( AIGroup )
 
-  AIGroup:E( { "AI_A2A_PATROL.Resume:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_PATROL.Resume:", AIGroup:GetName() } )
   if AIGroup:IsAlive() then
     local _AI_A2A = AIGroup:GetState( AIGroup, "AI_A2A" ) -- #AI_A2A
       _AI_A2A:__Reset( 1 )

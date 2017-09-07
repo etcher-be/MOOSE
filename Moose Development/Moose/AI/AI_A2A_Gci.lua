@@ -311,13 +311,12 @@ end
 -- todo: need to fix this global function
 
 --- @param Wrapper.Group#GROUP AIControllable
-function AI_A2A_GCI.InterceptRoute( AIGroup )
+function AI_A2A_GCI.InterceptRoute( AIGroup, Fsm )
 
-  AIGroup:E( { "AI_A2A_GCI.InterceptRoute:", AIGroup:GetName() } )
+  AIGroup:F( { "AI_A2A_GCI.InterceptRoute:", AIGroup:GetName() } )
   
   if AIGroup:IsAlive() then
-    local _AI_A2A_GCI = AIGroup:GetState( AIGroup, "AI_A2A_GCI" ) -- AI.AI_Cap#AI_A2A_GCI
-    _AI_A2A_GCI:__Engage( 0.5 )
+    Fsm:__Engage( 0.5 )
   
     --local Task = AIGroup:TaskOrbitCircle( 4000, 400 )
     --AIGroup:SetTask( Task )
@@ -361,14 +360,13 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
   
   local FirstAttackUnit = self.AttackSetUnit:GetFirst()
   
-  if FirstAttackUnit then
+  if FirstAttackUnit and FirstAttackUnit:IsAlive() then
 
     if AIGroup:IsAlive() then
   
       local EngageRoute = {}
       
       local CurrentCoord = AIGroup:GetCoordinate()
-            
   
       --- Calculate the target route point.
       
@@ -381,7 +379,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
       local ToInterceptAngle = CurrentCoord:GetAngleDegrees( CurrentCoord:GetDirectionVec3( ToTargetCoord ) )
       
       --- Create a route point of type air.
-      local ToPatrolRoutePoint = CurrentCoord:Translate( 10000, ToInterceptAngle ):RoutePointAir( 
+      local ToPatrolRoutePoint = CurrentCoord:Translate( 15000, ToInterceptAngle ):WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -404,11 +402,7 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
           AttackTasks[#AttackTasks+1] = AIGroup:TaskAttackUnit( AttackUnit )
         end
       end
-  
-      --- Now we're going to do something special, we're going to call a function from a waypoint action at the AIControllable...
-      AIGroup:WayPointInitialize( EngageRoute )
-      
-      
+        
       if #AttackTasks == 0 then
         self:E("No targets found -> Going RTB")
         self:Return()
@@ -417,17 +411,11 @@ function AI_A2A_GCI:onafterEngage( AIGroup, From, Event, To, AttackSetUnit )
         AIGroup:OptionROEOpenFire()
         AIGroup:OptionROTPassiveDefense()
 
-        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( 1, 1, "AI_A2A_GCI.InterceptRoute" )
-        --AttackTasks[#AttackTasks+1] = AIGroup:TaskOrbitCircle( AIGroup:GetHeight(), self.EngageMinSpeed )
+        AttackTasks[#AttackTasks+1] = AIGroup:TaskFunction( "AI_A2A_GCI.InterceptRoute", self )
         EngageRoute[#EngageRoute].task = AIGroup:TaskCombo( AttackTasks )
-        
-        --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-        AIGroup:SetState( AIGroup, "AI_A2A_GCI", self )
       end
       
-      --- NOW ROUTE THE GROUP!
-      --AIGroup:ClearTasks()
-      AIGroup:SetTask( AIGroup:TaskRoute( EngageRoute ), 1 )
+      AIGroup:Route( EngageRoute, 0.5 )
     
     end
   else

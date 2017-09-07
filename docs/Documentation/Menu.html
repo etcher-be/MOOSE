@@ -194,6 +194,7 @@ On top, MOOSE implements <strong>variable parameter</strong> passing for command
 <hr/>
 <p>The MENU<em>COMMAND</em>BASE class defines the main MENU class where other MENU COMMAND_ 
 classes are derived from, in order to set commands.</p>
+
 </td>
 		</tr>
 		<tr>
@@ -371,6 +372,24 @@ classes are derived from, in order to set commands.</p>
 <p>Constructor</p>
 </td>
 		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(MENU_COMMAND_BASE).SetCommandMenuArguments">MENU_COMMAND_BASE.SetCommandMenuArguments(#, self, CommandMenuArguments)</a></td>
+		<td class="summary">
+<p>This sets the new command arguments of a menu, 
+so that if a menu is regenerated, or if command arguments change,
+that the arguments set for the menu are loosely coupled with the menu itself!!!
+If the arguments change, no new menu needs to be generated if the menu text is the same!!!</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(MENU_COMMAND_BASE).SetCommandMenuFunction">MENU_COMMAND_BASE.SetCommandMenuFunction(#, self, CommandMenuFunction)</a></td>
+		<td class="summary">
+<p>This sets the new command function of a menu, 
+so that if a menu is regenerated, or if command function changes,
+that the function set for the menu is loosely coupled with the menu itself!!!
+If the function changes, no new menu needs to be generated if the menu text is the same!!!</p>
+</td>
+		</tr>
 	</table>
 
 			<h2><a id="#(MENU_GROUP)">Type <code>MENU_GROUP</code></a></h2>
@@ -424,7 +443,7 @@ classes are derived from, in order to set commands.</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(MENU_GROUP).RemoveSubMenus">MENU_GROUP:RemoveSubMenus(MenuTime, MenuTag, Menutag)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(MENU_GROUP).RemoveSubMenus">MENU_GROUP:RemoveSubMenus(MenuTime, MenuTag)</a></td>
 		<td class="summary">
 <p>Removes the sub menus recursively of this MENU_GROUP.</p>
 </td>
@@ -728,6 +747,7 @@ Using this object reference, you can then remove ALL the menus and submenus unde
 <hr/>
 <p>The MENU<em>COMMAND</em>BASE class defines the main MENU class where other MENU COMMAND_ 
 classes are derived from, in order to set commands.</p>
+
 
 </dd>
 </dl>
@@ -1454,6 +1474,86 @@ ENU<em>COMMAND</em>BASE</p>
 
 </dd>
 </dl>
+		<dl class="function">
+<dt>
+
+<a id="#(MENU_COMMAND_BASE).SetCommandMenuArguments" >
+<strong>MENU_COMMAND_BASE.SetCommandMenuArguments(#, self, CommandMenuArguments)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>This sets the new command arguments of a menu, 
+so that if a menu is regenerated, or if command arguments change,
+that the arguments set for the menu are loosely coupled with the menu itself!!!
+If the arguments change, no new menu needs to be generated if the menu text is the same!!!</p>
+
+		<h3>Parameters</h3>
+		<ul>
+				<li>
+				
+<p><code><em> # </em></code>: 
+ENU<em>COMMAND</em>BASE</p>
+
+				</li>
+				<li>
+				
+<p><code><em> self </em></code>: </p>
+
+				</li>
+				<li>
+				
+<p><code><em> CommandMenuArguments </em></code>: </p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(MENU_COMMAND_BASE)">#MENU<em>COMMAND</em>BASE</a>:</em></p>
+
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(MENU_COMMAND_BASE).SetCommandMenuFunction" >
+<strong>MENU_COMMAND_BASE.SetCommandMenuFunction(#, self, CommandMenuFunction)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>This sets the new command function of a menu, 
+so that if a menu is regenerated, or if command function changes,
+that the function set for the menu is loosely coupled with the menu itself!!!
+If the function changes, no new menu needs to be generated if the menu text is the same!!!</p>
+
+		<h3>Parameters</h3>
+		<ul>
+				<li>
+				
+<p><code><em> # </em></code>: 
+ENU<em>COMMAND</em>BASE</p>
+
+				</li>
+				<li>
+				
+<p><code><em> self </em></code>: </p>
+
+				</li>
+				<li>
+				
+<p><code><em> CommandMenuFunction </em></code>: </p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(MENU_COMMAND_BASE)">#MENU<em>COMMAND</em>BASE</a>:</em></p>
+
+
+</dd>
+</dl>
 
 			<h2><a id="#(MENU_GROUP)" >Type <code>MENU_GROUP</code></a></h2>
 				<h3>Field(s)</h3>
@@ -1619,7 +1719,7 @@ A Tag or Key to filter the menus to be refreshed with the Tag set.</p>
 <dt>
 
 <a id="#(MENU_GROUP).RemoveSubMenus" >
-<strong>MENU_GROUP:RemoveSubMenus(MenuTime, MenuTag, Menutag)</strong>
+<strong>MENU_GROUP:RemoveSubMenus(MenuTime, MenuTag)</strong>
 </a>
 </dt>
 <dd>
@@ -1637,11 +1737,6 @@ A Tag or Key to filter the menus to be refreshed with the Tag set.</p>
 				
 <p><code><em> MenuTag </em></code>: 
 A Tag or Key to filter the menus to be refreshed with the Tag set.</p>
-
-				</li>
-				<li>
-				
-<p><code><em> Menutag </em></code>: </p>
 
 				</li>
 		</ul>
@@ -1792,6 +1887,9 @@ An argument for the function.</p>
 <dd>
 	
 
+
+	
+<p>self:E({Path=Path}) </p>
 
 </dd>
 </dl>
