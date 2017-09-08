@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170905_2148' )
+env.info( 'Moose Generation Timestamp: 20170908_1038' )
 
 --- Various routines
 -- @module routines
@@ -19226,14 +19226,19 @@ function CONTROLLABLE:SetTask( DCSTask, WaitTime )
 
   if DCSControllable then
 
+    local DCSControllableName = self:GetName()
 
     -- When a controllable SPAWNs, it takes about a second to get the controllable in the simulator. Setting tasks to unspawned controllables provides unexpected results.
     -- Therefore we schedule the functions to set the mission and options for the Controllable.
     -- Controller.setTask( Controller, DCSTask )
 
     local function SetTask( Controller, DCSTask )
-      local Controller = self:_GetController()
-      Controller:setTask( DCSTask )
+      if self and self:IsAlive() then
+        local Controller = self:_GetController()
+        Controller:setTask( DCSTask )
+      else
+        BASE:E( DCSControllableName .. " is not alive anymore. Cannot set DCSTask " .. DCSTask )
+      end
     end
 
     if not WaitTime or WaitTime == 0 then
@@ -33399,9 +33404,11 @@ do -- DETECTION_BASE
     
       DetectedItem.FriendliesNearBy = nil
 
-      if DetectedUnit then
+      -- We need to ensure that the DetectedUnit is alive!
+      if DetectedUnit and DetectedUnit:IsAlive() then
       
-        local InterceptCoord = ReportGroupData.InterceptCoord or DetectedUnit:GetCoordinate()
+        local DetectedUnitCoord = DetectedUnit:GetCoordinate()
+        local InterceptCoord = ReportGroupData.InterceptCoord or DetectedUnitCoord
         
         local SphereSearch = {
          id = world.VolumeType.SPHERE,
@@ -33496,9 +33503,7 @@ do -- DETECTION_BASE
                 DetectedItem.FriendliesNearBy = DetectedItem.FriendliesNearBy or {}
                 DetectedItem.FriendliesNearBy[PlayerUnitName] = PlayerUnit
       
-                local CenterCoord = DetectedUnit:GetCoordinate()
-  
-                local Distance = CenterCoord:Get2DDistance( PlayerUnit:GetCoordinate() )
+                local Distance = DetectedUnitCoord:Get2DDistance( PlayerUnit:GetCoordinate() )
                 DetectedItem.FriendliesDistance = DetectedItem.FriendliesDistance or {}
                 DetectedItem.FriendliesDistance[Distance] = PlayerUnit
 
@@ -34613,13 +34618,15 @@ do -- DETECTION_AREAS
     local DistanceRecce = 1000000000 -- Units are not further than 1000000 km away from an area :-)
     
     for RecceGroupName, RecceGroup in pairs( self.DetectionSetGroup:GetSet() ) do
-      for RecceUnit, RecceUnit in pairs( RecceGroup:GetUnits() ) do
-        if RecceUnit:IsActive() then
-          local RecceUnitCoord = RecceUnit:GetCoordinate()
-          local Distance = RecceUnitCoord:Get2DDistance( self:GetDetectedItemCoordinate( DetectedItem.Index ) )
-          if Distance < DistanceRecce then
-            DistanceRecce = Distance
-            NearestRecce = RecceUnit
+      if RecceGroup and RecceGroup:IsAlive() then
+        for RecceUnit, RecceUnit in pairs( RecceGroup:GetUnits() ) do
+          if RecceUnit:IsActive() then
+            local RecceUnitCoord = RecceUnit:GetCoordinate()
+            local Distance = RecceUnitCoord:Get2DDistance( self:GetDetectedItemCoordinate( DetectedItem.Index ) )
+            if Distance < DistanceRecce then
+              DistanceRecce = Distance
+              NearestRecce = RecceUnit
+            end
           end
         end
       end
