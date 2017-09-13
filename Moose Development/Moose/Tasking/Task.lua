@@ -746,7 +746,8 @@ function TASK:SetPlannedMenuForGroup( TaskGroup, MenuTime )
   
   if not Mission:IsGroupAssigned( TaskGroup ) then
     self:F( { "Replacing Join Task menu" } )
-    local JoinTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Join Task" ), TaskTypeMenu, self.MenuAssignToGroup, self, TaskGroup  ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
+    local JoinTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Join Task" ), TaskTypeMenu, self.MenuAssignToGroup, self, TaskGroup ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
+    local MarkTaskMenu = MENU_GROUP_COMMAND:New( TaskGroup, string.format( "Mark Task on Map" ), TaskTypeMenu, self.MenuMarkToGroup, self, TaskGroup ):SetTime( MenuTime ):SetTag( "Tasking" ):SetRemoveParent( true )
   end
       
   return self
@@ -854,9 +855,59 @@ end
 -- @param Wrapper.Group#GROUP TaskGroup
 function TASK:MenuAssignToGroup( TaskGroup )
 
-  self:E( "Assigned menu selected")
+  self:E( "Join Task menu selected")
   
   self:AssignToGroup( TaskGroup )
+end
+
+--- @param #TASK self
+-- @param Wrapper.Group#GROUP TaskGroup
+function TASK:MenuMarkToGroup( TaskGroup )
+
+  self:E( "Mark Task menu selected")
+
+  self:UpdateTaskInfo()
+  
+  local Report = REPORT:New():SetIndent( 0 )
+
+  -- List the name of the Task.
+  local Name = self:GetName()
+  Report:Add( Name .. ": " .. self:GetTaskBriefing() )
+
+  for TaskInfoID, TaskInfo in pairs( self.TaskInfo, function( t, a, b ) return t[a].TaskInfoOrder < t[b].TaskInfoOrder end ) do
+    
+    local TaskInfoIDText = "" --string.format( "%s: ", TaskInfoID )
+
+    if type( TaskInfo.TaskInfoText ) == "string" then
+      Report:Add( TaskInfoIDText .. TaskInfo.TaskInfoText )
+    elseif type(TaskInfo) == "table" then
+      if TaskInfoID == "Coordinates" then
+        local ToCoordinate = TaskInfo.TaskInfoText -- Core.Point#COORDINATE
+        Report:Add( TaskInfoIDText .. ToCoordinate:ToString() )
+      else
+      end
+    end
+    
+  end
+
+  self:E("ok5")
+
+  local Coordinate = self:GetInfo( "Coordinates" ) -- Core.Point#COORDINATE
+  
+  local Velocity = self.TargetSetUnit:GetVelocity()
+  local Heading = self.TargetSetUnit:GetHeading()
+  
+  Coordinate:SetHeading( Heading )
+  Coordinate:SetVelocity( Velocity )
+  
+  Report:Add( "Targets are" .. Coordinate:GetMovingText() ..  "." )
+
+  local MarkText = Report:Text( ", " ) 
+  
+  self:F( { Coordinate = Coordinate, MarkText = MarkText } )
+  
+  Coordinate:MarkToGroup( MarkText, TaskGroup )
+  --Coordinate:MarkToAll( Briefing )
 end
 
 --- Report the task status.
@@ -866,7 +917,7 @@ function TASK:MenuTaskStatus( TaskGroup )
   local ReportText = self:ReportDetails( TaskGroup )
   
   self:T( ReportText )
-  self:GetMission():GetCommandCenter():MessageToGroup( ReportText, TaskGroup )
+  self:GetMission():GetCommandCenter():MessageTypeToGroup( ReportText, TaskGroup, MESSAGE.Type.Detailed )
 
 end
 
@@ -1031,6 +1082,17 @@ function TASK:SetInfo( TaskInfo, TaskInfoText, TaskInfoOrder )
   self.TaskInfo[TaskInfo] = self.TaskInfo[TaskInfo] or {}
   self.TaskInfo[TaskInfo].TaskInfoText = TaskInfoText
   self.TaskInfo[TaskInfo].TaskInfoOrder = TaskInfoOrder
+end
+
+--- Gets the Information of the Task
+-- @param #TASK self
+-- @param #string TaskInfo The key and title of the task information.
+-- @return #string TaskInfoText The Task info text.
+function TASK:GetInfo( TaskInfo )
+
+  self.TaskInfo = self.TaskInfo or {}
+  self.TaskInfo[TaskInfo] = self.TaskInfo[TaskInfo] or {}
+  return self.TaskInfo[TaskInfo].TaskInfoText
 end
 
 --- Gets the Type of the Task

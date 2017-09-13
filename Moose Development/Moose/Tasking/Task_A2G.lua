@@ -141,9 +141,9 @@ do -- TASK_A2G
       else
         local TargetUnit = Task.TargetSetUnit:GetFirst() -- Wrapper.Unit#UNIT
         if TargetUnit then
-          local Coordinate = TargetUnit:GetCoordinate()
+          local Coordinate = TargetUnit:GetPointVec3()
           self:T( { TargetCoordinate = Coordinate, Coordinate:GetX(), Coordinate:GetY(), Coordinate:GetZ() } )
-          Task:SetTargetCoordinate( TargetUnit:GetCoordinate(), TaskUnit )
+          Task:SetTargetCoordinate( Coordinate, TaskUnit )
         end
         self:__RouteToTargetPoint( 0.1 )
       end
@@ -325,11 +325,9 @@ do -- TASK_A2G_SEAD
     
     self:SetBriefing( 
       TaskBriefing or 
-      "Execute a Suppression of Enemy Air Defenses.\n"
+      "Execute a Suppression of Enemy Air Defenses." 
     )
 
-    self:UpdateTaskInfo()
-    
     return self
   end 
 
@@ -339,7 +337,13 @@ do -- TASK_A2G_SEAD
     local TargetCoordinate = self.Detection and self.Detection:GetDetectedItemCoordinate( self.DetectedItemIndex ) or self.TargetSetUnit:GetFirst():GetCoordinate() 
     self:SetInfo( "Coordinates", TargetCoordinate, 0 )
 
-    self:SetInfo( "Threat", "[" .. string.rep(  "■", self.Detection and self.Detection:GetDetectedItemThreatLevel( self.DetectedItemIndex ) or self.TargetSetUnit:CalculateThreatLevelA2G() ) .. "]", 11 )
+    local ThreatLevel, ThreatText
+    if self.Detection then
+      ThreatLevel, ThreatText = self.Detection:GetDetectedItemThreatLevel( self.DetectedItemIndex )
+    else
+      ThreatLevel, ThreatText = self.TargetSetUnit:CalculateThreatLevelA2G()
+    end
+    self:SetInfo( "Threat", ThreatText .. " [" .. string.rep(  "■", ThreatLevel ) .. "]", 11 )
 
     if self.Detection then
       local DetectedItemsCount = self.TargetSetUnit:Count()
@@ -468,10 +472,8 @@ do -- TASK_A2G_BAI
     
     self:SetBriefing( 
       TaskBriefing or 
-      "Execute a Battlefield Air Interdiction of a group of enemy targets.\n"
+      "Execute a Battlefield Air Interdiction of a group of enemy targets."
     )
-
-    self:UpdateTaskInfo()
     
     return self
   end
@@ -483,7 +485,13 @@ do -- TASK_A2G_BAI
     local TargetCoordinate = self.Detection and self.Detection:GetDetectedItemCoordinate( self.DetectedItemIndex ) or self.TargetSetUnit:GetFirst():GetCoordinate() 
     self:SetInfo( "Coordinates", TargetCoordinate, 0 )
 
-    self:SetInfo( "Threat", "[" .. string.rep(  "■", self.Detection and self.Detection:GetDetectedItemThreatLevel( self.DetectedItemIndex ) or self.TargetSetUnit:CalculateThreatLevelA2G() ) .. "]", 11 )
+    local ThreatLevel, ThreatText
+    if self.Detection then
+      ThreatLevel, ThreatText = self.Detection:GetDetectedItemThreatLevel( self.DetectedItemIndex )
+    else
+      ThreatLevel, ThreatText = self.TargetSetUnit:CalculateThreatLevelA2G()
+    end
+    self:SetInfo( "Threat", ThreatText .. " [" .. string.rep(  "■", ThreatLevel ) .. "]", 11 )
 
     if self.Detection then
       local DetectedItemsCount = self.TargetSetUnit:Count()
@@ -612,11 +620,10 @@ do -- TASK_A2G_CAS
     
     self:SetBriefing( 
       TaskBriefing or 
-      "Execute a Close Air Support for a group of enemy targets.\n" ..
-      "Beware of friendlies at the vicinity!\n"
+      "Execute a Close Air Support for a group of enemy targets. " ..
+      "Beware of friendlies at the vicinity! "
     )
 
-    self:UpdateTaskInfo()
     
     return self
   end 
@@ -626,7 +633,13 @@ do -- TASK_A2G_CAS
     local TargetCoordinate = self.Detection and self.Detection:GetDetectedItemCoordinate( self.DetectedItemIndex ) or self.TargetSetUnit:GetFirst():GetCoordinate() 
     self:SetInfo( "Coordinates", TargetCoordinate, 0 )
 
-    self:SetInfo( "Threat", "[" .. string.rep(  "■", self.Detection and self.Detection:GetDetectedItemThreatLevel( self.DetectedItemIndex ) or self.TargetSetUnit:CalculateThreatLevelA2G() ) .. "]", 11 )
+    local ThreatLevel, ThreatText
+    if self.Detection then
+      ThreatLevel, ThreatText = self.Detection:GetDetectedItemThreatLevel( self.DetectedItemIndex )
+    else
+      ThreatLevel, ThreatText = self.TargetSetUnit:CalculateThreatLevelA2G()
+    end
+    self:SetInfo( "Threat", ThreatText .. " [" .. string.rep(  "■", ThreatLevel ) .. "]", 11 )
 
     if self.Detection then
       local DetectedItemsCount = self.TargetSetUnit:Count()
