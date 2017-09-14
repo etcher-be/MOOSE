@@ -135,19 +135,21 @@
     <li>When a unit is removed a new unit with a different flight plan is respawned.</li>
     <li>Aircraft can report their status during the route.</li>
     <li>All of the above can be customized by the user if necessary.</li>
-    <li>Can be used on all current (Caucasus, Nevada, Normandy) and future maps.</li>
+    <li>All current (Caucasus, Nevada, Normandy) and future maps are supported.</li>
 </ul>
 
 <p> The RAT class creates an entry in the F10 menu which allows to</p>
 
 <ul>
     <li>Create new groups on-the-fly, i.e. at run time within the mission,</li>
-    <li>Destory specific groups (e.g. if they get stuck or damaged and block a runway),</li>
+    <li>Destroy specific groups (e.g. if they get stuck or damaged and block a runway),</li>
     <li>Request the status of all RAT aircraft or individual groups,</li>
     <li>Place markers at waypoints on the F10 map for each group.</li>
 </ul>
 
 <p>Note that by its very nature, this class is suited best for civil or transport aircraft. However, it also works perfectly fine for military aircraft of any kind.</p>
+
+<p>More of the documentation include some simple examples can be found further down this page.</p>
 
 <hr/>
 
@@ -165,7 +167,7 @@
 
 <h3>Author: <strong><a href="https://forums.eagle.ru/member.php?u=115026">funkyfranky</a></strong></h3>
 
-<h3>Contributions: <strong>Sven Van de Velde (<a href="https://forums.eagle.ru/member.php?u=89536">FlightControl</a>)</strong></h3>
+<h3>Contributions: <strong>Sven van de Velde (<a href="https://forums.eagle.ru/member.php?u=89536">FlightControl</a>)</strong></h3>
 
 <hr/>
 
@@ -236,7 +238,13 @@
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(RAT).New">RAT:New(groupname)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(RAT).MenuName">RAT:MenuName(name)</a></td>
+		<td class="summary">
+<p>Set the name of the F10 submenu.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(RAT).New">RAT:New(groupname, alias)</a></td>
 		<td class="summary">
 <p>Create a new RAT object.</p>
 </td>
@@ -434,7 +442,7 @@
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(RAT)._DeleteMarkers">RAT:_DeleteMarkers(ids)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(RAT)._DeleteMarkers">RAT:_DeleteMarkers()</a></td>
 		<td class="summary">
 <p>Delete all markers on F10 map.</p>
 </td>
@@ -538,13 +546,19 @@
 		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(RAT)._PickDestination">RAT:_PickDestination(destinations, _random)</a></td>
 		<td class="summary">
-<p>Set the destination airport of the AI.</p>
+<p>Pick destination airport.</p>
 </td>
 		</tr>
 		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(RAT)._PlaceMarkers">RAT:_PlaceMarkers(waypoints)</a></td>
 		<td class="summary">
 <p>Place markers of the waypoints.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(RAT)._Random_Gaussian">RAT._Random_Gaussian(x0, sigma, xmin, xmax, self)</a></td>
+		<td class="summary">
+<p>Generate Gaussian pseudo-random numbers.</p>
 </td>
 		</tr>
 		<tr>
@@ -635,6 +649,12 @@
 		<td class="name" nowrap="nowrap"><a href="##(RAT).airports_map">RAT.airports_map</a></td>
 		<td class="summary">
 <p>All airports available on current map (Caucasus, Nevada, Normandy, ...).</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(RAT).alias">RAT.alias</a></td>
+		<td class="summary">
+<p>Alias for spawned group.</p>
 </td>
 		</tr>
 		<tr>
@@ -749,6 +769,12 @@
 		<td class="name" nowrap="nowrap"><a href="##(RAT).mindist">RAT.mindist</a></td>
 		<td class="summary">
 <p>Min distance from departure to destination in meters. Default 5 km.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(RAT).ngroups">RAT.ngroups</a></td>
+		<td class="summary">
+<p>Number of groups to be spawned in total.</p>
 </td>
 		</tr>
 		<tr>
@@ -876,7 +902,7 @@
 
 <ul>
     <li>A specific departure and/or destination airport can be chosen.</li>
-    <li>Valid coalitions can be set, e.g. only red, blue or neutral, all three „colours“.</li>
+    <li>Valid coalitions can be set, e.g. only red, blue or neutral, all three ï¿½coloursï¿½.</li>
     <li>It is possible to start in air within a zone defined in the mission editor or within a zone above an airport of the map.</li>
 </ul>
 
@@ -885,7 +911,7 @@
 <p><img src="..\Presentations\RAT\RAT_Flight_Plan.png" alt="Process"/></p>
 
 <ul>
-    <li>A general flight plan has five main airborn segments: Climb, cruise, descent, holding and final approach.</li>
+    <li>A general flight plan has five main airborne segments: Climb, cruise, descent, holding and final approach.</li>
     <li>Events monitored during the flight are: birth, engine-start, take-off, landing and engine-shutdown.</li>
     <li>The default flight level (FL) is set to ~FL200, i.e. 20000 feet ASL but randomized for each aircraft.
     Service ceiling of aircraft type is into account for max FL as well as the distance between departure and destination.</li>
@@ -910,7 +936,7 @@
     <li>Activate the "LATE ACTIVATION" tick box. Note that this aircraft will not be spawned itself but serves a template for each RAT aircraft spawned when the mission starts. </li>
 </ul>
 
-<p>Voilà, your already done!</p>
+<p>Voilï¿½, your already done!</p>
 
 <p>Optionally, you can set a specific livery for the aircraft or give it some weapons.
 However, the aircraft will by default not engage any enemies. Think of them as beeing on a peaceful or ferry mission.</p>
@@ -1165,20 +1191,51 @@ Turn journey on=true or off=false. If no value is given switch=true.</p>
 		<dl class="function">
 <dt>
 
+<a id="#(RAT).MenuName" >
+<strong>RAT:MenuName(name)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Set the name of the F10 submenu.</p>
+
+	
+<p>Default is the name of the template group.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em>#string name </em></code>: 
+Submenu name.</p>
+
+				</li>
+		</ul>
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(RAT).New" >
-<strong>RAT:New(groupname)</strong>
+<strong>RAT:New(groupname, alias)</strong>
 </a>
 </dt>
 <dd>
 	
 <p>Create a new RAT object.</p>
 
-		<h3>Parameter</h3>
+		<h3>Parameters</h3>
 		<ul>
 				<li>
 				
 <p><code><em>#string groupname </em></code>: 
 Name of the group as defined in the mission editor. This group is serving as a template for all spawned units.</p>
+
+				</li>
+				<li>
+				
+<p><code><em>#string alias </em></code>: 
+(Optional) Alias of the group. This is and optional parameter but must(!) be used if the same template group is used for more than one RAT object.  </p>
 
 				</li>
 		</ul>
@@ -1197,8 +1254,11 @@ If the group does not exist in the mission editor.</p>
 
 				</li>
 			</ol>
-			<h3>Usage:</h3>
-		<pre class="example"><code>yak:RAT("RAT_YAK") will create a RAT object called "yak". The template group in the mission editor must have the name "RAT_YAK".</code></pre>
+			<h3>Usages:</h3>
+		<ul>
+			<li><pre class="example"><code>yak1:RAT("RAT_YAK") will create a RAT object called "yak1". The template group in the mission editor must have the name "RAT_YAK".</code></pre></li>
+			<li><pre class="example"><code>yak2:RAT("RAT_YAK", "Yak2") will create a RAT object "yak2". The template group in the mission editor must have the name "RAT_YAK" but the group will be called "Yak2" in e.g. the F10 menu.</code></pre></li>
+		</ul>
 
 </dd>
 </dl>
@@ -1703,7 +1763,7 @@ Interval in seconds.</p>
 
 	
 <p>Starting cold at airport, starting hot at airport, starting at runway, starting in the air.
-Default is "takeoff-hot" for a start at airport with engines already running.</p>
+Default is "takeoff-coldorhot". So there is a 50% chance that the aircraft starts with cold engines and 50% that it starts with hot engines. </p>
 
 		<h3>Parameter</h3>
 		<ul>
@@ -1767,7 +1827,7 @@ Type can be "takeoff-cold" or "cold", "takeoff-hot" or "hot", "takeoff-runway" o
 				<li>
 				
 <p><code><em>#boolean message </em></code>: 
-(Optional) Send message if true.</p>
+(Optional) Send message with report to all if true.</p>
 
 				</li>
 				<li>
@@ -1973,22 +2033,13 @@ true turn messages on, false=off.</p>
 <dt>
 
 <a id="#(RAT)._DeleteMarkers" >
-<strong>RAT:_DeleteMarkers(ids)</strong>
+<strong>RAT:_DeleteMarkers()</strong>
 </a>
 </dt>
 <dd>
 	
 <p>Delete all markers on F10 map.</p>
 
-		<h3>Parameter</h3>
-		<ul>
-				<li>
-				
-<p><code><em>#table ids </em></code>: 
-(Optional) Table holding the marker IDs to be deleted.</p>
-
-				</li>
-		</ul>
 </dd>
 </dl>
 		<dl class="function">
@@ -2422,7 +2473,7 @@ Departure zone if spawning in air.</p>
 </dt>
 <dd>
 	
-<p>Set the destination airport of the AI.</p>
+<p>Pick destination airport.</p>
 
 	
 <p>If no airport name is given an airport from the coalition is chosen randomly.</p>
@@ -2438,7 +2489,7 @@ Table with destination airports.</p>
 				<li>
 				
 <p><code><em>#boolean _random </em></code>: 
-Optional switch to activate a random selection of airports.</p>
+(Optional) Switch to activate a random selection of airports.</p>
 
 				</li>
 		</ul>
@@ -2472,6 +2523,56 @@ Table with waypoints.</p>
 
 				</li>
 		</ul>
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(RAT)._Random_Gaussian" >
+<strong>RAT._Random_Gaussian(x0, sigma, xmin, xmax, self)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Generate Gaussian pseudo-random numbers.</p>
+
+		<h3>Parameters</h3>
+		<ul>
+				<li>
+				
+<p><code><em>#number x0 </em></code>: 
+Expectation value of distribution.</p>
+
+				</li>
+				<li>
+				
+<p><code><em>#number sigma </em></code>: 
+(Optional) Standard deviation. Default 10.</p>
+
+				</li>
+				<li>
+				
+<p><code><em>#number xmin </em></code>: 
+(Optional) Lower cut-off value.</p>
+
+				</li>
+				<li>
+				
+<p><code><em>#number xmax </em></code>: 
+(Optional) Upper cut-off value.</p>
+
+				</li>
+				<li>
+				
+<p><code><em> self </em></code>: </p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em>#number:</em>
+Gaussian random number.</p>
+
 </dd>
 </dl>
 		<dl class="function">
@@ -2734,7 +2835,13 @@ Destination airbase.</p>
 				<li>
 				
 <p><em>#table:</em>
-Table of flight plan waypoints. </p>
+Table of flight plan waypoints.</p>
+
+				</li>
+				<li>
+				
+<p><em>#nil:</em>
+If no valid departure or destination airport could be found.</p>
 
 				</li>
 			</ol>
@@ -2935,6 +3042,20 @@ Waypoints for DCS task route or spawn template.</p>
 <dd>
 	
 <p>All airports available on current map (Caucasus, Nevada, Normandy, ...).</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+		<em>#string</em>
+<a id="#(RAT).alias" >
+<strong>RAT.alias</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Alias for spawned group.</p>
 
 </dd>
 </dl>
@@ -3201,6 +3322,20 @@ Waypoints for DCS task route or spawn template.</p>
 <dd>
 	
 <p>Min distance from departure to destination in meters. Default 5 km.</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+		<em>#number</em>
+<a id="#(RAT).ngroups" >
+<strong>RAT.ngroups</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Number of groups to be spawned in total.</p>
 
 </dd>
 </dl>
