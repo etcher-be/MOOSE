@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170913_2134' )
+env.info( 'Moose Generation Timestamp: 20170914_1131' )
 
 --- Various routines
 -- @module routines
@@ -22085,10 +22085,10 @@ GROUP.Takeoff = {
 GROUPTEMPLATE = {}
 
 GROUPTEMPLATE.Takeoff = {
-  [GROUP.Takeoff.Air] =     "Turning Point",
-  [GROUP.Takeoff.Runway] =  "TakeOff",
-  [GROUP.Takeoff.Hot] =     "TakeOffParkingHot",
-  [GROUP.Takeoff.Cold] =    "TakeOffParking",
+  [GROUP.Takeoff.Air] =     { "Turning Point", "Turning Point" },
+  [GROUP.Takeoff.Runway] =  { "TakeOff", "From Runway" },
+  [GROUP.Takeoff.Hot] =     { "TakeOffParkingHot", "From Parking Area Hot" },
+  [GROUP.Takeoff.Cold] =    { "TakeOffParking", "From Parking Area" }
 }
 
 --- Create a new GROUP from a DCSGroup
@@ -28291,6 +28291,8 @@ function SPAWN:SpawnAtAirbase( Airbase, Takeoff, TakeoffAltitude ) -- R2.2
         else
           SpawnTemplate.units[UnitID].alt = PointVec3.y + 10
         end
+        SpawnTemplate.units[UnitID].parking = nil
+        SpawnTemplate.units[UnitID].parking_id = nil
         self:T( 'After Translation SpawnTemplate.units['..UnitID..'].x = ' .. SpawnTemplate.units[UnitID].x .. ', SpawnTemplate.units['..UnitID..'].y = ' .. SpawnTemplate.units[UnitID].y )
       end
       
@@ -28302,7 +28304,8 @@ function SPAWN:SpawnAtAirbase( Airbase, Takeoff, TakeoffAltitude ) -- R2.2
         SpawnTemplate.route.points[1].alt = PointVec3.y + 10
         SpawnTemplate.route.points[1].airdromeId = Airbase:GetID()
       end
-      SpawnTemplate.route.points[1].type = GROUPTEMPLATE.Takeoff[Takeoff]
+      SpawnTemplate.route.points[1].type = GROUPTEMPLATE.Takeoff[Takeoff][1] -- type
+      SpawnTemplate.route.points[1].action = GROUPTEMPLATE.Takeoff[Takeoff][2] -- action
       
       SpawnTemplate.x = PointVec3.x
       SpawnTemplate.y = PointVec3.z
