@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170915_1703' )
+env.info( 'Moose Generation Timestamp: 20170915_1940' )
 
 --- Various routines
 -- @module routines
@@ -11278,7 +11278,7 @@ end
 -- @return #number Heading Heading in degrees and speed in mps in case of moving units.
 function SET_UNIT:GetHeading()
 
-  local AvgHeading = nil
+  local HeadingSet = nil
   local MovingCount = 0
 
   for UnitName, UnitData in pairs( self:GetSet() ) do
@@ -11289,15 +11289,20 @@ function SET_UNIT:GetHeading()
     local Velocity = Coordinate:GetVelocity()
     if Velocity ~= 0  then
       local Heading = Coordinate:GetHeading()
-      AvgHeading = AvgHeading and ( AvgHeading + Heading ) or Heading
-      MovingCount = MovingCount + 1
+      if HeadingSet == nil then
+        HeadingSet = Heading
+      else
+        local HeadingDiff = ( HeadingSet - Heading + 180 + 360 ) % 360 - 180
+        HeadingDiff = math.abs( HeadingDiff )
+        if HeadingDiff > 5 then
+          HeadingSet = nil
+          break
+        end
+      end        
     end
   end
 
-  AvgHeading = AvgHeading and ( AvgHeading / MovingCount )
-  
-  self:F( { AvgHeading = AvgHeading } )
-  return AvgHeading
+  return HeadingSet
 
 end
 
@@ -13032,9 +13037,9 @@ do -- COORDINATE
   function COORDINATE:GetHeadingText( Settings )
     local Heading = self:GetHeading()
     if Heading then
-      return string.format( " heading %3.2f °", Heading )
+      return string.format( " bearing %3d°", Heading )
     else
-      return " heading cannot be determined"
+      return " bearing unknown"
     end
   end
 
