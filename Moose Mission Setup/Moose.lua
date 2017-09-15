@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170915_1056' )
+env.info( 'Moose Generation Timestamp: 20170915_1345' )
 
 --- Various routines
 -- @module routines
@@ -12882,7 +12882,7 @@ do -- COORDINATE
   -- @return #string
   function COORDINATE:GetMovingText( Settings )
 
-    return self:GetVelocityText( Settings ) .. self:GetHeadingText( Settings )
+    return self:GetVelocityText( Settings ) .. ", " .. self:GetHeadingText( Settings )
   end
 
 
@@ -12893,6 +12893,7 @@ do -- COORDINATE
   function COORDINATE:GetDirectionVec3( TargetCoordinate )
     return { x = TargetCoordinate.x - self.x, y = TargetCoordinate.y - self.y, z = TargetCoordinate.z - self.z }
   end
+
 
   --- Get a correction in radians of the real magnetic north of the COORDINATE.
   -- @param #COORDINATE self
@@ -53038,18 +53039,19 @@ function TASK:MenuMarkToGroup( TaskGroup )
     local TaskInfoIDText = "" --string.format( "%s: ", TaskInfoID )
 
     if type( TaskInfo.TaskInfoText ) == "string" then
-      Report:Add( TaskInfoIDText .. TaskInfo.TaskInfoText )
-    elseif type(TaskInfo) == "table" then
+      if TaskInfoID == "Targets" then
+      else
+        Report:Add( TaskInfoIDText .. TaskInfo.TaskInfoText )
+      end
+    elseif type( TaskInfo ) == "table" then
       if TaskInfoID == "Coordinates" then
-        local ToCoordinate = TaskInfo.TaskInfoText -- Core.Point#COORDINATE
-        Report:Add( TaskInfoIDText .. ToCoordinate:ToString() )
+        --local ToCoordinate = TaskInfo.TaskInfoText -- Core.Point#COORDINATE
+        --Report:Add( TaskInfoIDText .. ToCoordinate:ToString() )
       else
       end
     end
     
   end
-
-  self:E("ok5")
 
   local Coordinate = self:GetInfo( "Coordinates" ) -- Core.Point#COORDINATE
   
@@ -53723,6 +53725,8 @@ function TASK:ReportDetails( ReportGroup )
   -- Determine the status of the Task.
   local Status = "<" .. self:GetState() .. ">"
 
+  Report:Add( "Task: " .. Name .. " - " .. Status .. " - Detailed Report" )
+
   -- Loop each Unit active in the Task, and find Player Names.
   local PlayerNames = self:GetPlayerNames()
   
@@ -53731,10 +53735,11 @@ function TASK:ReportDetails( ReportGroup )
     PlayerReport:Add( "Group " .. PlayerGroup:GetCallsign() .. ": " .. PlayerName )
   end
   local Players = PlayerReport:Text()
-
-  Report:Add( "Task: " .. Name .. " - " .. Status .. " - Detailed Report" )
-  Report:Add( " - Players:" )
-  Report:AddIndent( Players )
+  
+  if Players ~= "" then
+    Report:Add( " - Players assigned:" )
+    Report:AddIndent( Players )
+  end
   
   for TaskInfoID, TaskInfo in pairs( self.TaskInfo, function( t, a, b ) return t[a].TaskInfoOrder < t[b].TaskInfoOrder end ) do
     
@@ -53744,17 +53749,24 @@ function TASK:ReportDetails( ReportGroup )
       Report:Add( TaskInfoIDText .. TaskInfo.TaskInfoText )
     elseif type(TaskInfo) == "table" then
       if TaskInfoID == "Coordinates" then
-        local FromCoordinate = ReportGroup:GetUnit(1):GetCoordinate()
         local ToCoordinate = TaskInfo.TaskInfoText -- Core.Point#COORDINATE
-        Report:Add( TaskInfoIDText )
-        Report:AddIndent( ToCoordinate:ToStringBRA( FromCoordinate ) .. ", " .. TaskInfo.TaskInfoText:ToStringAspect( FromCoordinate ) )
-        Report:AddIndent( ToCoordinate:ToStringBULLS( ReportGroup:GetCoalition() ) )
+        Report:Add( TaskInfoIDText .. ToCoordinate:ToString() )
       else
       end
     end
     
   end
+
+  local Coordinate = self:GetInfo( "Coordinates" ) -- Core.Point#COORDINATE
   
+  local Velocity = self.TargetSetUnit:GetVelocity()
+  local Heading = self.TargetSetUnit:GetHeading()
+  
+  Coordinate:SetHeading( Heading )
+  Coordinate:SetVelocity( Velocity )
+  
+  Report:Add( "Targets are" .. Coordinate:GetMovingText() ..  "." )
+
   return Report:Text()
 end
 
