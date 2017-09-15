@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170915_1618' )
+env.info( 'Moose Generation Timestamp: 20170915_1703' )
 
 --- Various routines
 -- @module routines
@@ -13616,7 +13616,7 @@ do -- COORDINATE
     end
     
 
-    if ModeA2A then
+    if ModeA2A == true then
       return self:ToStringA2A( Controllable, Settings )
     else
       return self:ToStringA2G( Controllable, Settings )
@@ -53852,8 +53852,9 @@ function TASK:ReportDetails( ReportGroup )
       Report:Add( TaskInfoIDText .. TaskInfo.TaskInfoText )
     elseif type(TaskInfo) == "table" then
       if TaskInfoID == "Coordinates" then
+        local FromCoordinate = ReportGroup:GetUnit(1):GetCoordinate()
         local ToCoordinate = TaskInfo.TaskInfoText -- Core.Point#COORDINATE
-        Report:Add( TaskInfoIDText .. ToCoordinate:ToString() )
+        Report:Add( TaskInfoIDText .. ToCoordinate:ToString( ReportGroup:GetUnit(1), nil, self ) )
       else
       end
     end
