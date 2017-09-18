@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170915_1940' )
+env.info( 'Moose Generation Timestamp: 20170918_0616' )
 
 --- Various routines
 -- @module routines
@@ -6343,11 +6343,24 @@ do -- MENU_COMMAND_BASE
   function MENU_COMMAND_BASE:New( MenuText, ParentMenu, CommandMenuFunction, CommandMenuArguments )
   
   	local self = BASE:Inherit( self, MENU_BASE:New( MenuText, ParentMenu ) ) -- #MENU_COMMAND_BASE
+
+    -- When a menu function goes into error, DCS displays an obscure menu message.
+    -- This error handler catches the menu error and displays the full call stack.
+    local ErrorHandler = function( errmsg )
+      env.info( "MOOSE error in MENU COMMAND function: " .. errmsg )
+      if debug ~= nil then
+        env.info( debug.traceback() )
+      end
+      return errmsg
+    end
   
     self:SetCommandMenuFunction( CommandMenuFunction )
     self:SetCommandMenuArguments( CommandMenuArguments )
     self.MenuCallHandler = function()
-      self.CommandMenuFunction( unpack( self.CommandMenuArguments ) )
+      local function MenuFunction() 
+        return self.CommandMenuFunction( unpack( self.CommandMenuArguments ) )
+      end
+      local Status, Result = xpcall( MenuFunction, ErrorHandler )
     end
   	
   	return self
@@ -19181,7 +19194,7 @@ function POSITIONABLE:MessageToSetGroup( Message, Duration, MessageSetGroup, Nam
     if DCSObject:isExist() then
       MessageSetGroup:ForEachGroup(
         function( MessageGroup )
-          self:GetMessageType( Message, Duration, Name ):ToGroup( MessageGroup )
+          self:GetMessage( Message, Duration, Name ):ToGroup( MessageGroup )
         end 
       )
     end
@@ -52145,6 +52158,8 @@ end
 -- @return #string
 function MISSION:ReportOverview( ReportGroup, TaskStatus )
 
+  self:F( { TaskStatus = TaskStatus } )
+
   local Report = REPORT:New()
 
   -- List the name of the mission.
@@ -54607,6 +54622,7 @@ do -- TASK_A2G_DISPATCHER
             self.Tasks[TaskIndex] = Task
             Task:SetTargetZone( DetectedZone )
             Task:SetDispatcher( self )
+            Task:UpdateTaskInfo()
             Mission:AddTask( Task )
     
             TaskReport:Add( Task:GetName() )
@@ -55003,7 +55019,8 @@ do -- TASK_A2G_SEAD
   end
     
   function TASK_A2G_SEAD:ReportOrder( ReportGroup ) 
-    local Coordinate = self.TaskInfo.Coordinates.TaskInfoText
+    local Coordinate = self:GetInfo( "Coordinates" )
+    --local Coordinate = self.TaskInfo.Coordinates.TaskInfoText
     local Distance = ReportGroup:GetCoordinate():Get2DDistance( Coordinate )
     
     return Distance
@@ -55152,7 +55169,8 @@ do -- TASK_A2G_BAI
 
 
   function TASK_A2G_BAI:ReportOrder( ReportGroup ) 
-    local Coordinate = self.TaskInfo.Coordinates.TaskInfoText
+    local Coordinate = self:GetInfo( "Coordinates" )
+    --local Coordinate = self.TaskInfo.Coordinates.TaskInfoText
     local Distance = ReportGroup:GetCoordinate():Get2DDistance( Coordinate )
     
     return Distance
@@ -55267,9 +55285,9 @@ do -- TASK_A2G_CAS
   
   function TASK_A2G_CAS:UpdateTaskInfo()
   
-    local TargetCoordinate = self.Detection and self.Detection:GetDetectedItemCoordinate( self.DetectedItemIndex ) or self.TargetSetUnit:GetFirst():GetCoordinate() 
+    local TargetCoordinate = ( self.Detection and self.Detection:GetDetectedItemCoordinate( self.DetectedItemIndex ) ) or self.TargetSetUnit:GetFirst():GetCoordinate() 
     self:SetInfo( "Coordinates", TargetCoordinate, 0 )
-
+    
     local ThreatLevel, ThreatText
     if self.Detection then
       ThreatLevel, ThreatText = self.Detection:GetDetectedItemThreatLevel( self.DetectedItemIndex )
@@ -55298,8 +55316,10 @@ do -- TASK_A2G_CAS
 
   end
 
-  function TASK_A2G_CAS:ReportOrder( ReportGroup ) 
-    local Coordinate = self.TaskInfo.Coordinates.TaskInfoText
+  --- @param #TASK_A2G_CAS self
+  function TASK_A2G_CAS:ReportOrder( ReportGroup )
+     
+    local Coordinate = self:GetInfo( "Coordinates" )
     local Distance = ReportGroup:GetCoordinate():Get2DDistance( Coordinate )
     
     return Distance
