@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170918_0616' )
+env.info( 'Moose Generation Timestamp: 20170918_1451' )
 
 --- Various routines
 -- @module routines
@@ -46997,15 +46997,19 @@ function AI_CAP_ZONE:onafterStart( Controllable, From, Event, To )
 
 end
 
--- todo: need to fix this global function
 
---- @param Wrapper.Controllable#CONTROLLABLE AIControllable
-function _NewEngageCapRoute( AIControllable )
+--- @param AI.AI_CAP#AI_CAP_ZONE 
+-- @param Wrapper.Group#GROUP EngageGroup
+function AI_CAP_ZONE.EngageRoute( EngageGroup, Fsm )
 
-  AIControllable:T( "NewEngageRoute" )
-  local EngageZone = AIControllable:GetState( AIControllable, "EngageZone" ) -- AI.AI_Cap#AI_CAP_ZONE
-  EngageZone:__Engage( 1 )
+  EngageGroup:F( { "AI_CAP_ZONE.EngageRoute:", EngageGroup:GetName() } )
+
+  if EngageGroup:IsAlive() then
+    Fsm:__Engage( 1 )
+  end
 end
+
+
 
 --- @param #AI_CAP_ZONE self
 -- @param Wrapper.Controllable#CONTROLLABLE Controllable The Controllable Object managed by the FSM.
@@ -47142,28 +47146,20 @@ function AI_CAP_ZONE:onafterEngage( Controllable, From, Event, To )
       end
     end
 
-    --- Now we're going to do something special, we're going to call a function from a waypoint action at the AIControllable...
-    self.Controllable:WayPointInitialize( EngageRoute )
-    
-    
     if #AttackTasks == 0 then
       self:F("No targets found -> Going back to Patrolling")
       self:__Abort( 1 )
       self:__Route( 1 )
       self:SetDetectionActivated()
     else
+
+      AttackTasks[#AttackTasks+1] = Controllable:TaskFunction( "AI_CAP_ZONE.EngageRoute", self )
       EngageRoute[1].task = Controllable:TaskCombo( AttackTasks )
-      
-      --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-      self.Controllable:SetState( self.Controllable, "EngageZone", self )
-  
-      self.Controllable:WayPointFunction( #EngageRoute, 1, "_NewEngageCapRoute" )
       
       self:SetDetectionDeactivated()
     end
     
-    --- NOW ROUTE THE GROUP!
-    self.Controllable:WayPointExecute( 1, 2 )
+    Controllable:Route( EngageRoute, 0.5 )
   
   end
 end
@@ -47577,12 +47573,15 @@ function AI_CAS_ZONE:onafterStart( Controllable, From, Event, To )
   self:SetDetectionDeactivated() -- When not engaging, set the detection off.
 end
 
---- @param Wrapper.Controllable#CONTROLLABLE AIControllable
-function _NewEngageRoute( AIControllable )
+--- @param AI.AI_CAS#AI_CAS_ZONE 
+-- @param Wrapper.Group#GROUP EngageGroup
+function AI_CAS_ZONE.EngageRoute( EngageGroup, Fsm )
 
-  AIControllable:T( "NewEngageRoute" )
-  local EngageZone = AIControllable:GetState( AIControllable, "EngageZone" ) -- AI.AI_Cas#AI_CAS_ZONE
-  EngageZone:__Engage( 1, EngageZone.EngageSpeed, EngageZone.EngageAltitude, EngageZone.EngageWeaponExpend, EngageZone.EngageAttackQty, EngageZone.EngageDirection )
+  EngageGroup:F( { "AI_CAS_ZONE.EngageRoute:", EngageGroup:GetName() } )
+
+  if EngageGroup:IsAlive() then
+    Fsm:__Engage( 1, Fsm.EngageSpeed, Fsm.EngageAltitude, Fsm.EngageWeaponExpend, Fsm.EngageAttackQty, Fsm.EngageDirection )
+  end
 end
 
 
@@ -47668,6 +47667,9 @@ function AI_CAS_ZONE:onafterEngage( Controllable, From, Event, To,
 
   if Controllable:IsAlive() then
 
+    Controllable:OptionROEOpenFire()
+    Controllable:OptionROTVertical()
+
     local EngageRoute = {}
 
     --- Calculate the current route point.
@@ -47689,7 +47691,7 @@ function AI_CAS_ZONE:onafterEngage( Controllable, From, Event, To,
 
     local AttackTasks = {}
 
-    for DetectedUnitID, DetectedUnit in pairs( self.DetectedUnits ) do
+    for DetectedUnit, Detected in pairs( self.DetectedUnits ) do
       local DetectedUnit = DetectedUnit -- Wrapper.Unit#UNIT
       self:T( DetectedUnit )
       if DetectedUnit:IsAlive() then
@@ -47707,7 +47709,8 @@ function AI_CAS_ZONE:onafterEngage( Controllable, From, Event, To,
       end
     end
 
-    EngageRoute[1].task = Controllable:TaskCombo( AttackTasks )
+    AttackTasks[#AttackTasks+1] = Controllable:TaskFunction( "AI_CAS_ZONE.EngageRoute", self )
+    EngageRoute[#EngageRoute].task = Controllable:TaskCombo( AttackTasks )
 
     --- Define a random point in the @{Zone}. The AI will fly to that point within the zone.
     
@@ -47728,20 +47731,8 @@ function AI_CAS_ZONE:onafterEngage( Controllable, From, Event, To,
     )
     
     EngageRoute[#EngageRoute+1] = ToTargetRoutePoint
-
-    --- Now we're going to do something special, we're going to call a function from a waypoint action at the AIControllable...
-    Controllable:WayPointInitialize( EngageRoute )
-    
-    --- Do a trick, link the NewEngageRoute function of the object to the AIControllable in a temporary variable ...
-    Controllable:SetState( Controllable, "EngageZone", self )
-
-    Controllable:WayPointFunction( #EngageRoute, 1, "_NewEngageRoute" )
-
-    --- NOW ROUTE THE GROUP!
-    Controllable:WayPointExecute( 1 )
-
-    Controllable:OptionROEOpenFire()
-    Controllable:OptionROTVertical()
+  
+    Controllable:Route( EngageRoute, 0.5 )
     
     self:SetRefreshTimeInterval( 2 )
     self:SetDetectionActivated()
