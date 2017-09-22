@@ -214,7 +214,10 @@ SCORING = {
   ClassName = "SCORING",
   ClassID = 0,
   Players = {},
+  IP = "96.49.78.227",
+  port = "5010",
 }
+
 
 local _SCORINGCoalition =
   {
@@ -1663,8 +1666,12 @@ function SCORING:OpenCSV( ScoringCSV )
     if ScoringCSV then
       self.ScoringCSV = ScoringCSV
       local fdir = lfs.writedir() .. [[Logs\]] .. self.ScoringCSV .. " " .. os.date( "%Y-%m-%d %H-%M-%S" ) .. ".csv"
+      local ipname = lfs.writedir() .. [[Logs\IP_]] .. self.ScoringCSV .. " " .. os.date( "%Y-%m-%d %H-%M-%S" ) .. ".csv"
 
       self.CSVFile, self.err = io.open( fdir, "w+" )
+      
+      self.IPFile, self.err = io.open( ipname, "w+" )
+      
       if not self.CSVFile then
         error( "Error: Cannot open CSV file in " .. lfs.writedir() )
       end
@@ -1678,6 +1685,19 @@ function SCORING:OpenCSV( ScoringCSV )
   else
     self:E( "The MissionScripting.lua file has not been changed to allow lfs, io and os modules to be used..." )
   end
+  
+  
+  package.path  = package.path..";.\\LuaSocket\\?.lua;"
+  package.cpath = package.cpath..";.\\LuaSocket\\?.dll;"
+
+  local socket = require("socket")
+
+  local JSON = loadfile("Scripts\\JSON.lua")()
+  self.JSON = JSON
+
+  self.conn = socket.udp()
+  self.conn:settimeout(0)
+  
   return self
 end
 
@@ -1740,8 +1760,7 @@ function SCORING:ScoreCSV( PlayerName, TargetPlayerName, ScoreType, ScoreTimes, 
   TargetUnitType = TargetUnitType or ""
   TargetUnitName = TargetUnitName or ""
 
-  if lfs and io and os then
-    self.CSVFile:write(
+  local ScoreText = 
       '"' .. self.GameName        .. '"' .. ',' ..
       '"' .. self.RunTime         .. '"' .. ',' ..
       ''  .. ScoreTime            .. ''  .. ',' ..
@@ -1758,9 +1777,42 @@ function SCORING:ScoreCSV( PlayerName, TargetPlayerName, ScoreType, ScoreTimes, 
       '"' .. TargetUnitName       .. '"' .. ',' ..
       ''  .. ScoreTimes           .. ''  .. ',' ..
       ''  .. ScoreAmount
-    )
+
+--      self.CSVFile:write( '"GameName","RunTime","Time","PlayerName",
+--      "TargetPlayerName","ScoreType","PlayerUnitCoaltion","PlayerUnitCategory","PlayerUnitType",
+--      "PlayerUnitName","TargetUnitCoalition","TargetUnitCategory","TargetUnitType","TargetUnitName","Times","Score"\n' )
+
+  local Score = {}
+  Score.GameName = self.GameName
+  Score.RunTime = self.RunTime
+  Score.ScoreTime = ScoreTime
+  Score.PlayerName = PlayerName
+  Score.TargetPlayerName = TargetPlayerName
+  Score.ScoreType = ScoreType
+  Score.PlayerUnitCoalition = PlayerUnitCoalition
+  Score.PlayerUnitCategory = PlayerUnitCategory
+  Score.PlayerUnitType = PlayerUnitType
+  Score.PlayerUnitName = PlayerUnitName
+  Score.TargetUnitCoalition = TargetUnitCoalition
+  Score.TargetUnitCategory = TargetUnitCategory
+  Score.TargetUnitType = TargetUnitType
+  Score.TargetUnitName = TargetUnitName
+  Score.Times = ScoreTimes
+  Score.Score = ScoreAmount
+  
+  local JSONText = self.JSON:encode(Score).." \n"
+  
+  
+
+  if lfs and io and os then
+    self.CSVFile:write( ScoreText )
 
     self.CSVFile:write( "\n" )
+    
+    self.IPFile:write( JSONText )
+    
+    self.socket.try( self.conn:sendto( self.JSON:encode(Score).." \n", self.IP , self.port ) )
+    
   end
 end
 
@@ -1768,6 +1820,7 @@ end
 function SCORING:CloseCSV()
   if lfs and io and os then
     self.CSVFile:close()
+    self.socket.try(self.conn:close())
   end
 end
 
