@@ -1,5 +1,5 @@
 env.info( '*** MOOSE STATIC INCLUDE START *** ' )
-env.info( 'Moose Generation Timestamp: 20170920_1152' )
+env.info( 'Moose Generation Timestamp: 20170922_1614' )
 
 --- Various routines
 -- @module routines
@@ -3506,6 +3506,22 @@ function BASE:CreateEventCrash( EventTime, Initiator )
 	world.onEvent( Event )
 end
 
+--- Creation of a Takeoff Event.
+-- @param #BASE self
+-- @param Dcs.DCSTypes#Time EventTime The time stamp of the event.
+-- @param Dcs.DCSWrapper.Object#Object Initiator The initiating object of the event.
+function BASE:CreateEventTakeoff( EventTime, Initiator )
+  self:F( { EventTime, Initiator } )
+
+  local Event = {
+    id = world.event.S_EVENT_TAKEOFF,
+    time = EventTime,
+    initiator = Initiator,
+    }
+
+  world.onEvent( Event )
+end
+
 -- TODO: Complete Dcs.DCSTypes#Event structure.                       
 --- The main event handling function... This function captures all events generated for the class.
 -- @param #BASE self
@@ -5065,12 +5081,13 @@ end
 -- @param Core.Base#BASE EventClass The self instance of the class for which the event is.
 -- @param EventID
 -- @return #EVENT
-function EVENT:OnEventForGroup( GroupName, EventFunction, EventClass, EventID )
-  self:F2( GroupName )
+function EVENT:OnEventForGroup( GroupName, EventFunction, EventClass, EventID, ... )
+  self:E( GroupName )
 
   local Event = self:Init( EventID, EventClass )
   Event.EventGroup = true
   Event.EventFunction = EventFunction
+  Event.Params = arg
   return self
 end
 
@@ -5454,7 +5471,7 @@ function EVENT:onEvent( Event )
                                       
                     local Result, Value = xpcall( 
                       function() 
-                        return EventData.EventFunction( EventClass, Event ) 
+                        return EventData.EventFunction( EventClass, Event, unpack( EventData.Params ) ) 
                       end, ErrorHandler )
       
                   else
@@ -5470,14 +5487,14 @@ function EVENT:onEvent( Event )
                                           
                       local Result, Value = xpcall( 
                         function() 
-                          return EventFunction( EventClass, Event ) 
+                          return EventFunction( EventClass, Event, unpack( EventData.Params ) ) 
                         end, ErrorHandler )
                     end
                   end
                 end
               else
                 -- The EventClass is not alive anymore, we remove it from the EventHandlers...
-                self:RemoveEvent( EventClass, Event.id )  
+                --self:RemoveEvent( EventClass, Event.id )  
               end
             else
           
@@ -23161,9 +23178,9 @@ do -- Event Handling
   -- @param Core.Event#EVENTS Event
   -- @param #function EventFunction (optional) The function to be called when the event occurs for the GROUP.
   -- @return #GROUP
-  function GROUP:HandleEvent( Event, EventFunction )
+  function GROUP:HandleEvent( Event, EventFunction, ... )
   
-    self:EventDispatcher():OnEventForGroup( self:GetName(), EventFunction, self, Event )
+    self:EventDispatcher():OnEventForGroup( self:GetName(), EventFunction, self, Event, ... )
     
     return self
   end
@@ -28394,8 +28411,18 @@ function SPAWN:SpawnAtAirbase( SpawnAirbase, Takeoff, TakeoffAltitude ) -- R2.2
 
       SpawnTemplate.x = PointVec3.x
       SpawnTemplate.y = PointVec3.z
+      
+      local GroupSpawned = self:SpawnWithIndex( self.SpawnIndex )
+      
+      -- When spawned in the air, we need to generate a Takeoff Event
+      
+      if Takeoff == GROUP.Takeoff.Air then
+        for UnitID, UnitSpawned in pairs( GroupSpawned:GetUnits() ) do
+          SCHEDULER:New( nil, BASE.CreateEventTakeoff, { GroupSpawned, timer.getTime(), UnitSpawned:GetDCSObject() } , 1 )
+        end
+      end
 
-      return self:SpawnWithIndex( self.SpawnIndex )
+      return GroupSpawned
     end
   end
   
@@ -40169,6 +40196,7 @@ function AI_A2A:New( AIGroup )
   -- @param #AI_A2A self
   -- @param #number Delay
 
+  self:AddTransition( "*", "Takeoff", "Airborne" )
   self:AddTransition( "*", "Return", "Returning" )
   self:AddTransition( "*", "Hold", "Holding" )
   self:AddTransition( "*", "Home", "Home" )
@@ -40182,6 +40210,13 @@ function AI_A2A:New( AIGroup )
   self.IdleCount = 0
   
   return self
+end
+
+--- @param Wrapper.Group#GROUP self
+-- @param Core.Event#EVENTDATA EventData
+function GROUP:OnEventTakeoff( EventData, Fsm )
+  Fsm:Takeoff()
+  self:UnHandleEvent( EVENTS.Takeoff )
 end
 
 function AI_A2A:SetDispatcher( Dispatcher )
@@ -40832,7 +40867,7 @@ function AI_A2A_PATROL:New( AIGroup, PatrolZone, PatrolFloorAltitude, PatrolCeil
   -- defafult PatrolAltType to "RADIO" if not specified
   self.PatrolAltType = PatrolAltType or "RADIO"
   
-  self:AddTransition( { "Started", "Refuelling" }, "Patrol", "Patrolling" )
+  self:AddTransition( { "Started", "Airborne", "Refuelling" }, "Patrol", "Patrolling" )
 
 --- OnBefore Transition Handler for Event Patrol.
 -- @function [parent=#AI_A2A_PATROL] OnBeforePatrol
@@ -41189,7 +41224,7 @@ function AI_A2A_CAP:New( AIGroup, PatrolZone, PatrolFloorAltitude, PatrolCeiling
   self.EngageMinSpeed = EngageMinSpeed
   self.EngageMaxSpeed = EngageMaxSpeed
   
-  self:AddTransition( { "Patrolling", "Engaging", "Returning" }, "Engage", "Engaging" ) -- FSM_CONTROLLABLE Transition for type #AI_A2A_CAP.
+  self:AddTransition( { "Patrolling", "Engaging", "Returning", "Airborne" }, "Engage", "Engaging" ) -- FSM_CONTROLLABLE Transition for type #AI_A2A_CAP.
 
   --- OnBefore Transition Handler for Event Engage.
   -- @function [parent=#AI_A2A_CAP] OnBeforeEngage
@@ -41350,6 +41385,17 @@ function AI_A2A_CAP:New( AIGroup, PatrolZone, PatrolFloorAltitude, PatrolCeiling
   return self
 end
 
+--- onafter State Transition for Event Patrol.
+-- @param #AI_A2A_GCI self
+-- @param Wrapper.Group#GROUP AIGroup The AI Group managed by the FSM.
+-- @param #string From The From State string.
+-- @param #string Event The Event string.
+-- @param #string To The To State string.
+function AI_A2A_CAP:onafterStart( AIGroup, From, Event, To )
+
+  AIGroup:HandleEvent( EVENTS.Takeoff, nil, self )
+
+end
 
 --- Set the Engage Zone which defines where the AI will engage bogies. 
 -- @param #AI_A2A_CAP self
@@ -41679,7 +41725,7 @@ function AI_A2A_GCI:New( AIGroup, EngageMinSpeed, EngageMaxSpeed )
   
   self.PatrolAltType = "RADIO"
   
-  self:AddTransition( { "Started", "Engaging", "Returning" }, "Engage", "Engaging" ) -- FSM_CONTROLLABLE Transition for type #AI_A2A_GCI.
+  self:AddTransition( { "Started", "Engaging", "Returning", "Airborne" }, "Engage", "Engaging" ) -- FSM_CONTROLLABLE Transition for type #AI_A2A_GCI.
 
   --- OnBefore Transition Handler for Event Engage.
   -- @function [parent=#AI_A2A_GCI] OnBeforeEngage
@@ -41839,6 +41885,19 @@ function AI_A2A_GCI:New( AIGroup, EngageMinSpeed, EngageMaxSpeed )
 
   return self
 end
+
+--- onafter State Transition for Event Patrol.
+-- @param #AI_A2A_GCI self
+-- @param Wrapper.Group#GROUP AIGroup The AI Group managed by the FSM.
+-- @param #string From The From State string.
+-- @param #string Event The Event string.
+-- @param #string To The To State string.
+function AI_A2A_GCI:onafterStart( AIGroup, From, Event, To )
+
+  AIGroup:HandleEvent( EVENTS.Takeoff, nil, self )
+
+end
+
 
 
 --- onafter State Transition for Event Patrol.
@@ -42984,6 +43043,7 @@ do -- AI_A2A_DISPATCHER
     -- This will avoid the detection to still "know" the shot unit until the next detection.
     -- Otherwise, a new intercept or engage may happen for an already shot plane!
     
+    
     self:HandleEvent( EVENTS.Crash, self.OnEventCrashOrDead )
     self:HandleEvent( EVENTS.Dead, self.OnEventCrashOrDead )
     
@@ -43365,6 +43425,8 @@ do -- AI_A2A_DISPATCHER
   ---
   -- @param #AI_A2A_DISPATCHER self
   function AI_A2A_DISPATCHER:SetDefenderTask( SquadronName, Defender, Type, Fsm, Target )
+  
+    self:F( { SquadronName = SquadronName, Defender = Defender:GetName() } )
   
     self.DefenderTasks[Defender] = self.DefenderTasks[Defender] or {}
     self.DefenderTasks[Defender].Type = Type
@@ -44532,15 +44594,18 @@ do -- AI_A2A_DISPATCHER
     DetectedSet:Flush()
     
     local DefenderTasks = self:GetDefenderTasks()
-    for Defender, DefenderTask in pairs( DefenderTasks ) do
-      local Defender = Defender -- Wrapper.Group#GROUP
+    for DefenderGroup, DefenderTask in pairs( DefenderTasks ) do
+      local Defender = DefenderGroup -- Wrapper.Group#GROUP
       local DefenderTaskTarget = DefenderTask.Target
       local DefenderSquadronName = DefenderTask.SquadronName
+      
       if DefenderTaskTarget and DefenderTaskTarget.Index == AttackerDetection.Index then
         local Squadron = self:GetSquadron( DefenderSquadronName )
-        local SquadronOverhead = Squadron.Overhead or self.DefenderDefault.Overhead 
-        DefenderCount = DefenderCount + Defender:GetSize() / SquadronOverhead
-        self:E( "Defender Group Name: " .. Defender:GetName() .. ", Size: " .. Defender:GetSize() )
+        local SquadronOverhead = Squadron.Overhead or self.DefenderDefault.Overhead
+        
+        local DefenderSize = Defender:GetInitialSize()
+        DefenderCount = DefenderCount + DefenderSize / SquadronOverhead
+        self:F( "Defender Group Name: " .. Defender:GetName() .. ", Size: " .. DefenderSize )
       end
     end
 
@@ -44628,10 +44693,21 @@ do -- AI_A2A_DISPATCHER
           Fsm:SetDisengageRadius( self.DisengageRadius )
           Fsm:SetTanker( DefenderSquadron.TankerName or self.DefenderDefault.TankerName )
           Fsm:Start()
-          Fsm:__Patrol( 2 )
   
           self:SetDefenderTask( SquadronName, DefenderCAP, "CAP", Fsm )
 
+          function Fsm:onafterTakeoff( Defender, From, Event, To )
+            self:F({"GCI Birth", Defender:GetName()})
+            --self:GetParent(self).onafterBirth( self, Defender, From, Event, To )
+            
+            local Dispatcher = Fsm:GetDispatcher() -- #AI_A2A_DISPATCHER
+            local Squadron = Dispatcher:GetSquadronFromDefender( Defender )
+
+            if Squadron then
+              Fsm:__Patrol( 2 ) -- Start Patrolling
+            end
+          end
+  
           function Fsm:onafterRTB( Defender, From, Event, To )
             self:F({"CAP RTB", Defender:GetName()})
             self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
@@ -44727,7 +44803,7 @@ do -- AI_A2A_DISPATCHER
             local SpawnCoord = DefenderSquadron.Airbase:GetCoordinate() -- Core.Point#COORDINATE
             local AttackerCoord = AttackerUnit:GetCoordinate()
             local InterceptCoord = AttackerDetection.InterceptCoord
-            self:F({InterceptCoord = InterceptCoord})
+            self:F( { InterceptCoord = InterceptCoord } )
             if InterceptCoord then
               local InterceptDistance = SpawnCoord:Get2DDistance( InterceptCoord )
               local AirbaseDistance = SpawnCoord:Get2DDistance( AttackerCoord )
@@ -44763,6 +44839,11 @@ do -- AI_A2A_DISPATCHER
               self:F( { Grouping = DefenderGrouping, SquadronGrouping = DefenderSquadron.Grouping, DefaultGrouping = self.DefenderDefault.Grouping } )
               self:F( { DefendersCount = DefenderCount, DefendersNeeded = DefendersNeeded } )
               
+              if DefendersNeeded > DefenderSquadron.Resources then
+                DefendersNeeded = DefenderSquadron.Resources
+                BreakLoop = true
+              end
+              
               while ( DefendersNeeded > 0 ) do
             
                 local Spawn = DefenderSquadron.Spawn[ math.random( 1, #DefenderSquadron.Spawn ) ] -- Functional.Spawn#SPAWN
@@ -44775,14 +44856,14 @@ do -- AI_A2A_DISPATCHER
                 
                 local TakeoffMethod = self:GetSquadronTakeoff( ClosestDefenderSquadronName )
                 local DefenderGCI = Spawn:SpawnAtAirbase( DefenderSquadron.Airbase, TakeoffMethod, DefenderSquadron.TakeoffAltitude or self.DefenderDefault.TakeoffAltitude ) -- Wrapper.Group#GROUP
-                self:F( { GCIDefender = DefenderGCI:GetName() } )
+                self:E( { GCIDefender = DefenderGCI:GetName() } )
   
                 DefendersNeeded = DefendersNeeded - DefenderGrouping
         
                 self:AddDefenderToSquadron( DefenderSquadron, DefenderGCI, DefenderGrouping )
           
                 if DefenderGCI then
-
+                
                   DefenderCount = DefenderCount - DefenderGrouping / DefenderOverhead
         
                   local Fsm = AI_A2A_GCI:New( DefenderGCI, Gci.EngageMinSpeed, Gci.EngageMaxSpeed )
@@ -44792,12 +44873,24 @@ do -- AI_A2A_DISPATCHER
                   Fsm:SetDamageThreshold( self.DefenderDefault.DamageThreshold )
                   Fsm:SetDisengageRadius( self.DisengageRadius )
                   Fsm:Start()
-                  Fsm:__Engage( 2, AttackerDetection.Set ) -- Engage on the TargetSetUnit
         
           
                   self:SetDefenderTask( ClosestDefenderSquadronName, DefenderGCI, "GCI", Fsm, AttackerDetection )
                   
                   
+                  function Fsm:onafterTakeoff( Defender, From, Event, To )
+                    self:F({"GCI Birth", Defender:GetName()})
+                    --self:GetParent(self).onafterBirth( self, Defender, From, Event, To )
+                    
+                    local Dispatcher = Fsm:GetDispatcher() -- #AI_A2A_DISPATCHER
+                    local Squadron = Dispatcher:GetSquadronFromDefender( Defender )
+                    local DefenderTarget = Dispatcher:GetDefenderTaskTarget( Defender )
+                    
+                    if DefenderTarget then
+                      Fsm:__Engage( 2, DefenderTarget.Set ) -- Engage on the TargetSetUnit
+                    end
+                  end
+  
                   function Fsm:onafterRTB( Defender, From, Event, To )
                     self:F({"GCI RTB", Defender:GetName()})
                     self:GetParent(self).onafterRTB( self, Defender, From, Event, To )
@@ -44926,7 +45019,11 @@ do -- AI_A2A_DISPATCHER
     for AIGroup, DefenderTask in pairs( self:GetDefenderTasks() ) do
       local AIGroup = AIGroup -- Wrapper.Group#GROUP
       if not AIGroup:IsAlive() then
-        self:ClearDefenderTask( AIGroup )
+        local DefenderTaskFsm = self:GetDefenderTaskFsm( AIGroup )
+        self:E( { Defender = AIGroup:GetName(), DefenderState = DefenderTaskFsm:GetState() } )
+        if not DefenderTaskFsm:Is( "Started" ) then
+          self:ClearDefenderTask( AIGroup )
+        end
       else
         if DefenderTask.Target then
           local AttackerItem = Detection:GetDetectedItem( DefenderTask.Target.Index )
