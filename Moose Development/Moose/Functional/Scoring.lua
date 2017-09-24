@@ -214,8 +214,6 @@ SCORING = {
   ClassName = "SCORING",
   ClassID = 0,
   Players = {},
-  IP = "96.49.78.227",
-  port = "5010",
 }
 
 
@@ -290,6 +288,13 @@ function SCORING:New( GameName )
 
   return self
   
+end
+
+function SCORING:SetTelemetryServer( IP, Port )
+
+  self.IP = IP
+  self.Port = Port
+
 end
 
 --- Set a prefix string that will be displayed at each scoring message sent.
@@ -1687,20 +1692,25 @@ function SCORING:OpenCSV( ScoringCSV )
   end
   
   
+  
+  return self
+end
+
+
+function SCORING:OpenIP()
+
   package.path  = package.path..";.\\LuaSocket\\?.lua;"
   package.cpath = package.cpath..";.\\LuaSocket\\?.dll;"
 
-  local socket = require("socket")
+  local socket = require( "socket" )
 
   local JSON = loadfile("Scripts\\JSON.lua")()
   self.JSON = JSON
 
   self.conn = socket.udp()
-  self.conn:settimeout(0)
-  
-  return self
-end
+  self.conn:settimeout( 10000 )
 
+end
 
 --- Registers a score for a player.
 -- @param #SCORING self
@@ -1800,19 +1810,17 @@ function SCORING:ScoreCSV( PlayerName, TargetPlayerName, ScoreType, ScoreTimes, 
   Score.Times = ScoreTimes
   Score.Score = ScoreAmount
   
-  local JSONText = self.JSON:encode(Score).." \n"
   
   
 
   if lfs and io and os then
     self.CSVFile:write( ScoreText )
-
     self.CSVFile:write( "\n" )
-    
-    self.IPFile:write( JSONText )
-    
-    self.socket.try( self.conn:sendto( self.JSON:encode(Score).." \n", self.IP , self.port ) )
-    
+    if self.conn then
+      local JSONText = self.JSON:encode(Score).." \n"
+      self.IPFile:write( JSONText )
+      self.socket.try( self.conn:sendto( self.JSON:encode(Score).." \n", self.IP , self.port ) )
+    end
   end
 end
 
@@ -1820,7 +1828,9 @@ end
 function SCORING:CloseCSV()
   if lfs and io and os then
     self.CSVFile:close()
-    self.socket.try(self.conn:close())
+    if self.conn then
+      self.socket.try(self.conn:close())
+    end
   end
 end
 
