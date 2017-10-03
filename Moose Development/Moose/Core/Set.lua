@@ -1,4 +1,4 @@
---- **Core** - SET_ classes define **collections** of objects to perform **bulk actions** and logically **group** objects.
+--- **Core** -- SET_ classes define **collections** of objects to perform **bulk actions** and logically **group** objects.
 -- 
 -- ![Banner Image](..\Presentations\SET\Dia1.JPG)
 -- 
@@ -23,12 +23,12 @@
 --   * Validate the presence of objects in the SET.
 --   * Trigger events when objects in the SET change a zone presence.
 -- 
--- ### Authors: 
+-- ====
 -- 
---   * FlightControl : Design & Programming
---   
+-- ### Author: **Sven Van de Velde (FlightControl)**
 -- ### Contributions: 
 -- 
+-- ====
 -- 
 -- @module Set
 
@@ -84,11 +84,6 @@ function SET_BASE:New( Database )
   self.TimeInterval = 0.001
 
   self.Set = {}
-
-  self.List = {}
-  self.List.__index = self.List
-  self.List = setmetatable( { Count = 0 }, self.List )
-  
   self.Index = {}
   
   self.CallScheduler = SCHEDULER:New( self )
@@ -126,24 +121,8 @@ end
 function SET_BASE:Add( ObjectName, Object )
   self:F( ObjectName )
 
-  local t = { _ = Object }
-
-  if self.List.last then
-    self.List.last._next = t
-    t._prev = self.List.last
-    self.List.last = t
-  else
-    -- this is the first node
-    self.List.first = t
-    self.List.last = t
-  end
-  
-  self.List.Count = self.List.Count + 1
-  
   self.Set[ObjectName] = Object
-  
   table.insert( self.Index, ObjectName )
-  
 end
 
 --- Adds a @{Base#BASE} object in the @{Set#SET_BASE}, using the Object Name as the index.
@@ -166,42 +145,18 @@ end
 -- @param #string ObjectName
 function SET_BASE:Remove( ObjectName )
 
-  local t = self.Set[ObjectName]
+  local Object = self.Set[ObjectName]
   
-  self:F3( { ObjectName, t } )
+  self:F3( { ObjectName, Object } )
 
-  if t then  
-    if t._next then
-      if t._prev then
-        t._next._prev = t._prev
-        t._prev._next = t._next
-      else
-        -- this was the first node
-        t._next._prev = nil
-        self.List._first = t._next
-      end
-    elseif t._prev then
-      -- this was the last node
-      t._prev._next = nil
-      self.List._last = t._prev
-    else
-      -- this was the only node
-      self.List._first = nil
-      self.List._last = nil
-    end
-  
-    t._next = nil
-    t._prev = nil
-    self.List.Count = self.List.Count - 1
-    
+  if Object then  
     for Index, Key in ipairs( self.Index ) do
       if Key == ObjectName then
         table.remove( self.Index, Index )
+        self.Set[ObjectName] = nil
         break
       end
     end
-    
-    self.Set[ObjectName] = nil
     
   end
   
@@ -214,19 +169,16 @@ end
 function SET_BASE:Get( ObjectName )
   self:F( ObjectName )
 
-  local t = self.Set[ObjectName]
+  local Object = self.Set[ObjectName]
   
-  self:T3( { ObjectName, t } )
-  
-  return t
-  
+  self:T3( { ObjectName, Object } )
+  return Object
 end
 
 --- Gets the first object from the @{Set#SET_BASE} and derived classes.
 -- @param #SET_BASE self
 -- @return Core.Base#BASE
 function SET_BASE:GetFirst()
-  self:F()
 
   local ObjectName = self.Index[1]
   local FirstObject = self.Set[ObjectName]
@@ -238,7 +190,6 @@ end
 -- @param #SET_BASE self
 -- @return Core.Base#BASE
 function SET_BASE:GetLast()
-  self:F()
 
   local ObjectName = self.Index[#self.Index]
   local LastObject = self.Set[ObjectName]
@@ -250,12 +201,9 @@ end
 -- @param #SET_BASE self
 -- @return Core.Base#BASE
 function SET_BASE:GetRandom()
-  self:F()
 
   local RandomItem = self.Set[self.Index[math.random(#self.Index)]]
-
   self:T3( { RandomItem } )
-
   return RandomItem
 end
 
@@ -265,9 +213,8 @@ end
 -- @return #number Count
 function SET_BASE:Count()
 
-  return #self.Index or 0
+  return self.Index and #self.Index or 0
 end
-
 
 
 --- Copies the Filter criteria from a given Set (for rebuilding a new Set based on an existing Set).
@@ -603,6 +550,20 @@ function SET_BASE:IsIncludeObject( Object )
   return true
 end
 
+--- Gets a string with all the object names.
+-- @param #SET_BASE self
+-- @return #string A string with the names of the objects.
+function SET_BASE:GetObjectNames()
+  self:F3()
+
+  local ObjectNames = ""
+  for ObjectName, Object in pairs( self.Set ) do
+    ObjectNames = ObjectNames .. ObjectName .. ", "
+  end
+  
+  return ObjectNames
+end
+
 --- Flushes the current SET_BASE contents in the log ... (for debugging reasons).
 -- @param #SET_BASE self
 -- @return #string A string with the names of the objects.
@@ -622,7 +583,7 @@ end
 --- @type SET_GROUP
 -- @extends Core.Set#SET_BASE
 
---- # 2) SET_GROUP class, extends @{Set#SET_BASE}
+--- # SET_GROUP class, extends @{Set#SET_BASE}
 -- 
 -- Mission designers can use the @{Set#SET_GROUP} class to build sets of groups belonging to certain:
 -- 
@@ -631,18 +592,18 @@ end
 --  * Countries
 --  * Starting with certain prefix strings.
 --  
--- ## 2.1) SET_GROUP constructor
+-- ## 1. SET_GROUP constructor
 -- 
 -- Create a new SET_GROUP object with the @{#SET_GROUP.New} method:
 -- 
 --    * @{#SET_GROUP.New}: Creates a new SET_GROUP object.
 -- 
--- ## 2.2) Add or Remove GROUP(s) from SET_GROUP
+-- ## 2. Add or Remove GROUP(s) from SET_GROUP
 -- 
 -- GROUPS can be added and removed using the @{Set#SET_GROUP.AddGroupsByName} and @{Set#SET_GROUP.RemoveGroupsByName} respectively. 
 -- These methods take a single GROUP name or an array of GROUP names to be added or removed from SET_GROUP.
 -- 
--- ## 2.3) SET_GROUP filter criteria
+-- ## 3. SET_GROUP filter criteria
 -- 
 -- You can set filter criteria to define the set of groups within the SET_GROUP.
 -- Filter criteria are defined by:
@@ -651,6 +612,15 @@ end
 --    * @{#SET_GROUP.FilterCategories}: Builds the SET_GROUP with the groups belonging to the category(ies).
 --    * @{#SET_GROUP.FilterCountries}: Builds the SET_GROUP with the gruops belonging to the country(ies).
 --    * @{#SET_GROUP.FilterPrefixes}: Builds the SET_GROUP with the groups starting with the same prefix string(s).
+-- 
+-- For the Category Filter, extra methods have been added:
+-- 
+--    * @{#SET_GROUP.FilterCategoryAirplane}: Builds the SET_GROUP from airplanes.
+--    * @{#SET_GROUP.FilterCategoryHelicopter}: Builds the SET_GROUP from helicopters.
+--    * @{#SET_GROUP.FilterCategoryGround}: Builds the SET_GROUP from ground vehicles or infantry.
+--    * @{#SET_GROUP.FilterCategoryShip}: Builds the SET_GROUP from ships.
+--    * @{#SET_GROUP.FilterCategoryStructure}: Builds the SET_GROUP from structures.
+-- 
 --   
 -- Once the filter criteria have been set for the SET_GROUP, you can start filtering using:
 -- 
@@ -660,7 +630,7 @@ end
 -- 
 --    * @{#SET_GROUP.FilterZones}: Builds the SET_GROUP with the groups within a @{Zone#ZONE}.
 -- 
--- ## 2.4) SET_GROUP iterators
+-- ## 4. SET_GROUP iterators
 -- 
 -- Once the filters have been defined and the SET_GROUP has been built, you can iterate the SET_GROUP with the available iterator methods.
 -- The iterator methods will walk the SET_GROUP set, and call for each element within the set a function that you provide.
@@ -690,7 +660,7 @@ SET_GROUP = {
     Categories = {
       plane = Group.Category.AIRPLANE,
       helicopter = Group.Category.HELICOPTER,
-      ground = Group.Category.GROUND_UNIT,
+      ground = Group.Category.GROUND, -- R2.2
       ship = Group.Category.SHIP,
       structure = Group.Category.STRUCTURE,
     },
@@ -818,6 +788,48 @@ function SET_GROUP:FilterCategories( Categories )
   end
   return self
 end
+
+--- Builds a set of groups out of ground category.
+-- @param #SET_GROUP self
+-- @return #SET_GROUP self
+function SET_GROUP:FilterCategoryGround()
+  self:FilterCategories( "ground" )
+  return self
+end
+
+--- Builds a set of groups out of airplane category.
+-- @param #SET_GROUP self
+-- @return #SET_GROUP self
+function SET_GROUP:FilterCategoryAirplane()
+  self:FilterCategories( "plane" )
+  return self
+end
+
+--- Builds a set of groups out of helicopter category.
+-- @param #SET_GROUP self
+-- @return #SET_GROUP self
+function SET_GROUP:FilterCategoryHelicopter()
+  self:FilterCategories( "helicopter" )
+  return self
+end
+
+--- Builds a set of groups out of ship category.
+-- @param #SET_GROUP self
+-- @return #SET_GROUP self
+function SET_GROUP:FilterCategoryShip()
+  self:FilterCategories( "ship" )
+  return self
+end
+
+--- Builds a set of groups out of structure category.
+-- @param #SET_GROUP self
+-- @return #SET_GROUP self
+function SET_GROUP:FilterCategoryStructure()
+  self:FilterCategories( "structure" )
+  return self
+end
+
+
 
 --- Builds a set of groups of defined countries.
 -- Possible current countries are those known within DCS world.
@@ -1248,7 +1260,7 @@ function SET_GROUP:IsIncludeObject( MooseGroup )
     local MooseGroupPrefix = false
     for GroupPrefixId, GroupPrefix in pairs( self.Filter.GroupPrefixes ) do
       self:T3( { "Prefix:", string.find( MooseGroup:GetName(), GroupPrefix, 1 ), GroupPrefix } )
-      if string.find( MooseGroup:GetName(), GroupPrefix, 1 ) then
+      if string.find( MooseGroup:GetName(), GroupPrefix:gsub ("-", "%%-"), 1 ) then
         MooseGroupPrefix = true
       end
     end
@@ -1771,21 +1783,134 @@ end
 
 --- Calculate the maxium A2G threat level of the SET_UNIT.
 -- @param #SET_UNIT self
+-- @return #number The maximum threatlevel
 function SET_UNIT:CalculateThreatLevelA2G()
   
   local MaxThreatLevelA2G = 0
+  local MaxThreatText = ""
   for UnitName, UnitData in pairs( self:GetSet() ) do
     local ThreatUnit = UnitData -- Wrapper.Unit#UNIT
-    local ThreatLevelA2G = ThreatUnit:GetThreatLevel()
+    local ThreatLevelA2G, ThreatText = ThreatUnit:GetThreatLevel()
     if ThreatLevelA2G > MaxThreatLevelA2G then
       MaxThreatLevelA2G = ThreatLevelA2G
+      MaxThreatText = ThreatText
     end
   end
 
-  self:T3( MaxThreatLevelA2G )
-  return MaxThreatLevelA2G
+  self:F( { MaxThreatLevelA2G = MaxThreatLevelA2G, MaxThreatText = MaxThreatText } )
+  return MaxThreatLevelA2G, MaxThreatText
   
 end
+
+--- Get the center coordinate of the SET_UNIT.
+-- @param #SET_UNIT self
+-- @return Core.Point#COORDINATE The center coordinate of all the units in the set, including heading in degrees and speed in mps in case of moving units.
+function SET_UNIT:GetCoordinate()
+
+  local Coordinate = self:GetFirst():GetCoordinate()
+  
+  local x1 = Coordinate.x
+  local x2 = Coordinate.x
+  local y1 = Coordinate.y
+  local y2 = Coordinate.y
+  local z1 = Coordinate.z
+  local z2 = Coordinate.z
+  local MaxVelocity = 0
+  local AvgHeading = nil
+  local MovingCount = 0
+
+  for UnitName, UnitData in pairs( self:GetSet() ) do
+  
+    local Unit = UnitData -- Wrapper.Unit#UNIT
+    local Coordinate = Unit:GetCoordinate()
+
+    x1 = ( Coordinate.x < x1 ) and Coordinate.x or x1
+    x2 = ( Coordinate.x > x2 ) and Coordinate.x or x2
+    y1 = ( Coordinate.y < y1 ) and Coordinate.y or y1
+    y2 = ( Coordinate.y > y2 ) and Coordinate.y or y2
+    z1 = ( Coordinate.y < z1 ) and Coordinate.z or z1
+    z2 = ( Coordinate.y > z2 ) and Coordinate.z or z2
+
+    local Velocity = Coordinate:GetVelocity()
+    if Velocity ~= 0  then
+      MaxVelocity = ( MaxVelocity < Velocity ) and Velocity or MaxVelocity
+      local Heading = Coordinate:GetHeading()
+      AvgHeading = AvgHeading and ( AvgHeading + Heading ) or Heading
+      MovingCount = MovingCount + 1
+    end
+  end
+
+  AvgHeading = AvgHeading and ( AvgHeading / MovingCount )
+  
+  Coordinate.x = ( x2 - x1 ) / 2 + x1
+  Coordinate.y = ( y2 - y1 ) / 2 + y1
+  Coordinate.z = ( z2 - z1 ) / 2 + z1
+  Coordinate:SetHeading( AvgHeading )
+  Coordinate:SetVelocity( MaxVelocity )
+
+  self:F( { Coordinate = Coordinate } )
+  return Coordinate
+
+end
+
+--- Get the maximum velocity of the SET_UNIT.
+-- @param #SET_UNIT self
+-- @return #number The speed in mps in case of moving units.
+function SET_UNIT:GetVelocity()
+
+  local Coordinate = self:GetFirst():GetCoordinate()
+  
+  local MaxVelocity = 0
+
+  for UnitName, UnitData in pairs( self:GetSet() ) do
+  
+    local Unit = UnitData -- Wrapper.Unit#UNIT
+    local Coordinate = Unit:GetCoordinate()
+
+    local Velocity = Coordinate:GetVelocity()
+    if Velocity ~= 0  then
+      MaxVelocity = ( MaxVelocity < Velocity ) and Velocity or MaxVelocity
+    end
+  end
+
+  self:F( { MaxVelocity = MaxVelocity } )
+  return MaxVelocity
+
+end
+
+--- Get the average heading of the SET_UNIT.
+-- @param #SET_UNIT self
+-- @return #number Heading Heading in degrees and speed in mps in case of moving units.
+function SET_UNIT:GetHeading()
+
+  local HeadingSet = nil
+  local MovingCount = 0
+
+  for UnitName, UnitData in pairs( self:GetSet() ) do
+  
+    local Unit = UnitData -- Wrapper.Unit#UNIT
+    local Coordinate = Unit:GetCoordinate()
+
+    local Velocity = Coordinate:GetVelocity()
+    if Velocity ~= 0  then
+      local Heading = Coordinate:GetHeading()
+      if HeadingSet == nil then
+        HeadingSet = Heading
+      else
+        local HeadingDiff = ( HeadingSet - Heading + 180 + 360 ) % 360 - 180
+        HeadingDiff = math.abs( HeadingDiff )
+        if HeadingDiff > 5 then
+          HeadingSet = nil
+          break
+        end
+      end        
+    end
+  end
+
+  return HeadingSet
+
+end
+
 
 
 --- Returns if the @{Set} has targets having a radar (of a given type).
@@ -2752,13 +2877,13 @@ SET_CARGO = {
 
 --- (R2.1) Creates a new SET_CARGO object, building a set of cargos belonging to a coalitions and categories.
 -- @param #SET_CARGO self
--- @return #SET_CARGO self
+-- @return #SET_CARGO
 -- @usage
 -- -- Define a new SET_CARGO Object. The DatabaseSet will contain a reference to all Cargos.
 -- DatabaseSet = SET_CARGO:New()
 function SET_CARGO:New() --R2.1
   -- Inherits from BASE
-  local self = BASE:Inherit( self, SET_BASE:New( _DATABASE.CARGOS ) )
+  local self = BASE:Inherit( self, SET_BASE:New( _DATABASE.CARGOS ) ) -- #SET_CARGO
 
   return self
 end

@@ -1,4 +1,4 @@
---- Single-Player:**No** / Multi-Player:**Yes** / AI:**Yes** / Human:**No** / Types:**All** -- **AI Balancing will replace in multi player missions 
+--- **AI** -- **AI Balancing will replace in multi player missions 
 -- non-occupied human slots with AI groups, in order to provide an engaging simulation environment, 
 -- even when there are hardly any players in the mission.**
 -- 
@@ -20,33 +20,14 @@
 -- 
 -- ### [AI_BALANCER YouTube Channel](https://www.youtube.com/playlist?list=PL7ZUrU4zZUl2CJVIrL1TdAumuVS8n64B7)
 -- 
--- ===
+-- ====
 -- 
--- # **API CHANGE HISTORY**
--- 
--- The underlying change log documents the API changes. Please read this carefully. The following notation is used:
--- 
---   * **Added** parts are expressed in bold type face.
---   * _Removed_ parts are expressed in italic type face.
--- 
--- Hereby the change log:
--- 
--- 2017-01-17: There is still a problem with AI being destroyed, but not respawned. Need to check further upon that.
--- 
--- 2017-01-08: AI_BALANCER:**InitSpawnInterval( Earliest, Latest )** added.
--- 
--- ===
--- 
--- # **AUTHORS and CONTRIBUTIONS**
--- 
+-- ### Author: **Sven Van de Velde (FlightControl)**
 -- ### Contributions: 
 -- 
 --   * **[Dutch_Baron](https://forums.eagle.ru/member.php?u=112075)**: Working together with James has resulted in the creation of the AI_BALANCER class. James has shared his ideas on balancing AI with air units, and together we made a first design which you can use now :-)
---   * **SNAFU**: Had a couple of mails with the guys to validate, if the same concept in the GCI/CAP script could be reworked within MOOSE. None of the script code has been used however within the new AI_BALANCER moose class.
 -- 
--- ### Authors: 
--- 
---   * FlightControl: Framework Design &  Programming and Documentation.
+-- ====
 -- 
 -- @module AI_Balancer
 
@@ -170,22 +151,22 @@ end
 
 --- Returns the AI to the nearest friendly @{Airbase#AIRBASE}.
 -- @param #AI_BALANCER self
--- @param Dcs.DCSTypes#Distance ReturnTresholdRange If there is an enemy @{Client#CLIENT} within the ReturnTresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
+-- @param Dcs.DCSTypes#Distance ReturnThresholdRange If there is an enemy @{Client#CLIENT} within the ReturnThresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
 -- @param Core.Set#SET_AIRBASE ReturnAirbaseSet The SET of @{Set#SET_AIRBASE}s to evaluate where to return to.
-function AI_BALANCER:ReturnToNearestAirbases( ReturnTresholdRange, ReturnAirbaseSet )
+function AI_BALANCER:ReturnToNearestAirbases( ReturnThresholdRange, ReturnAirbaseSet )
 
   self.ToNearestAirbase = true
-  self.ReturnTresholdRange = ReturnTresholdRange
+  self.ReturnThresholdRange = ReturnThresholdRange
   self.ReturnAirbaseSet = ReturnAirbaseSet
 end
 
 --- Returns the AI to the home @{Airbase#AIRBASE}.
 -- @param #AI_BALANCER self
--- @param Dcs.DCSTypes#Distance ReturnTresholdRange If there is an enemy @{Client#CLIENT} within the ReturnTresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
-function AI_BALANCER:ReturnToHomeAirbase( ReturnTresholdRange )
+-- @param Dcs.DCSTypes#Distance ReturnThresholdRange If there is an enemy @{Client#CLIENT} within the ReturnThresholdRange given in meters, the AI will not return to the nearest @{Airbase#AIRBASE}.
+function AI_BALANCER:ReturnToHomeAirbase( ReturnThresholdRange )
 
   self.ToHomeAirbase = true
-  self.ReturnTresholdRange = ReturnTresholdRange
+  self.ReturnThresholdRange = ReturnThresholdRange
 end
 
 --- @param #AI_BALANCER self
@@ -265,12 +246,12 @@ function AI_BALANCER:onenterMonitoring( SetGroup )
           if self.ToNearestAirbase == false and self.ToHomeAirbase == false then
             self:Destroy( Client.UnitName, AIGroup )
           else
-            -- We test if there is no other CLIENT within the self.ReturnTresholdRange of the first unit of the AI group.
+            -- We test if there is no other CLIENT within the self.ReturnThresholdRange of the first unit of the AI group.
             -- If there is a CLIENT, the AI stays engaged and will not return.
-            -- If there is no CLIENT within the self.ReturnTresholdRange, then the unit will return to the Airbase return method selected.
+            -- If there is no CLIENT within the self.ReturnThresholdRange, then the unit will return to the Airbase return method selected.
 
             local PlayerInRange = { Value = false }          
-            local RangeZone = ZONE_RADIUS:New( 'RangeZone', AIGroup:GetVec2(), self.ReturnTresholdRange )
+            local RangeZone = ZONE_RADIUS:New( 'RangeZone', AIGroup:GetVec2(), self.ReturnThresholdRange )
             
             self:T2( RangeZone )
             

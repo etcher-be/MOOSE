@@ -1,4 +1,4 @@
---- **(R2.1) Core** -- Management of CARGO logistics, that can be transported from and to transportation carriers.
+--- **Core** -- Management of CARGO logistics, that can be transported from and to transportation carriers.
 --
 -- ![Banner Image](..\Presentations\CARGO\Dia1.JPG)
 --
@@ -9,13 +9,15 @@
 --   * CARGO_UNIT, represented by a @{Unit} in a singleton @{Group}: Cargo can be represented by a Unit in a Group. a CARGO_UNIT is representable...
 --   * CARGO_GROUP, represented by a @{Group}. A CARGO_GROUP is reportable...
 --   
+-- This module is still under construction, but is described above works already, and will keep working ...
+-- 
 -- ====
 -- 
 -- # Demo Missions
 -- 
--- ### [CARGO Demo Missions source code]()
+-- ### [CARGO Demo Missions source code](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/master-release/CGO%20-%20Cargo)
 -- 
--- ### [CARGO Demo Missions, only for beta testers]()
+-- ### [CARGO Demo Missions, only for beta testers](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/master/CGO%20-%20Cargo)
 --
 -- ### [ALL Demo Missions pack of the last release](https://github.com/FlightControl-Master/MOOSE_MISSIONS/releases)
 -- 
@@ -23,11 +25,14 @@
 -- 
 -- # YouTube Channel
 -- 
--- ### [SPAWNSTATIC YouTube Channel]()
+-- ### [CARGO YouTube Channel](https://www.youtube.com/watch?v=tM00lTlkpYs&list=PL7ZUrU4zZUl2zUTuKrLW5RsO9zLMqUtbf)
 -- 
 -- ====
 -- 
--- This module is still under construction, but is described above works already, and will keep working ...
+-- ### Author: **Sven Van de Velde (FlightControl)**
+-- ### Contributions: 
+-- 
+-- ====
 -- 
 -- @module Cargo
 
@@ -159,7 +164,7 @@ do -- CARGO
   -- @field #number Weight A number defining the weight of the cargo. The weight is expressed in kg.
   -- @field #number NearRadius (optional) A number defining the radius in meters when the cargo is near to a Carrier, so that it can be loaded.
   -- @field Wrapper.Controllable#CONTROLLABLE CargoObject The alive DCS object representing the cargo. This value can be nil, meaning, that the cargo is not represented anywhere...
-  -- @field Wrapper.Controllable#CONTROLLABLE CargoCarrier The alive DCS object carrying the cargo. This value can be nil, meaning, that the cargo is not contained anywhere...
+  -- @field Wrapper.Client#CLIENT CargoCarrier The alive DCS object carrying the cargo. This value can be nil, meaning, that the cargo is not contained anywhere...
   -- @field #boolean Slingloadable This flag defines if the cargo can be slingloaded.
   -- @field #boolean Moveable This flag defines if the cargo is moveable.
   -- @field #boolean Representable This flag defines if the cargo can be represented by a DCS Unit.
@@ -205,8 +210,7 @@ do -- CARGO
   --     The state transition method needs to start with the name **OnEnter + the name of the state**. 
   --     These state transition methods need to provide a return value, which is specified at the function description.
   --
-  -- @field #CARGO CARGO
-  --
+  -- @field #CARGO
   CARGO = {
     ClassName = "CARGO",
     Type = nil,
@@ -246,6 +250,7 @@ function CARGO:New( Type, Name, Weight ) --R2.1
   self:AddTransition( "UnBoarding", "UnBoarding", "UnBoarding" )
   self:AddTransition( "UnBoarding", "UnLoad", "UnLoaded" )
   self:AddTransition( "Loaded", "UnLoad", "UnLoaded" )
+  self:AddTransition( "*", "Damaged", "Damaged" )
   self:AddTransition( "*", "Destroyed", "Destroyed" )
   self:AddTransition( "*", "Respawn", "UnLoaded" )
 
@@ -259,15 +264,24 @@ function CARGO:New( Type, Name, Weight ) --R2.1
   self.Slingloadable = false
   self.Moveable = false
   self.Containable = false
+  
+  self:SetDeployed( false )
 
   self.CargoScheduler = SCHEDULER:New()
 
   CARGOS[self.Name] = self
 
-  self:SetEventPriority( 5 )
   
-
   return self
+end
+
+--- Destroy the cargo.
+-- @param #CARGO self
+function CARGO:Destroy()
+  if self.CargoObject then
+    self.CargoObject:Destroy()
+  end
+  self:Destroyed()
 end
 
 --- Get the name of the Cargo.
@@ -302,6 +316,13 @@ function CARGO:GetCoordinate()
   return self.CargoObject:GetCoordinate()
 end
 
+--- Check if cargo is destroyed.
+-- @param #CARGO self
+-- @return #boolean true if destroyed
+function CARGO:IsDestroyed()
+  return self:Is( "Destroyed" )
+end
+
 
 --- Check if cargo is loaded.
 -- @param #CARGO self
@@ -329,6 +350,19 @@ function CARGO:IsAlive()
   end 
 end
 
+--- Set the cargo as deployed
+-- @param #CARGO self
+function CARGO:SetDeployed( Deployed )
+  self.Deployed = Deployed
+end
+
+--- Is the cargo deployed
+-- @param #CARGO self
+-- @return #boolean
+function CARGO:IsDeployed()
+  return self.Deployed
+end
+
 
 
 
@@ -339,6 +373,85 @@ function CARGO:Spawn( PointVec2 )
   self:F()
 
 end
+
+--- Signal a flare at the position of the CARGO.
+-- @param #CARGO self
+-- @param Utilities.Utils#FLARECOLOR FlareColor
+function CARGO:Flare( FlareColor )
+  if self:IsUnLoaded() then
+    trigger.action.signalFlare( self.CargoObject:GetVec3(), FlareColor , 0 )
+  end
+end
+
+--- Signal a white flare at the position of the CARGO.
+-- @param #CARGO self
+function CARGO:FlareWhite()
+  self:Flare( trigger.flareColor.White )
+end
+
+--- Signal a yellow flare at the position of the CARGO.
+-- @param #CARGO self
+function CARGO:FlareYellow()
+  self:Flare( trigger.flareColor.Yellow )
+end
+
+--- Signal a green flare at the position of the CARGO.
+-- @param #CARGO self
+function CARGO:FlareGreen()
+  self:Flare( trigger.flareColor.Green )
+end
+
+--- Signal a red flare at the position of the CARGO.
+-- @param #CARGO self
+function CARGO:FlareRed()
+  self:Flare( trigger.flareColor.Red )
+end
+
+--- Smoke the CARGO.
+-- @param #CARGO self
+function CARGO:Smoke( SmokeColor, Range )
+  self:F2()
+  if self:IsUnLoaded() then
+    if Range then
+      trigger.action.smoke( self.CargoObject:GetRandomVec3( Range ), SmokeColor )
+    else
+      trigger.action.smoke( self.CargoObject:GetVec3(), SmokeColor )
+    end
+  end
+end
+
+--- Smoke the CARGO Green.
+-- @param #CARGO self
+function CARGO:SmokeGreen()
+  self:Smoke( trigger.smokeColor.Green, Range )
+end
+
+--- Smoke the CARGO Red.
+-- @param #CARGO self
+function CARGO:SmokeRed()
+  self:Smoke( trigger.smokeColor.Red, Range )
+end
+
+--- Smoke the CARGO White.
+-- @param #CARGO self
+function CARGO:SmokeWhite()
+  self:Smoke( trigger.smokeColor.White, Range )
+end
+
+--- Smoke the CARGO Orange.
+-- @param #CARGO self
+function CARGO:SmokeOrange()
+  self:Smoke( trigger.smokeColor.Orange, Range )
+end
+
+--- Smoke the CARGO Blue.
+-- @param #CARGO self
+function CARGO:SmokeBlue()
+  self:Smoke( trigger.smokeColor.Blue, Range )
+end
+
+
+
 
 
 
@@ -352,7 +465,12 @@ function CARGO:IsInZone( Zone )
   if self:IsLoaded() then
     return Zone:IsPointVec2InZone( self.CargoCarrier:GetPointVec2() )
   else
-    return Zone:IsPointVec2InZone( self.CargoObject:GetPointVec2() )
+    self:F( { Size = self.CargoObject:GetSize(), Units = self.CargoObject:GetUnits() } )
+    if self.CargoObject:GetSize() ~= 0 then
+      return Zone:IsPointVec2InZone( self.CargoObject:GetPointVec2() )
+    else
+      return false
+    end
   end  
   
   return nil
@@ -443,8 +561,8 @@ do -- CARGO_REPRESENTABLE
   
     local PointStartVec2 = self.CargoObject:GetPointVec2()
   
-    Points[#Points+1] = PointStartVec2:RoutePointGround( Speed )
-    Points[#Points+1] = ToPointVec2:RoutePointGround( Speed )
+    Points[#Points+1] = PointStartVec2:WaypointGround( Speed )
+    Points[#Points+1] = ToPointVec2:WaypointGround( Speed )
   
     local TaskRoute = self.CargoObject:TaskRoute( Points )
     self.CargoObject:SetTask( TaskRoute, 2 )
@@ -475,8 +593,12 @@ end -- CARGO_REPRESENTABLE
     local self = BASE:Inherit( self, CARGO:New( Type, Name, Weight ) ) -- #CARGO_REPORTABLE
     self:F( { Type, Name, Weight, ReportRadius } )
   
+    self.CargoSet = SET_CARGO:New() -- Core.Set#SET_CARGO
+  
     self.ReportRadius = ReportRadius or 1000
     self.CargoObject = CargoObject
+
+
   
     return self
   end
@@ -506,7 +628,7 @@ end -- CARGO_REPRESENTABLE
   end
 
   --- Send a CC message to a GROUP.
-  -- @param #COMMANDCENTER self
+  -- @param #CARGO_REPORTABLE self
   -- @param #string Message
   -- @param Wrapper.Group#GROUP TaskGroup
   -- @param #sring Name (optional) The name of the Group used as a prefix for the message to the Group. If not provided, there will be nothing shown.
@@ -519,12 +641,38 @@ end -- CARGO_REPRESENTABLE
   end
 
   --- Get the range till cargo will board.
-  -- @param #CARGO self
+  -- @param #CARGO_REPORTABLE self
   -- @return #number The range till cargo will board.
   function CARGO_REPORTABLE:GetBoardingRange()
     return self.ReportRadius
   end
+  
+  --- Respawn the cargo.
+  -- @param #CARGO_REPORTABLE self
+  function CARGO_REPORTABLE:Respawn()
 
+    self:F({"Respawning"})
+
+    for CargoID, CargoData in pairs( self.CargoSet:GetSet() ) do
+      local Cargo = CargoData -- #CARGO
+      Cargo:Destroy()
+      Cargo:SetStartState( "UnLoaded" )
+    end
+
+    local CargoObject = self.CargoObject -- Wrapper.Group#GROUP
+    CargoObject:Destroy()
+    local Template = CargoObject:GetTemplate()
+    CargoObject:Respawn( Template )
+  
+    self:SetDeployed( false )
+  
+    local WeightGroup = 0
+        
+    self:SetStartState( "UnLoaded" )
+    
+  end
+
+  
 end
 
 do -- CARGO_UNIT
@@ -564,16 +712,18 @@ function CARGO_UNIT:New( CargoUnit, Type, Name, Weight, NearRadius )
 
   self:T( self.ClassName )
 
-  self:HandleEvent( EVENTS.Dead,
-    --- @param #CARGO Cargo
-    -- @param Core.Event#EVENTDATA EventData 
-    function( Cargo, EventData )
-      if Cargo:GetObjectName() == EventData.IniUnit:GetName() then
-        self:E( { "Cargo destroyed", Cargo } )
-        Cargo:Destroyed()
-      end
-    end
-  )
+--  self:HandleEvent( EVENTS.Dead,
+--    --- @param #CARGO Cargo
+--    -- @param Core.Event#EVENTDATA EventData 
+--    function( Cargo, EventData )
+--      if Cargo:GetObjectName() == EventData.IniUnit:GetName() then
+--        self:E( { "Cargo destroyed", Cargo } )
+--        Cargo:Destroyed()
+--      end
+--    end
+--  )
+
+  self:SetEventPriority( 5 )
 
   return self
 end
@@ -584,6 +734,7 @@ end
 function CARGO_UNIT:Destroy()
 
   -- Cargo objects are deleted from the _DATABASE and SET_CARGO objects.
+  self:F( { CargoName = self:GetName() } )
   _EVENTDISPATCHER:CreateEventDeleteCargo( self )
 
   return self
@@ -633,9 +784,9 @@ function CARGO_UNIT:onenterUnBoarding( From, Event, To, ToPointVec2, NearRadius 
       self.CargoCarrier = nil
 
       local Points = {}
-      Points[#Points+1] = CargoCarrierPointVec2:RoutePointGround( Speed )
+      Points[#Points+1] = CargoCarrierPointVec2:WaypointGround( Speed )
       
-      Points[#Points+1] = ToPointVec2:RoutePointGround( Speed )
+      Points[#Points+1] = ToPointVec2:WaypointGround( Speed )
   
       local TaskRoute = self.CargoObject:TaskRoute( Points )
       self.CargoObject:SetTask( TaskRoute, 1 )
@@ -772,8 +923,8 @@ function CARGO_UNIT:onafterBoard( From, Event, To, CargoCarrier, NearRadius, ...
     
       local PointStartVec2 = self.CargoObject:GetPointVec2()
     
-      Points[#Points+1] = PointStartVec2:RoutePointGround( Speed )
-      Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+      Points[#Points+1] = PointStartVec2:WaypointGround( Speed )
+      Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
     
       local TaskRoute = self.CargoObject:TaskRoute( Points )
       self.CargoObject:SetTask( TaskRoute, 2 )
@@ -820,8 +971,8 @@ function CARGO_UNIT:onafterBoarding( From, Event, To, CargoCarrier, NearRadius, 
         
           local PointStartVec2 = self.CargoObject:GetPointVec2()
         
-          Points[#Points+1] = PointStartVec2:RoutePointGround( Speed )
-          Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+          Points[#Points+1] = PointStartVec2:WaypointGround( Speed )
+          Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
         
           local TaskRoute = self.CargoObject:TaskRoute( Points )
           self.CargoObject:SetTask( TaskRoute, 0.2 )
@@ -911,9 +1062,9 @@ function CARGO_GROUP:New( CargoGroup, Type, Name, ReportRadius )
   local self = BASE:Inherit( self, CARGO_REPORTABLE:New( CargoGroup, Type, Name, 0, ReportRadius ) ) -- #CARGO_GROUP
   self:F( { Type, Name, ReportRadius } )
 
-  self.CargoSet = SET_CARGO:New()
-  
   self.CargoObject = CargoGroup
+  self:SetDeployed( false )
+  self.CargoGroup = CargoGroup
   
   local WeightGroup = 0
   
@@ -932,7 +1083,45 @@ function CARGO_GROUP:New( CargoGroup, Type, Name, ReportRadius )
   -- Cargo objects are added to the _DATABASE and SET_CARGO objects.
   _EVENTDISPATCHER:CreateEventNewCargo( self )
   
+  self:HandleEvent( EVENTS.Dead, self.OnEventCargoDead )
+  self:HandleEvent( EVENTS.Crash, self.OnEventCargoDead )
+  self:HandleEvent( EVENTS.PlayerLeaveUnit, self.OnEventCargoDead )
+  
+  self:SetEventPriority( 4 )
+  
   return self
+end
+
+--- @param #CARGO_GROUP self
+-- @param Core.Event#EVENTDATA EventData 
+function CARGO_GROUP:OnEventCargoDead( EventData )
+
+  local Destroyed = false
+  
+  if self:IsDestroyed() or self:IsUnLoaded() then
+    Destroyed = true
+    for CargoID, CargoData in pairs( self.CargoSet:GetSet() ) do
+      local Cargo = CargoData -- #CARGO
+      if Cargo:IsAlive() then
+        Destroyed = false
+      else
+        Cargo:Destroyed()
+      end
+    end
+  else
+    local CarrierName = self.CargoCarrier:GetName()
+    if CarrierName == EventData.IniDCSUnitName then
+      MESSAGE:New( "Cargo is lost from carrier " .. CarrierName, 15 ):ToAll()
+      Destroyed = true
+      self.CargoCarrier:ClearCargo()
+    end
+  end
+  
+  if Destroyed then
+    self:Destroyed()
+    self:E( { "Cargo group destroyed" } )
+  end
+
 end
 
 --- Enter Boarding State.
@@ -976,7 +1165,7 @@ function CARGO_GROUP:onenterLoaded( From, Event, To, CargoCarrier, ... )
     end
   end
   
-  self.CargoObject:Destroy()
+  --self.CargoObject:Destroy()
   self.CargoCarrier = CargoCarrier
   
 end
@@ -1032,6 +1221,14 @@ function CARGO_GROUP:onafterBoarding( From, Event, To, CargoCarrier, NearRadius,
   
 end
 
+--- Get the amount of cargo units in the group.
+-- @param #CARGO_GROUP self
+-- @return #CARGO_GROUP
+function CARGO_GROUP:GetCount()
+  return self.CargoSet:Count()
+end
+
+
 --- Enter UnBoarding State.
 -- @param #CARGO_GROUP self
 -- @param Core.Point#POINT_VEC2 ToPointVec2
@@ -1046,6 +1243,10 @@ function CARGO_GROUP:onenterUnBoarding( From, Event, To, ToPointVec2, NearRadius
   local Timer = 1
 
   if From == "Loaded" then
+  
+    if self.CargoObject then
+      self.CargoObject:Destroy()
+    end
 
     -- For each Cargo object within the CARGO_GROUP, route each object to the CargoLoadPointVec2
     self.CargoSet:ForEach(
@@ -1137,6 +1338,23 @@ function CARGO_GROUP:onenterUnLoaded( From, Event, To, ToPointVec2, ... )
   
 end
 
+
+  --- Respawn the cargo when destroyed
+  -- @param #CARGO_GROUP self
+  -- @param #boolean RespawnDestroyed
+  function CARGO_GROUP:RespawnOnDestroyed( RespawnDestroyed )
+    self:F({"In function RespawnOnDestroyed"})
+    if RespawnDestroyed then
+      self.onenterDestroyed = function( self )
+        self:F("IN FUNCTION")
+        self:Respawn()
+      end
+    else
+      self.onenterDestroyed = nil
+    end
+      
+  end
+
 end -- CARGO_GROUP
 
 do -- CARGO_PACKAGE
@@ -1193,8 +1411,8 @@ function CARGO_PACKAGE:onafterOnBoard( From, Event, To, CargoCarrier, Speed, Boa
     self:T( { CargoCarrierHeading, CargoDeployHeading } )
     local CargoDeployPointVec2 = CargoCarrier:GetPointVec2():Translate( BoardDistance, CargoDeployHeading )
 
-    Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-    Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+    Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+    Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
     local TaskRoute = self.CargoCarrier:TaskRoute( Points )
     self.CargoCarrier:SetTask( TaskRoute, 1 )
@@ -1270,8 +1488,8 @@ function CARGO_PACKAGE:onafterUnBoard( From, Event, To, CargoCarrier, Speed, UnL
     self:T( { CargoCarrierHeading, CargoDeployHeading } )
     local CargoDeployPointVec2 = StartPointVec2:Translate( UnBoardDistance, CargoDeployHeading )
 
-    Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-    Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+    Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+    Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
     local TaskRoute = CargoCarrier:TaskRoute( Points )
     CargoCarrier:SetTask( TaskRoute, 1 )
@@ -1317,8 +1535,8 @@ function CARGO_PACKAGE:onafterLoad( From, Event, To, CargoCarrier, Speed, LoadDi
   local CargoDeployPointVec2 = StartPointVec2:Translate( LoadDistance, CargoDeployHeading )
   
   local Points = {}
-  Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-  Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+  Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+  Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
   local TaskRoute = self.CargoCarrier:TaskRoute( Points )
   self.CargoCarrier:SetTask( TaskRoute, 1 )
@@ -1343,8 +1561,8 @@ function CARGO_PACKAGE:onafterUnLoad( From, Event, To, CargoCarrier, Speed, Dist
   self.CargoCarrier = CargoCarrier
 
   local Points = {}
-  Points[#Points+1] = StartPointVec2:RoutePointGround( Speed )
-  Points[#Points+1] = CargoDeployPointVec2:RoutePointGround( Speed )
+  Points[#Points+1] = StartPointVec2:WaypointGround( Speed )
+  Points[#Points+1] = CargoDeployPointVec2:WaypointGround( Speed )
 
   local TaskRoute = self.CargoCarrier:TaskRoute( Points )
   self.CargoCarrier:SetTask( TaskRoute, 1 )

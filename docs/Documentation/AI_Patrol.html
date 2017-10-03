@@ -17,6 +17,11 @@
 				<a href="index.html">index</a>
 			</li></ul>
 		<ul>
+					<li><a href="AI_A2A.html">AI_A2A</a></li>
+					<li><a href="AI_A2A_Cap.html">AI_A2A_Cap</a></li>
+					<li><a href="AI_A2A_Dispatcher.html">AI_A2A_Dispatcher</a></li>
+					<li><a href="AI_A2A_GCI.html">AI_A2A_GCI</a></li>
+					<li><a href="AI_A2A_Patrol.html">AI_A2A_Patrol</a></li>
 					<li><a href="AI_Bai.html">AI_Bai</a></li>
 					<li><a href="AI_Balancer.html">AI_Balancer</a></li>
 					<li><a href="AI_Cap.html">AI_Cap</a></li>
@@ -68,6 +73,7 @@
 					<li><a href="Process_JTAC.html">Process_JTAC</a></li>
 					<li><a href="Process_Pickup.html">Process_Pickup</a></li>
 					<li><a href="Radio.html">Radio</a></li>
+					<li><a href="Rat.html">Rat</a></li>
 					<li><a href="Route.html">Route</a></li>
 					<li><a href="Scenery.html">Scenery</a></li>
 					<li><a href="ScheduleDispatcher.html">ScheduleDispatcher</a></li>
@@ -75,6 +81,7 @@
 					<li><a href="Scoring.html">Scoring</a></li>
 					<li><a href="Sead.html">Sead</a></li>
 					<li><a href="Set.html">Set</a></li>
+					<li><a href="Settings.html">Settings</a></li>
 					<li><a href="Smoke.html">Smoke</a></li>
 					<li><a href="Spawn.html">Spawn</a></li>
 					<li><a href="SpawnStatic.html">SpawnStatic</a></li>
@@ -82,6 +89,8 @@
 					<li><a href="Static.html">Static</a></li>
 					<li><a href="StaticObject.html">StaticObject</a></li>
 					<li><a href="Task.html">Task</a></li>
+					<li><a href="Task_A2A.html">Task_A2A</a></li>
+					<li><a href="Task_A2A_Dispatcher.html">Task_A2A_Dispatcher</a></li>
 					<li><a href="Task_A2G.html">Task_A2G</a></li>
 					<li><a href="Task_A2G_Dispatcher.html">Task_A2G_Dispatcher</a></li>
 					<li><a href="Task_Cargo.html">Task_Cargo</a></li>
@@ -131,38 +140,7 @@
 
 <hr/>
 
-<h1><strong>OPEN ISSUES</strong></h1>
-
-<p>2017-01-17: When Spawned AI is located at an airbase, it will be routed first back to the airbase after take-off.</p>
-
-<p>2016-01-17: 
-  -- Fixed problem with AI returning to base too early and unexpected.
-  -- ReSpawning of AI will reset the AI_PATROL and derived classes.
-  -- Checked the correct workings of SCHEDULER, and it DOES work correctly.</p>
-
-<hr/>
-
-<h1><strong>API CHANGE HISTORY</strong></h1>
-
-<p>The underlying change log documents the API changes. Please read this carefully. The following notation is used:</p>
-
-<ul>
-    <li><strong>Added</strong> parts are expressed in bold type face.</li>
-    <li><em>Removed</em> parts are expressed in italic type face.</li>
-</ul>
-
-<p>Hereby the change log:</p>
-
-<p>2017-01-17: Rename of class: <strong>AI_PATROL_ZONE</strong> is the new name for the old <em>AI_PATROLZONE</em>.</p>
-
-<p>2017-01-15: Complete revision. AI<em>PATROL</em>ZONE is the base class for other AI_PATROL like classes.</p>
-
-<p>2016-09-01: Initial class and API.</p>
-
-<hr/>
-
-<h1><strong>AUTHORS and CONTRIBUTIONS</strong></h1>
-
+<h3>Author: <strong>Sven Van de Velde (FlightControl)</strong></h3>
 <h3>Contributions:</h3>
 
 <ul>
@@ -170,11 +148,7 @@
     <li><strong><a href="https://forums.eagle.ru/member.php?u=62835">Pikey</a></strong>: Testing and API concept review.</li>
 </ul>
 
-<h3>Authors:</h3>
-
-<ul>
-    <li><strong>FlightControl</strong>: Design &amp; Programming.</li>
-</ul>
+<hr/>
 
 
 	<h2>Global(s)</h2>
@@ -263,13 +237,13 @@
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).ManageDamage">AI_PATROL_ZONE:ManageDamage(PatrolDamageTreshold)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).ManageDamage">AI_PATROL_ZONE:ManageDamage(PatrolDamageThreshold)</a></td>
 		<td class="summary">
 <p>When the AI is damaged beyond a certain treshold, it is required that the AI returns to the home base.</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).ManageFuel">AI_PATROL_ZONE:ManageFuel(PatrolFuelTresholdPercentage, PatrolOutOfFuelOrbitTime)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).ManageFuel">AI_PATROL_ZONE:ManageFuel(PatrolFuelThresholdPercentage, PatrolOutOfFuelOrbitTime)</a></td>
 		<td class="summary">
 <p>When the AI is out of fuel, it is required that a new AI is started, before the old AI can return to the home base.</p>
 </td>
@@ -431,7 +405,7 @@
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).PatrolDamageTreshold">AI_PATROL_ZONE.PatrolDamageTreshold</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).PatrolDamageThreshold">AI_PATROL_ZONE.PatrolDamageThreshold</a></td>
 		<td class="summary">
 
 </td>
@@ -443,7 +417,7 @@
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).PatrolFuelTresholdPercentage">AI_PATROL_ZONE.PatrolFuelTresholdPercentage</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).PatrolFuelThresholdPercentage">AI_PATROL_ZONE.PatrolFuelThresholdPercentage</a></td>
 		<td class="summary">
 
 </td>
@@ -515,12 +489,6 @@
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).SetDetectionInterval">AI_PATROL_ZONE:SetDetectionInterval(Seconds)</a></td>
-		<td class="summary">
-<p>Set the interval in seconds between each detection executed by the AI.</p>
-</td>
-		</tr>
-		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).SetDetectionOff">AI_PATROL_ZONE:SetDetectionOff()</a></td>
 		<td class="summary">
 <p>Set the detection off.</p>
@@ -536,6 +504,12 @@
 		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).SetDetectionZone">AI_PATROL_ZONE:SetDetectionZone(DetectionZone)</a></td>
 		<td class="summary">
 <p>Set the detection zone where the AI is detecting targets.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(AI_PATROL_ZONE).SetRefreshTimeInterval">AI_PATROL_ZONE:SetRefreshTimeInterval(Seconds)</a></td>
+		<td class="summary">
+<p>Set the interval in seconds between each detection executed by the AI.</p>
 </td>
 		</tr>
 		<tr>
@@ -769,7 +743,7 @@ Only put detection on when absolutely necessary, and the frequency of the detect
     <li><a href="##(AI_PATROL_ZONE).SetDetectionOff">AI<em>PATROL</em>ZONE.SetDetectionOff</a>(): Set the detection off, the AI will not detect for targets. The existing target list will NOT be erased.</li>
 </ul>
 
-<p>The detection frequency can be set with <a href="##(AI_PATROL_ZONE).SetDetectionInterval">AI<em>PATROL</em>ZONE.SetDetectionInterval</a>( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
+<p>The detection frequency can be set with <a href="##(AI_PATROL_ZONE).SetRefreshTimeInterval">AI<em>PATROL</em>ZONE.SetRefreshTimeInterval</a>( seconds ), where the amount of seconds specify how much seconds will be waited before the next detection.
 Use the method <a href="##(AI_PATROL_ZONE).GetDetectedUnits">AI<em>PATROL</em>ZONE.GetDetectedUnits</a>() to obtain a list of the <a href="Unit.html">Unit</a>s detected by the AI.</p>
 
 <p>The detection can be filtered to potential targets in a specific zone.
@@ -953,6 +927,9 @@ Use the method <a href="##(AI_PATROL_ZONE).ManageDamage">AI<em>PATROL</em>ZONE.M
 	
 
 
+	
+<p> This table contains the targets detected during patrol.</p>
+
 </dd>
 </dl>
 		<dl class="function">
@@ -981,7 +958,7 @@ The list of <a href="Unit.html##(UNIT)">Unit#UNIT</a>s</p>
 <dt>
 
 <a id="#(AI_PATROL_ZONE).ManageDamage" >
-<strong>AI_PATROL_ZONE:ManageDamage(PatrolDamageTreshold)</strong>
+<strong>AI_PATROL_ZONE:ManageDamage(PatrolDamageThreshold)</strong>
 </a>
 </dt>
 <dd>
@@ -999,7 +976,7 @@ So, in a group of 4 airplanes, 2 lost and 2 with damage 0.2, the damage treshold
 		<ul>
 				<li>
 				
-<p><code><em>#number PatrolDamageTreshold </em></code>: 
+<p><code><em>#number PatrolDamageThreshold </em></code>: 
 The treshold in percentage (between 0 and 1) when the AI is considered to be damaged.</p>
 
 				</li>
@@ -1015,7 +992,7 @@ self</p>
 <dt>
 
 <a id="#(AI_PATROL_ZONE).ManageFuel" >
-<strong>AI_PATROL_ZONE:ManageFuel(PatrolFuelTresholdPercentage, PatrolOutOfFuelOrbitTime)</strong>
+<strong>AI_PATROL_ZONE:ManageFuel(PatrolFuelThresholdPercentage, PatrolOutOfFuelOrbitTime)</strong>
 </a>
 </dt>
 <dd>
@@ -1031,7 +1008,7 @@ Once the time is finished, the old AI will return to the base.</p>
 		<ul>
 				<li>
 				
-<p><code><em>#number PatrolFuelTresholdPercentage </em></code>: 
+<p><code><em>#number PatrolFuelThresholdPercentage </em></code>: 
 The treshold in percentage (between 0 and 1) when the AIControllable is considered to get out of fuel.</p>
 
 				</li>
@@ -2059,8 +2036,8 @@ Return false to cancel Transition.</p>
 <dt>
 
 		<em></em>
-<a id="#(AI_PATROL_ZONE).PatrolDamageTreshold" >
-<strong>AI_PATROL_ZONE.PatrolDamageTreshold</strong>
+<a id="#(AI_PATROL_ZONE).PatrolDamageThreshold" >
+<strong>AI_PATROL_ZONE.PatrolDamageThreshold</strong>
 </a>
 </dt>
 <dd>
@@ -2087,8 +2064,8 @@ Return false to cancel Transition.</p>
 <dt>
 
 		<em></em>
-<a id="#(AI_PATROL_ZONE).PatrolFuelTresholdPercentage" >
-<strong>AI_PATROL_ZONE.PatrolFuelTresholdPercentage</strong>
+<a id="#(AI_PATROL_ZONE).PatrolFuelThresholdPercentage" >
+<strong>AI_PATROL_ZONE.PatrolFuelThresholdPercentage</strong>
 </a>
 </dt>
 <dd>
@@ -2285,39 +2262,6 @@ self</p>
 		<dl class="function">
 <dt>
 
-<a id="#(AI_PATROL_ZONE).SetDetectionInterval" >
-<strong>AI_PATROL_ZONE:SetDetectionInterval(Seconds)</strong>
-</a>
-</dt>
-<dd>
-	
-<p>Set the interval in seconds between each detection executed by the AI.</p>
-
-	
-<p>The list of already detected targets will be kept and updated.
-Newly detected targets will be added, but already detected targets that were 
-not detected in this cycle, will NOT be removed!
-The default interval is 30 seconds.</p>
-
-		<h3>Parameter</h3>
-		<ul>
-				<li>
-				
-<p><code><em>#number Seconds </em></code>: 
-The interval in seconds.</p>
-
-				</li>
-		</ul>
-		<h3>Return value</h3>
-				
-<p><em><a href="##(AI_PATROL_ZONE)">#AI<em>PATROL</em>ZONE</a>:</em>
-self</p>
-
-</dd>
-</dl>
-		<dl class="function">
-<dt>
-
 <a id="#(AI_PATROL_ZONE).SetDetectionOff" >
 <strong>AI_PATROL_ZONE:SetDetectionOff()</strong>
 </a>
@@ -2375,6 +2319,39 @@ self</p>
 				
 <p><code><em><a href="Core.Zone.html##(ZONE)">Core.Zone#ZONE</a> DetectionZone </em></code>: 
 The zone where to detect targets.</p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(AI_PATROL_ZONE)">#AI<em>PATROL</em>ZONE</a>:</em>
+self</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(AI_PATROL_ZONE).SetRefreshTimeInterval" >
+<strong>AI_PATROL_ZONE:SetRefreshTimeInterval(Seconds)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Set the interval in seconds between each detection executed by the AI.</p>
+
+	
+<p>The list of already detected targets will be kept and updated.
+Newly detected targets will be added, but already detected targets that were 
+not detected in this cycle, will NOT be removed!
+The default interval is 30 seconds.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em>#number Seconds </em></code>: 
+The interval in seconds.</p>
 
 				</li>
 		</ul>

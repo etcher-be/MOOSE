@@ -1,8 +1,8 @@
---- **Core** - ZONE classes define **zones** within your mission of **various forms**, with **various capabilities**.
+--- **Core** -- ZONE classes define **zones** within your mission of **various forms**, with **various capabilities**.
 -- 
 -- ![Banner Image](..\Presentations\ZONE\Dia1.JPG)
 -- 
--- ===
+-- ====
 -- 
 -- There are essentially two core functions that zones accomodate:
 -- 
@@ -27,41 +27,12 @@
 --   * @{#ZONE_GROUP}: The ZONE_GROUP class defines by a zone around a @{Group#GROUP} with a radius.
 --   * @{#ZONE_POLYGON}: The ZONE_POLYGON class defines by a sequence of @{Group#GROUP} waypoints within the Mission Editor, forming a polygon.
 --
--- === 
+-- ==== 
 -- 
--- # **API CHANGE HISTORY**
+-- ### Author: **Sven Van de Velde (FlightControl)**
+-- ### Contributions: 
 -- 
--- The underlying change log documents the API changes. Please read this carefully. The following notation is used:
--- 
---   * **Added** parts are expressed in bold type face.
---   * _Removed_ parts are expressed in italic type face.
--- 
--- Hereby the change log:
--- 
--- 2017-02-28: ZONE\_BASE:**IsVec2InZone()** replaces ZONE\_BASE:_IsPointVec2InZone()_.  
--- 2017-02-28: ZONE\_BASE:**IsVec3InZone()** replaces ZONE\_BASE:_IsPointVec3InZone()_.  
--- 2017-02-28: ZONE\_RADIUS:**IsVec2InZone()** replaces ZONE\_RADIUS:_IsPointVec2InZone()_.  
--- 2017-02-28: ZONE\_RADIUS:**IsVec3InZone()** replaces ZONE\_RADIUS:_IsPointVec3InZone()_.  
--- 2017-02-28: ZONE\_POLYGON:**IsVec2InZone()** replaces ZONE\_POLYGON:_IsPointVec2InZone()_.  
--- 2017-02-28: ZONE\_POLYGON:**IsVec3InZone()** replaces ZONE\_POLYGON:_IsPointVec3InZone()_.  
--- 
--- 2017-02-18: ZONE\_POLYGON_BASE:**GetRandomPointVec2()** added.
--- 
--- 2017-02-18: ZONE\_POLYGON_BASE:**GetRandomPointVec3()** added.
--- 
--- 2017-02-18: ZONE\_RADIUS:**GetRandomPointVec3( inner, outer )** added.
--- 
--- 2017-02-18: ZONE\_RADIUS:**GetRandomPointVec2( inner, outer )** added.
--- 
--- 2016-08-15: ZONE\_BASE:**GetName()** added.
--- 
--- 2016-08-15: ZONE\_BASE:**SetZoneProbability( ZoneProbability )** added.
--- 
--- 2016-08-15: ZONE\_BASE:**GetZoneProbability()** added.
--- 
--- 2016-08-15: ZONE\_BASE:**GetZoneMaybe()** added.
--- 
--- ===
+-- ====
 -- 
 -- @module Zone
 
@@ -225,7 +196,6 @@ end
 
 --- Returns a @{Point#COORDINATE} of the zone.
 -- @param #ZONE_BASE self
--- @param Dcs.DCSTypes#Distance Height The height to add to the land height where the center of the zone is located.
 -- @return Core.Point#COORDINATE The Coordinate of the zone.
 function ZONE_BASE:GetCoordinate()
   self:F2( self.ZoneName )
@@ -251,7 +221,7 @@ function ZONE_BASE:GetVec3( Height )
   
   local Vec2 = self:GetVec2()
 
-  local Vec3 = { x = Vec2.x, y = land.getHeight( self:GetVec2() ) + Height, z = Vec2.y }
+  local Vec3 = { x = Vec2.x, y = Height and Height or land.getHeight( self:GetVec2() ), z = Vec2.y }
 
   self:T2( { Vec3 } )
   
@@ -675,6 +645,22 @@ function ZONE_RADIUS:GetRandomPointVec3( inner, outer )
 end
 
 
+--- Returns a @{Point#COORDINATE} object reflecting a random 3D location within the zone.
+-- @param #ZONE_RADIUS self
+-- @param #number inner (optional) Minimal distance from the center of the zone. Default is 0.
+-- @param #number outer (optional) Maximal distance from the outer edge of the zone. Default is the radius of the zone.
+-- @return Core.Point#COORDINATE
+function ZONE_RADIUS:GetRandomCoordinate( inner, outer )
+  self:F( self.ZoneName, inner, outer )
+
+  local Coordinate = COORDINATE:NewFromVec2( self:GetRandomVec2() )
+
+  self:T3( { Coordinate = Coordinate } )
+  
+  return Coordinate
+end
+
+
 
 --- @type ZONE
 -- @extends #ZONE_RADIUS
@@ -864,6 +850,20 @@ function ZONE_GROUP:GetRandomVec2()
   return Point
 end
 
+--- Returns a @{Point#POINT_VEC2} object reflecting a random 2D location within the zone.
+-- @param #ZONE_GROUP self
+-- @param #number inner (optional) Minimal distance from the center of the zone. Default is 0.
+-- @param #number outer (optional) Maximal distance from the outer edge of the zone. Default is the radius of the zone.
+-- @return Core.Point#POINT_VEC2 The @{Point#POINT_VEC2} object reflecting the random 3D location within the zone.
+function ZONE_GROUP:GetRandomPointVec2( inner, outer )
+  self:F( self.ZoneName, inner, outer )
+
+  local PointVec2 = POINT_VEC2:NewFromVec2( self:GetRandomVec2() )
+
+  self:T3( { PointVec2 } )
+  
+  return PointVec2
+end
 
 
 --- @type ZONE_POLYGON_BASE
@@ -1104,6 +1104,20 @@ function ZONE_POLYGON_BASE:GetRandomPointVec3()
   self:T2( PointVec3 )
 
   return PointVec3
+end
+
+
+--- Return a @{Point#COORDINATE} object representing a random 3D point at landheight within the zone.
+-- @param #ZONE_POLYGON_BASE self
+-- @return Core.Point#COORDINATE
+function ZONE_POLYGON_BASE:GetRandomCoordinate()
+  self:F2()
+
+  local Coordinate = COORDINATE:NewFromVec2( self:GetRandomVec2() )
+  
+  self:T2( Coordinate )
+
+  return Coordinate
 end
 
 

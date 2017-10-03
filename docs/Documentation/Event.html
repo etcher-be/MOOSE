@@ -17,6 +17,11 @@
 				<a href="index.html">index</a>
 			</li></ul>
 		<ul>
+					<li><a href="AI_A2A.html">AI_A2A</a></li>
+					<li><a href="AI_A2A_Cap.html">AI_A2A_Cap</a></li>
+					<li><a href="AI_A2A_Dispatcher.html">AI_A2A_Dispatcher</a></li>
+					<li><a href="AI_A2A_GCI.html">AI_A2A_GCI</a></li>
+					<li><a href="AI_A2A_Patrol.html">AI_A2A_Patrol</a></li>
 					<li><a href="AI_Bai.html">AI_Bai</a></li>
 					<li><a href="AI_Balancer.html">AI_Balancer</a></li>
 					<li><a href="AI_Cap.html">AI_Cap</a></li>
@@ -68,6 +73,7 @@
 					<li><a href="Process_JTAC.html">Process_JTAC</a></li>
 					<li><a href="Process_Pickup.html">Process_Pickup</a></li>
 					<li><a href="Radio.html">Radio</a></li>
+					<li><a href="Rat.html">Rat</a></li>
 					<li><a href="Route.html">Route</a></li>
 					<li><a href="Scenery.html">Scenery</a></li>
 					<li><a href="ScheduleDispatcher.html">ScheduleDispatcher</a></li>
@@ -75,6 +81,7 @@
 					<li><a href="Scoring.html">Scoring</a></li>
 					<li><a href="Sead.html">Sead</a></li>
 					<li><a href="Set.html">Set</a></li>
+					<li><a href="Settings.html">Settings</a></li>
 					<li><a href="Smoke.html">Smoke</a></li>
 					<li><a href="Spawn.html">Spawn</a></li>
 					<li><a href="SpawnStatic.html">SpawnStatic</a></li>
@@ -82,6 +89,8 @@
 					<li><a href="Static.html">Static</a></li>
 					<li><a href="StaticObject.html">StaticObject</a></li>
 					<li><a href="Task.html">Task</a></li>
+					<li><a href="Task_A2A.html">Task_A2A</a></li>
+					<li><a href="Task_A2A_Dispatcher.html">Task_A2A_Dispatcher</a></li>
 					<li><a href="Task_A2G.html">Task_A2G</a></li>
 					<li><a href="Task_A2G_Dispatcher.html">Task_A2G_Dispatcher</a></li>
 					<li><a href="Task_Cargo.html">Task_Cargo</a></li>
@@ -97,7 +106,7 @@
 	<div id="content">
    <h1>Module <code>Event</code></h1>
    
-<p><strong>Core R2.1</strong> - EVENT models DCS <strong>event dispatching</strong> using a <strong>publish-subscribe</strong> model.</p>
+<p><strong>Core</strong> -- EVENT models DCS <strong>event dispatching</strong> using a <strong>publish-subscribe</strong> model.</p>
 
    
 
@@ -268,36 +277,10 @@ Example code snippet:</p>
 
 <hr/>
 
-<h1><strong>API CHANGE HISTORY</strong></h1>
-
-<p>The underlying change log documents the API changes. Please read this carefully. The following notation is used:</p>
-
-<ul>
-    <li><strong>Added</strong> parts are expressed in bold type face.</li>
-    <li><em>Removed</em> parts are expressed in italic type face.</li>
-</ul>
-
-<p>YYYY-MM-DD: CLASS:<strong>NewFunction</strong>( Params ) replaces CLASS:<em>OldFunction</em>( Params )
-YYYY-MM-DD: CLASS:<strong>NewFunction( Params )</strong> added</p>
-
-<p>Hereby the change log:</p>
-
-<ul>
-    <li><p>2017-03-07: Added the correct event dispatching in case the event is subscribed by a GROUP.</p></li>
-    <li><p>2017-02-07: Did a complete revision of the Event Handing API and underlying mechanisms.</p></li>
-</ul>
-
-<hr/>
-
-<h1><strong>AUTHORS and CONTRIBUTIONS</strong></h1>
-
+<h3>Author: <strong>Sven Van de Velde (FlightControl)</strong></h3>
 <h3>Contributions:</h3>
 
-<h3>Authors:</h3>
-
-<ul>
-    <li><a href="https://forums.eagle.ru/member.php?u=89536"><strong>FlightControl</strong></a>: Design &amp; Programming &amp; documentation.</li>
-</ul>
+<hr/>
 
 
 	<h2>Global(s)</h2>
@@ -360,12 +343,6 @@ YYYY-MM-DD: CLASS:<strong>NewFunction( Params )</strong> added</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(EVENT).EventsDead">EVENT.EventsDead</a></td>
-		<td class="summary">
-
-</td>
-		</tr>
-		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(EVENT).Init">EVENT:Init(EventID, EventClass)</a></td>
 		<td class="summary">
 <p>Initializes the Events structure for the event</p>
@@ -402,7 +379,7 @@ YYYY-MM-DD: CLASS:<strong>NewFunction( Params )</strong> added</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(EVENT).OnEventForGroup">EVENT:OnEventForGroup(GroupName, EventFunction, EventClass, EventID)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(EVENT).OnEventForGroup">EVENT:OnEventForGroup(GroupName, EventFunction, EventClass, EventID, ...)</a></td>
 		<td class="summary">
 <p>Set a new listener for an S<em>EVENT</em>X event for a GROUP.</p>
 </td>
@@ -438,15 +415,15 @@ YYYY-MM-DD: CLASS:<strong>NewFunction( Params )</strong> added</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(EVENT).Remove">EVENT:Remove(EventClass, EventID)</a></td>
-		<td class="summary">
-<p>Removes a subscription</p>
-</td>
-		</tr>
-		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(EVENT).RemoveAll">EVENT:RemoveAll(EventObject)</a></td>
 		<td class="summary">
 <p>Clears all event subscriptions for a <a href="Base.html##(BASE)">Base#BASE</a> derived object.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(EVENT).RemoveEvent">EVENT:RemoveEvent(EventClass, EventID)</a></td>
+		<td class="summary">
+<p>Removes a subscription</p>
 </td>
 		</tr>
 		<tr>
@@ -1056,19 +1033,6 @@ The Cargo created.</p>
 		<dl class="function">
 <dt>
 
-<a id="#(EVENT).EventsDead" >
-<strong>EVENT.EventsDead</strong>
-</a>
-</dt>
-<dd>
-	
-
-
-</dd>
-</dl>
-		<dl class="function">
-<dt>
-
 <a id="#(EVENT).Init" >
 <strong>EVENT:Init(EventID, EventClass)</strong>
 </a>
@@ -1281,7 +1245,7 @@ The self instance of the class for which the event is.</p>
 <dt>
 
 <a id="#(EVENT).OnEventForGroup" >
-<strong>EVENT:OnEventForGroup(GroupName, EventFunction, EventClass, EventID)</strong>
+<strong>EVENT:OnEventForGroup(GroupName, EventFunction, EventClass, EventID, ...)</strong>
 </a>
 </dt>
 <dd>
@@ -1311,6 +1275,11 @@ The self instance of the class for which the event is.</p>
 				<li>
 				
 <p><code><em> EventID </em></code>: </p>
+
+				</li>
+				<li>
+				
+<p><code><em> ... </em></code>: </p>
 
 				</li>
 		</ul>
@@ -1516,8 +1485,29 @@ The self instance of the class for which the event is captured. When the event h
 		<dl class="function">
 <dt>
 
-<a id="#(EVENT).Remove" >
-<strong>EVENT:Remove(EventClass, EventID)</strong>
+<a id="#(EVENT).RemoveAll" >
+<strong>EVENT:RemoveAll(EventObject)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Clears all event subscriptions for a <a href="Base.html##(BASE)">Base#BASE</a> derived object.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em><a href="Core.Base.html##(BASE)">Core.Base#BASE</a> EventObject </em></code>: </p>
+
+				</li>
+		</ul>
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(EVENT).RemoveEvent" >
+<strong>EVENT:RemoveEvent(EventClass, EventID)</strong>
 </a>
 </dt>
 <dd>
@@ -1543,27 +1533,6 @@ The self instance of the class for which the event is.</p>
 <p><em><a href="##(EVENT.Events)">#EVENT.Events</a>:</em></p>
 
 
-</dd>
-</dl>
-		<dl class="function">
-<dt>
-
-<a id="#(EVENT).RemoveAll" >
-<strong>EVENT:RemoveAll(EventObject)</strong>
-</a>
-</dt>
-<dd>
-	
-<p>Clears all event subscriptions for a <a href="Base.html##(BASE)">Base#BASE</a> derived object.</p>
-
-		<h3>Parameter</h3>
-		<ul>
-				<li>
-				
-<p><code><em><a href="Core.Base.html##(BASE)">Core.Base#BASE</a> EventObject </em></code>: </p>
-
-				</li>
-		</ul>
 </dd>
 </dl>
 		<dl class="function">

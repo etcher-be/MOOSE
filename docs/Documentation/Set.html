@@ -17,6 +17,11 @@
 				<a href="index.html">index</a>
 			</li></ul>
 		<ul>
+					<li><a href="AI_A2A.html">AI_A2A</a></li>
+					<li><a href="AI_A2A_Cap.html">AI_A2A_Cap</a></li>
+					<li><a href="AI_A2A_Dispatcher.html">AI_A2A_Dispatcher</a></li>
+					<li><a href="AI_A2A_GCI.html">AI_A2A_GCI</a></li>
+					<li><a href="AI_A2A_Patrol.html">AI_A2A_Patrol</a></li>
 					<li><a href="AI_Bai.html">AI_Bai</a></li>
 					<li><a href="AI_Balancer.html">AI_Balancer</a></li>
 					<li><a href="AI_Cap.html">AI_Cap</a></li>
@@ -68,6 +73,7 @@
 					<li><a href="Process_JTAC.html">Process_JTAC</a></li>
 					<li><a href="Process_Pickup.html">Process_Pickup</a></li>
 					<li><a href="Radio.html">Radio</a></li>
+					<li><a href="Rat.html">Rat</a></li>
 					<li><a href="Route.html">Route</a></li>
 					<li><a href="Scenery.html">Scenery</a></li>
 					<li><a href="ScheduleDispatcher.html">ScheduleDispatcher</a></li>
@@ -75,6 +81,7 @@
 					<li><a href="Scoring.html">Scoring</a></li>
 					<li><a href="Sead.html">Sead</a></li>
 					<li>Set</li>
+					<li><a href="Settings.html">Settings</a></li>
 					<li><a href="Smoke.html">Smoke</a></li>
 					<li><a href="Spawn.html">Spawn</a></li>
 					<li><a href="SpawnStatic.html">SpawnStatic</a></li>
@@ -82,6 +89,8 @@
 					<li><a href="Static.html">Static</a></li>
 					<li><a href="StaticObject.html">StaticObject</a></li>
 					<li><a href="Task.html">Task</a></li>
+					<li><a href="Task_A2A.html">Task_A2A</a></li>
+					<li><a href="Task_A2A_Dispatcher.html">Task_A2A_Dispatcher</a></li>
 					<li><a href="Task_A2G.html">Task_A2G</a></li>
 					<li><a href="Task_A2G_Dispatcher.html">Task_A2G_Dispatcher</a></li>
 					<li><a href="Task_Cargo.html">Task_Cargo</a></li>
@@ -97,7 +106,7 @@
 	<div id="content">
    <h1>Module <code>Set</code></h1>
    
-<p><strong>Core</strong> - SET_ classes define <strong>collections</strong> of objects to perform <strong>bulk actions</strong> and logically <strong>group</strong> objects.</p>
+<p><strong>Core</strong> -- SET_ classes define <strong>collections</strong> of objects to perform <strong>bulk actions</strong> and logically <strong>group</strong> objects.</p>
 
    
 
@@ -130,14 +139,12 @@
     <li>Trigger events when objects in the SET change a zone presence.</li>
 </ul>
 
-<h3>Authors:</h3>
+<hr/>
 
-<ul>
-    <li>FlightControl : Design &amp; Programming</li>
-</ul>
-
+<h3>Author: <strong>Sven Van de Velde (FlightControl)</strong></h3>
 <h3>Contributions:</h3>
 
+<hr/>
 
 
 	<h2>Global(s)</h2>
@@ -210,7 +217,7 @@
 		<tr>
 		<td class="name" nowrap="nowrap"><a href="#SET_GROUP">SET_GROUP</a></td>
 		<td class="summary">
-<h1>2) SET_GROUP class, extends <a href="Set.html##(SET_BASE)">Set#SET_BASE</a></h1>
+<h1>SET_GROUP class, extends <a href="Set.html##(SET_BASE)">Set#SET_BASE</a></h1>
 
 <p>Mission designers can use the <a href="Set.html##(SET_GROUP)">Set#SET_GROUP</a> class to build sets of groups belonging to certain:</p>
 
@@ -411,6 +418,12 @@
 		<td class="name" nowrap="nowrap"><a href="##(SET_BASE).GetLast">SET_BASE:GetLast()</a></td>
 		<td class="summary">
 <p>Gets the last object from the <a href="Set.html##(SET_BASE)">Set#SET_BASE</a> and derived classes.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_BASE).GetObjectNames">SET_BASE:GetObjectNames()</a></td>
+		<td class="summary">
+<p>Gets a string with all the object names.</p>
 </td>
 		</tr>
 		<tr>
@@ -776,6 +789,36 @@ provides an easy to use shortcut...</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP).FilterCategoryAirplane">SET_GROUP:FilterCategoryAirplane()</a></td>
+		<td class="summary">
+<p>Builds a set of groups out of airplane category.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP).FilterCategoryGround">SET_GROUP:FilterCategoryGround()</a></td>
+		<td class="summary">
+<p>Builds a set of groups out of ground category.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP).FilterCategoryHelicopter">SET_GROUP:FilterCategoryHelicopter()</a></td>
+		<td class="summary">
+<p>Builds a set of groups out of helicopter category.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP).FilterCategoryShip">SET_GROUP:FilterCategoryShip()</a></td>
+		<td class="summary">
+<p>Builds a set of groups out of ship category.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP).FilterCategoryStructure">SET_GROUP:FilterCategoryStructure()</a></td>
+		<td class="summary">
+<p>Builds a set of groups out of structure category.</p>
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP).FilterCoalitions">SET_GROUP:FilterCoalitions(Coalitions)</a></td>
 		<td class="summary">
 <p>Builds a set of groups of coalitions.</p>
@@ -865,6 +908,12 @@ mission designer to add a dedicated method</p>
 		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP).RemoveGroupsByName">SET_GROUP:RemoveGroupsByName(RemoveGroupNames)</a></td>
 		<td class="summary">
 <p>Remove GROUP(s) from SET_GROUP.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_GROUP)._EventOnDeadOrCrash">SET_GROUP:_EventOnDeadOrCrash(Event)</a></td>
+		<td class="summary">
+<p>Handles the OnDead or OnCrash event for alive groups set.</p>
 </td>
 		</tr>
 	</table>
@@ -981,9 +1030,21 @@ mission designer to add a dedicated method</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_UNIT).GetCoordinate">SET_UNIT:GetCoordinate()</a></td>
+		<td class="summary">
+<p>Get the center coordinate of the SET_UNIT.</p>
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(SET_UNIT).GetFirst">SET_UNIT:GetFirst()</a></td>
 		<td class="summary">
 <p>Get the first unit from the set.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_UNIT).GetHeading">SET_UNIT:GetHeading()</a></td>
+		<td class="summary">
+<p>Get the average heading of the SET_UNIT.</p>
 </td>
 		</tr>
 		<tr>
@@ -1008,6 +1069,12 @@ mission designer to add a dedicated method</p>
 		<td class="name" nowrap="nowrap"><a href="##(SET_UNIT).GetUnitTypesText">SET_UNIT:GetUnitTypesText()</a></td>
 		<td class="summary">
 <p>Returns a comma separated string of the unit types with a count in the  <a href="Set.html">Set</a>.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(SET_UNIT).GetVelocity">SET_UNIT:GetVelocity()</a></td>
+		<td class="summary">
+<p>Get the maximum velocity of the SET_UNIT.</p>
 </td>
 		</tr>
 		<tr>
@@ -1300,7 +1367,7 @@ The following iterator methods are currently available within the SET</em>CLIENT
 </dt>
 <dd>
 	
-<h1>2) SET_GROUP class, extends <a href="Set.html##(SET_BASE)">Set#SET_BASE</a></h1>
+<h1>SET_GROUP class, extends <a href="Set.html##(SET_BASE)">Set#SET_BASE</a></h1>
 
 <p>Mission designers can use the <a href="Set.html##(SET_GROUP)">Set#SET_GROUP</a> class to build sets of groups belonging to certain:</p>
 
@@ -1313,7 +1380,7 @@ The following iterator methods are currently available within the SET</em>CLIENT
 
 	
 <p> </p>
-<h2>2.1) SET_GROUP constructor</h2>
+<h2>1. SET_GROUP constructor</h2>
 
 <p>Create a new SET_GROUP object with the <a href="##(SET_GROUP).New">SET_GROUP.New</a> method:</p>
 
@@ -1321,12 +1388,12 @@ The following iterator methods are currently available within the SET</em>CLIENT
     <li><a href="##(SET_GROUP).New">SET_GROUP.New</a>: Creates a new SET_GROUP object.</li>
 </ul>
 
-<h2>2.2) Add or Remove GROUP(s) from SET_GROUP</h2>
+<h2>2. Add or Remove GROUP(s) from SET_GROUP</h2>
 
 <p>GROUPS can be added and removed using the <a href="Set.html##(SET_GROUP).AddGroupsByName">Set#SET_GROUP.AddGroupsByName</a> and <a href="Set.html##(SET_GROUP).RemoveGroupsByName">Set#SET_GROUP.RemoveGroupsByName</a> respectively. 
 These methods take a single GROUP name or an array of GROUP names to be added or removed from SET_GROUP.</p>
 
-<h2>2.3) SET_GROUP filter criteria</h2>
+<h2>3. SET_GROUP filter criteria</h2>
 
 <p>You can set filter criteria to define the set of groups within the SET_GROUP.
 Filter criteria are defined by:</p>
@@ -1337,6 +1404,17 @@ Filter criteria are defined by:</p>
     <li><a href="##(SET_GROUP).FilterCountries">SET_GROUP.FilterCountries</a>: Builds the SET_GROUP with the gruops belonging to the country(ies).</li>
     <li><a href="##(SET_GROUP).FilterPrefixes">SET_GROUP.FilterPrefixes</a>: Builds the SET_GROUP with the groups starting with the same prefix string(s).</li>
 </ul>
+
+<p>For the Category Filter, extra methods have been added:</p>
+
+<ul>
+    <li><a href="##(SET_GROUP).FilterCategoryAirplane">SET_GROUP.FilterCategoryAirplane</a>: Builds the SET_GROUP from airplanes.</li>
+    <li><a href="##(SET_GROUP).FilterCategoryHelicopter">SET_GROUP.FilterCategoryHelicopter</a>: Builds the SET_GROUP from helicopters.</li>
+    <li><a href="##(SET_GROUP).FilterCategoryGround">SET_GROUP.FilterCategoryGround</a>: Builds the SET_GROUP from ground vehicles or infantry.</li>
+    <li><a href="##(SET_GROUP).FilterCategoryShip">SET_GROUP.FilterCategoryShip</a>: Builds the SET_GROUP from ships.</li>
+    <li><a href="##(SET_GROUP).FilterCategoryStructure">SET_GROUP.FilterCategoryStructure</a>: Builds the SET_GROUP from structures.</li>
+</ul>
+
 
 <p>Once the filter criteria have been set for the SET_GROUP, you can start filtering using:</p>
 
@@ -1350,7 +1428,7 @@ Filter criteria are defined by:</p>
     <li><a href="##(SET_GROUP).FilterZones">SET_GROUP.FilterZones</a>: Builds the SET_GROUP with the groups within a <a href="Zone.html##(ZONE)">Zone#ZONE</a>.</li>
 </ul>
 
-<h2>2.4) SET_GROUP iterators</h2>
+<h2>4. SET_GROUP iterators</h2>
 
 <p>Once the filters have been defined and the SET<em>GROUP has been built, you can iterate the SET</em>GROUP with the available iterator methods.
 The iterator methods will walk the SET<em>GROUP set, and call for each element within the set a function that you provide.
@@ -2163,6 +2241,24 @@ self</p>
 		<dl class="function">
 <dt>
 
+<a id="#(SET_BASE).GetObjectNames" >
+<strong>SET_BASE:GetObjectNames()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Gets a string with all the object names.</p>
+
+		<h3>Return value</h3>
+				
+<p><em>#string:</em>
+A string with the names of the objects.</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(SET_BASE).GetRandom" >
 <strong>SET_BASE:GetRandom()</strong>
 </a>
@@ -2886,8 +2982,8 @@ self</p>
 
 		<h3>Return value</h3>
 				
-<p><em><a href="##(SET_CARGO)">#SET_CARGO</a>:</em>
-self</p>
+<p><em><a href="##(SET_CARGO)">#SET_CARGO</a>:</em></p>
+
 
 			<h3>Usage:</h3>
 		<pre class="example"><code>-- Define a new SET_CARGO Object. The DatabaseSet will contain a reference to all Cargos.
@@ -3806,6 +3902,96 @@ self</p>
 		<dl class="function">
 <dt>
 
+<a id="#(SET_GROUP).FilterCategoryAirplane" >
+<strong>SET_GROUP:FilterCategoryAirplane()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Builds a set of groups out of airplane category.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(SET_GROUP)">#SET_GROUP</a>:</em>
+self</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(SET_GROUP).FilterCategoryGround" >
+<strong>SET_GROUP:FilterCategoryGround()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Builds a set of groups out of ground category.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(SET_GROUP)">#SET_GROUP</a>:</em>
+self</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(SET_GROUP).FilterCategoryHelicopter" >
+<strong>SET_GROUP:FilterCategoryHelicopter()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Builds a set of groups out of helicopter category.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(SET_GROUP)">#SET_GROUP</a>:</em>
+self</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(SET_GROUP).FilterCategoryShip" >
+<strong>SET_GROUP:FilterCategoryShip()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Builds a set of groups out of ship category.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(SET_GROUP)">#SET_GROUP</a>:</em>
+self</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(SET_GROUP).FilterCategoryStructure" >
+<strong>SET_GROUP:FilterCategoryStructure()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Builds a set of groups out of structure category.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="##(SET_GROUP)">#SET_GROUP</a>:</em>
+self</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(SET_GROUP).FilterCoalitions" >
 <strong>SET_GROUP:FilterCoalitions(Coalitions)</strong>
 </a>
@@ -4269,6 +4455,30 @@ A single name or an array of GROUP names.</p>
 
 </dd>
 </dl>
+		<dl class="function">
+<dt>
+
+<a id="#(SET_GROUP)._EventOnDeadOrCrash" >
+<strong>SET_GROUP:_EventOnDeadOrCrash(Event)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Handles the OnDead or OnCrash event for alive groups set.</p>
+
+	
+<p>Note: The GROUP object in the SET_GROUP collection will only be removed if the last unit is destroyed of the GROUP.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em><a href="Core.Event.html##(EVENTDATA)">Core.Event#EVENTDATA</a> Event </em></code>: </p>
+
+				</li>
+		</ul>
+</dd>
+</dl>
 
 			<h2><a id="#(SET_UNIT)" >Type <code>SET_UNIT</code></a></h2>
 				<h3>Field(s)</h3>
@@ -4375,6 +4585,11 @@ self</p>
 <dd>
 	
 <p>Calculate the maxium A2G threat level of the SET_UNIT.</p>
+
+		<h3>Return value</h3>
+				
+<p><em>#number:</em>
+The maximum threatlevel</p>
 
 </dd>
 </dl>
@@ -4825,6 +5040,24 @@ self</p>
 		<dl class="function">
 <dt>
 
+<a id="#(SET_UNIT).GetCoordinate" >
+<strong>SET_UNIT:GetCoordinate()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Get the center coordinate of the SET_UNIT.</p>
+
+		<h3>Return value</h3>
+				
+<p><em><a href="Core.Point.html##(COORDINATE)">Core.Point#COORDINATE</a>:</em>
+The center coordinate of all the units in the set, including heading in degrees and speed in mps in case of moving units.</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(SET_UNIT).GetFirst" >
 <strong>SET_UNIT:GetFirst()</strong>
 </a>
@@ -4837,6 +5070,24 @@ self</p>
 				
 <p><em><a href="Wrapper.Unit.html##(UNIT)">Wrapper.Unit#UNIT</a>:</em>
 The UNIT object.</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(SET_UNIT).GetHeading" >
+<strong>SET_UNIT:GetHeading()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Get the average heading of the SET_UNIT.</p>
+
+		<h3>Return value</h3>
+				
+<p><em>#number:</em>
+Heading Heading in degrees and speed in mps in case of moving units.</p>
 
 </dd>
 </dl>
@@ -4918,6 +5169,24 @@ The types of the <a href="Unit.html">Unit</a>s delimited.</p>
 				
 <p><em>#string:</em>
 The unit types string</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(SET_UNIT).GetVelocity" >
+<strong>SET_UNIT:GetVelocity()</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Get the maximum velocity of the SET_UNIT.</p>
+
+		<h3>Return value</h3>
+				
+<p><em>#number:</em>
+The speed in mps in case of moving units.</p>
 
 </dd>
 </dl>

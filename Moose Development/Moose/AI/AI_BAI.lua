@@ -26,30 +26,15 @@
 -- 
 -- ### [AI_BAI YouTube Channel](https://www.youtube.com/playlist?list=PL7ZUrU4zZUl3JBO1WDqqpyYRRmIkR2ir2)
 -- 
--- ===
---
--- # **API CHANGE HISTORY**
---
--- The underlying change log documents the API changes. Please read this carefully. The following notation is used:
---
---   * **Added** parts are expressed in bold type face.
---   * _Removed_ parts are expressed in italic type face.
---
--- Hereby the change log:
---
--- 2017-01-15: Initial class and API.
---
--- ===
---
--- # **AUTHORS and CONTRIBUTIONS**
---
--- ### Contributions:
---
+-- ====
+-- 
+-- ### Author: **Sven Van de Velde (FlightControl)**
+-- 
+-- ### Contributions: 
+-- 
 --   * **[Gunterlund](http://forums.eagle.ru:8080/member.php?u=75036)**: Test case revision.
---
--- ### Authors:
---
---   * **FlightControl**: Concept, Design & Programming.
+-- 
+-- ====
 --
 -- @module AI_Bai
 
@@ -546,7 +531,7 @@ function AI_BAI_ZONE:onafterEngage( Controllable, From, Event, To,
     local CurrentAltitude = self.Controllable:GetUnit(1):GetAltitude()
     local CurrentPointVec3 = POINT_VEC3:New( CurrentVec2.x, CurrentAltitude, CurrentVec2.y )
     local ToEngageZoneSpeed = self.PatrolMaxSpeed
-    local CurrentRoutePoint = CurrentPointVec3:RoutePointAir( 
+    local CurrentRoutePoint = CurrentPointVec3:WaypointAir( 
         self.PatrolAltType, 
         POINT_VEC3.RoutePointType.TurningPoint, 
         POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -603,7 +588,7 @@ function AI_BAI_ZONE:onafterEngage( Controllable, From, Event, To,
     local ToTargetPointVec3 = POINT_VEC3:New( ToTargetVec2.x, self.EngageAltitude, ToTargetVec2.y )
     
     --- Create a route point of type air.
-    local ToTargetRoutePoint = ToTargetPointVec3:RoutePointAir( 
+    local ToTargetRoutePoint = ToTargetPointVec3:WaypointAir( 
       self.PatrolAltType, 
       POINT_VEC3.RoutePointType.TurningPoint, 
       POINT_VEC3.RoutePointAction.TurningPoint, 
@@ -627,7 +612,7 @@ function AI_BAI_ZONE:onafterEngage( Controllable, From, Event, To,
     --- NOW ROUTE THE GROUP!
     Controllable:WayPointExecute( 1 )
 
-    self:SetDetectionInterval( 2 )
+    self:SetRefreshTimeInterval( 2 )
     self:SetDetectionActivated()
     self:__Target( -2 ) -- Start Targetting
   end

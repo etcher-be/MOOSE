@@ -17,6 +17,11 @@
 				<a href="index.html">index</a>
 			</li></ul>
 		<ul>
+					<li><a href="AI_A2A.html">AI_A2A</a></li>
+					<li><a href="AI_A2A_Cap.html">AI_A2A_Cap</a></li>
+					<li><a href="AI_A2A_Dispatcher.html">AI_A2A_Dispatcher</a></li>
+					<li><a href="AI_A2A_GCI.html">AI_A2A_GCI</a></li>
+					<li><a href="AI_A2A_Patrol.html">AI_A2A_Patrol</a></li>
 					<li><a href="AI_Bai.html">AI_Bai</a></li>
 					<li><a href="AI_Balancer.html">AI_Balancer</a></li>
 					<li><a href="AI_Cap.html">AI_Cap</a></li>
@@ -68,6 +73,7 @@
 					<li><a href="Process_JTAC.html">Process_JTAC</a></li>
 					<li><a href="Process_Pickup.html">Process_Pickup</a></li>
 					<li><a href="Radio.html">Radio</a></li>
+					<li><a href="Rat.html">Rat</a></li>
 					<li><a href="Route.html">Route</a></li>
 					<li><a href="Scenery.html">Scenery</a></li>
 					<li><a href="ScheduleDispatcher.html">ScheduleDispatcher</a></li>
@@ -75,6 +81,7 @@
 					<li><a href="Scoring.html">Scoring</a></li>
 					<li><a href="Sead.html">Sead</a></li>
 					<li><a href="Set.html">Set</a></li>
+					<li><a href="Settings.html">Settings</a></li>
 					<li><a href="Smoke.html">Smoke</a></li>
 					<li><a href="Spawn.html">Spawn</a></li>
 					<li><a href="SpawnStatic.html">SpawnStatic</a></li>
@@ -82,6 +89,8 @@
 					<li><a href="Static.html">Static</a></li>
 					<li><a href="StaticObject.html">StaticObject</a></li>
 					<li><a href="Task.html">Task</a></li>
+					<li><a href="Task_A2A.html">Task_A2A</a></li>
+					<li><a href="Task_A2A_Dispatcher.html">Task_A2A_Dispatcher</a></li>
 					<li><a href="Task_A2G.html">Task_A2G</a></li>
 					<li><a href="Task_A2G_Dispatcher.html">Task_A2G_Dispatcher</a></li>
 					<li><a href="Task_Cargo.html">Task_Cargo</a></li>
@@ -97,7 +106,7 @@
 	<div id="content">
    <h1>Module <code>Fsm</code></h1>
    
-<p><strong>Core</strong> - The <strong>FSM</strong> (<strong>F</strong>inite <strong>S</strong>tate <strong>M</strong>achine) class and derived <strong>FSM_</strong> classes 
+<p><strong>Core</strong> -- The <strong>FSM</strong> (<strong>F</strong>inite <strong>S</strong>tate <strong>M</strong>achine) class and derived <strong>FSM_</strong> classes 
 are design patterns allowing efficient (long-lasting) processes and workflows.</p>
 
    
@@ -165,39 +174,11 @@ Additionally, I've added extendability and created an API that allows seamless F
 
 <hr/>
 
-<h1><strong>API CHANGE HISTORY</strong></h1>
 
-<p>The underlying change log documents the API changes. Please read this carefully. The following notation is used:</p>
-
-<ul>
-    <li><strong>Added</strong> parts are expressed in bold type face.</li>
-    <li><em>Removed</em> parts are expressed in italic type face.</li>
-</ul>
-
-<p>YYYY-MM-DD: CLASS:<strong>NewFunction</strong>( Params ) replaces CLASS:<em>OldFunction</em>( Params )
-YYYY-MM-DD: CLASS:<strong>NewFunction( Params )</strong> added</p>
-
-<p>Hereby the change log:</p>
-
-<ul>
-    <li>2016-12-18: Released.</li>
-</ul>
-
-<hr/>
-
-<h1><strong>AUTHORS and CONTRIBUTIONS</strong></h1>
-
+<h3>Author: <strong>Sven Van de Velde (FlightControl)</strong></h3>
 <h3>Contributions:</h3>
 
-<ul>
-    <li><a href="https://forums.eagle.ru/member.php?u=62835"><strong>Pikey</strong></a>: Review of documentation &amp; advice for improvements.</li>
-</ul>
-
-<h3>Authors:</h3>
-
-<ul>
-    <li><a href="https://forums.eagle.ru/member.php?u=89536"><strong>FlightControl</strong></a>: Design &amp; Programming &amp; documentation.</li>
-</ul>
+<hr/>
 
 
 	<h2>Global(s)</h2>
@@ -651,12 +632,6 @@ YYYY-MM-DD: CLASS:<strong>NewFunction( Params )</strong> added</p>
 		</tr>
 		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(FSM_PROCESS).onenterFailed">FSM_PROCESS:onenterFailed(ProcessUnit)</a></td>
-		<td class="summary">
-
-</td>
-		</tr>
-		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(FSM_PROCESS).onenterSuccess">FSM_PROCESS:onenterSuccess(ProcessUnit)</a></td>
 		<td class="summary">
 
 </td>
@@ -2633,27 +2608,6 @@ self</p>
 
 <a id="#(FSM_PROCESS).onenterFailed" >
 <strong>FSM_PROCESS:onenterFailed(ProcessUnit)</strong>
-</a>
-</dt>
-<dd>
-	
-
-
-		<h3>Parameter</h3>
-		<ul>
-				<li>
-				
-<p><code><em> ProcessUnit </em></code>: </p>
-
-				</li>
-		</ul>
-</dd>
-</dl>
-		<dl class="function">
-<dt>
-
-<a id="#(FSM_PROCESS).onenterSuccess" >
-<strong>FSM_PROCESS:onenterSuccess(ProcessUnit)</strong>
 </a>
 </dt>
 <dd>

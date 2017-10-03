@@ -1,29 +1,48 @@
---- This module contains the CONTROLLABLE class.
+--- **Wrapper** -- CONTROLLABLE is an intermediate class wrapping Group and Unit classes "controllers".
 -- 
--- 1) @{Controllable#CONTROLLABLE} class, extends @{Positionable#POSITIONABLE}
--- ===========================================================
--- The @{Controllable#CONTROLLABLE} class is a wrapper class to handle the DCS Controllable objects:
+-- ====
+-- 
+-- ### Author: **Sven Van de Velde (FlightControl)**
+-- 
+-- ### Contributions: 
+-- 
+-- ===
+-- 
+-- @module Controllable
+
+
+
+--- @type CONTROLLABLE
+-- @extends Wrapper.Positionable#POSITIONABLE
+-- @field Dcs.DCSWrapper.Controllable#Controllable DCSControllable The DCS controllable class.
+-- @field #string ControllableName The name of the controllable.
+
+
+
+--- # CONTROLLABLE class, extends @{Positionable#POSITIONABLE}
+-- 
+-- CONTROLLABLE is a wrapper class to handle the "DCS Controllable objects", which are Groups and Units:
 --
 --  * Support all DCS Controllable APIs.
 --  * Enhance with Controllable specific APIs not in the DCS Controllable API set.
 --  * Handle local Controllable Controller.
 --  * Manage the "state" of the DCS Controllable.
 --
--- 1.1) CONTROLLABLE constructor
--- -----------------------------
+-- ## CONTROLLABLE constructor
+-- 
 -- The CONTROLLABLE class provides the following functions to construct a CONTROLLABLE instance:
 --
 --  * @{#CONTROLLABLE.New}(): Create a CONTROLLABLE instance.
 --
--- 1.2) CONTROLLABLE task methods
--- ------------------------------
+-- ## CONTROLLABLE Task methods
+-- 
 -- Several controllable task methods are available that help you to prepare tasks. 
 -- These methods return a string consisting of the task description, which can then be given to either a @{Controllable#CONTROLLABLE.PushTask} or @{Controllable#SetTask} method to assign the task to the CONTROLLABLE.
 -- Tasks are specific for the category of the CONTROLLABLE, more specific, for AIR, GROUND or AIR and GROUND. 
 -- Each task description where applicable indicates for which controllable category the task is valid.
 -- There are 2 main subdivisions of tasks: Assigned tasks and EnRoute tasks.
 -- 
--- ### 1.2.1) Assigned task methods
+-- ### Task assignment
 -- 
 -- Assigned task methods make the controllable execute the task where the location of the (possible) targets of the task are known before being detected.
 -- This is different from the EnRoute tasks, where the targets of the task need to be detected before the task can be executed.
@@ -54,19 +73,20 @@
 --   * @{#CONTROLLABLE.TaskRouteToZone}: (AIR + GROUND) Route the controllable to a given zone.
 --   * @{#CONTROLLABLE.TaskReturnToBase}: (AIR) Route the controllable to an airbase.
 --
--- ### 1.2.2) EnRoute task methods
+-- ### EnRoute assignment
 -- 
 -- EnRoute tasks require the targets of the task need to be detected by the controllable (using its sensors) before the task can be executed:
 -- 
 --   * @{#CONTROLLABLE.EnRouteTaskAWACS}: (AIR) Aircraft will act as an AWACS for friendly units (will provide them with information about contacts). No parameters.
 --   * @{#CONTROLLABLE.EnRouteTaskEngageControllable}: (AIR) Engaging a controllable. The task does not assign the target controllable to the unit/controllable to attack now; it just allows the unit/controllable to engage the target controllable as well as other assigned targets.
 --   * @{#CONTROLLABLE.EnRouteTaskEngageTargets}: (AIR) Engaging targets of defined types.
+--   * @{#CONTROLLABLE.EnRouteTaskEngageTargetsInZone}: (AIR) Engaging a targets of defined types at circle-shaped zone.
 --   * @{#CONTROLLABLE.EnRouteTaskEWR}: (AIR) Attack the Unit.
 --   * @{#CONTROLLABLE.EnRouteTaskFAC}: (AIR + GROUND) The task makes the controllable/unit a FAC and lets the FAC to choose a targets (enemy ground controllable) around as well as other assigned targets.
 --   * @{#CONTROLLABLE.EnRouteTaskFAC_EngageControllable}: (AIR + GROUND) The task makes the controllable/unit a FAC and lets the FAC to choose the target (enemy ground controllable) as well as other assigned targets.
 --   * @{#CONTROLLABLE.EnRouteTaskTanker}: (AIR) Aircraft will act as a tanker for friendly units. No parameters.
 -- 
--- ### 1.2.3) Preparation task methods
+-- ### Task preparation
 -- 
 -- There are certain task methods that allow to tailor the task behaviour:
 --
@@ -75,24 +95,48 @@
 --   * @{#CONTROLLABLE.TaskCondition}: Return a condition section for a controlled task.
 --   * @{#CONTROLLABLE.TaskControlled}: Return a Controlled Task taking a Task and a TaskCondition.
 -- 
--- ### 1.2.4) Obtain the mission from controllable templates
+-- ### Call a function as a Task
+-- 
+-- A function can be called which is part of a Task. The method @{#CONTROLLABLE.TaskFunction}() prepares
+-- a Task that can call a GLOBAL function from within the Controller execution.
+-- This method can also be used to **embed a function call when a certain waypoint has been reached**.
+-- See below the **Tasks at Waypoints** section.
+-- 
+-- Demonstration Mission: [GRP-502 - Route at waypoint to random point](https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/release-2-2-pre/GRP - Group Commands/GRP-502 - Route at waypoint to random point)
+-- 
+-- ### Tasks at Waypoints
+-- 
+-- Special Task methods are available to set tasks at certain waypoints.
+-- The method @{#CONTROLLABLE.SetTaskWaypoint}() helps preparing a Route, embedding a Task at the Waypoint of the Route.
+-- 
+-- This creates a Task element, with an action to call a function as part of a Wrapped Task.
+-- 
+-- ### Obtain the mission from controllable templates
 -- 
 -- Controllable templates contain complete mission descriptions. Sometimes you want to copy a complete mission from a controllable and assign it to another:
 -- 
 --   * @{#CONTROLLABLE.TaskMission}: (AIR + GROUND) Return a mission task from a mission template.
 --
--- 1.3) CONTROLLABLE Command methods
--- --------------------------
+-- ## CONTROLLABLE Command methods
+-- 
 -- Controllable **command methods** prepare the execution of commands using the @{#CONTROLLABLE.SetCommand} method:
 -- 
 --   * @{#CONTROLLABLE.CommandDoScript}: Do Script command.
 --   * @{#CONTROLLABLE.CommandSwitchWayPoint}: Perform a switch waypoint command.
 -- 
--- 1.4) CONTROLLABLE Option methods
--- -------------------------
+-- ## Routing of Controllables
+-- 
+-- Different routing methods exist to route GROUPs and UNITs to different locations:
+--   
+--   * @{#CONTROLLABLE.Route}(): Make the Controllable to follow a given route.  
+--   * @{#CONTROLLABLE.RouteGroundTo}(): Make the GROUND Controllable to drive towards a specific coordinate.
+--   * @{#CONTROLLABLE.RouteAirTo}(): Make the AIR Controllable to fly towards a specific coordinate. 
+-- 
+-- ## Option methods
+-- 
 -- Controllable **Option methods** change the behaviour of the Controllable while being alive.
 -- 
--- ### 1.4.1) Rule of Engagement:
+-- ### Rule of Engagement:
 -- 
 --   * @{#CONTROLLABLE.OptionROEWeaponFree} 
 --   * @{#CONTROLLABLE.OptionROEOpenFire}
@@ -106,7 +150,7 @@
 --   * @{#CONTROLLABLE.OptionROEReturnFirePossible}
 --   * @{#CONTROLLABLE.OptionROEEvadeFirePossible}
 -- 
--- ### 1.4.2) Rule on thread:
+-- ### Rule on thread:
 -- 
 --   * @{#CONTROLLABLE.OptionROTNoReaction}
 --   * @{#CONTROLLABLE.OptionROTPassiveDefense}
@@ -120,15 +164,7 @@
 --   * @{#CONTROLLABLE.OptionROTEvadeFirePossible}
 --   * @{#CONTROLLABLE.OptionROTVerticalPossible}
 -- 
--- ===
--- 
--- @module Controllable
-
---- The CONTROLLABLE class
--- @type CONTROLLABLE
--- @extends Wrapper.Positionable#POSITIONABLE
--- @field Dcs.DCSWrapper.Controllable#Controllable DCSControllable The DCS controllable class.
--- @field #string ControllableName The name of the controllable.
+-- @field #CONTROLLABLE
 CONTROLLABLE = {
   ClassName = "CONTROLLABLE",
   ControllableName = "",
@@ -140,7 +176,7 @@ CONTROLLABLE = {
 -- @param Dcs.DCSWrapper.Controllable#Controllable ControllableName The DCS Controllable name
 -- @return #CONTROLLABLE self
 function CONTROLLABLE:New( ControllableName )
-  local self = BASE:Inherit( self, POSITIONABLE:New( ControllableName ) )
+  local self = BASE:Inherit( self, POSITIONABLE:New( ControllableName ) ) -- #CONTROLLABLE
   self:F2( ControllableName )
   self.ControllableName = ControllableName
   
@@ -154,12 +190,10 @@ end
 -- @param #CONTROLLABLE self
 -- @return Dcs.DCSController#Controller
 function CONTROLLABLE:_GetController()
-  self:F2( { self.ControllableName } )
   local DCSControllable = self:GetDCSObject()
 
   if DCSControllable then
     local ControllableController = DCSControllable:getController()
-    self:T3( ControllableController )
     return ControllableController
   end
 
@@ -217,6 +251,46 @@ function CONTROLLABLE:GetLife()
   
   return nil
 end
+
+--- Returns the initial health.
+-- @param #CONTROLLABLE self
+-- @return #number The controllable health value (unit or group average).
+-- @return #nil The controllable is not existing or alive.  
+function CONTROLLABLE:GetLife0()
+  self:F2( self.ControllableName )
+
+  local DCSControllable = self:GetDCSObject()
+  
+  if DCSControllable then
+    local UnitLife = 0
+    local Units = self:GetUnits()
+    if #Units == 1 then
+      local Unit = Units[1] -- Wrapper.Unit#UNIT
+      UnitLife = Unit:GetLife0()
+    else
+      local UnitLifeTotal = 0
+      for UnitID, Unit in pairs( Units ) do
+        local Unit = Unit -- Wrapper.Unit#UNIT
+        UnitLifeTotal = UnitLifeTotal + Unit:GetLife0()
+      end
+      UnitLife = UnitLifeTotal / #Units
+    end
+    return UnitLife
+  end
+  
+  return nil
+end
+
+--- Returns relative amount of fuel (from 0.0 to 1.0) the unit has in its internal tanks.
+-- This method returns nil to ensure polymorphic behaviour! This method needs to be overridden by GROUP or UNIT.
+-- @param #CONTROLLABLE self
+-- @return #nil The CONTROLLABLE is not existing or alive.  
+function CONTROLLABLE:GetFuel()
+  self:F( self.ControllableName )
+
+  return nil
+end
+
 
 
 
@@ -288,29 +362,55 @@ end
 -- @param #CONTROLLABLE self
 -- @return Wrapper.Controllable#CONTROLLABLE self
 function CONTROLLABLE:SetTask( DCSTask, WaitTime )
-  self:F2( { DCSTask } )
+  self:F2( { DCSTask = DCSTask } )
 
   local DCSControllable = self:GetDCSObject()
 
   if DCSControllable then
 
-    local Controller = self:_GetController()
-    self:T3( Controller )
+    local DCSControllableName = self:GetName()
 
     -- When a controllable SPAWNs, it takes about a second to get the controllable in the simulator. Setting tasks to unspawned controllables provides unexpected results.
     -- Therefore we schedule the functions to set the mission and options for the Controllable.
     -- Controller.setTask( Controller, DCSTask )
 
-    if not WaitTime then
-      Controller:setTask( DCSTask )
+    local function SetTask( Controller, DCSTask )
+      if self and self:IsAlive() then
+        local Controller = self:_GetController()
+        Controller:setTask( DCSTask )
+      else
+        BASE:E( DCSControllableName .. " is not alive anymore. Cannot set DCSTask " .. DCSTask )
+      end
+    end
+
+    if not WaitTime or WaitTime == 0 then
+      SetTask( self, DCSTask )
     else
-      self.TaskScheduler:Schedule( Controller, Controller.setTask, { DCSTask }, WaitTime )
+      self.TaskScheduler:Schedule( self, SetTask, { DCSTask }, WaitTime )
     end
 
     return self
   end
 
   return nil
+end
+
+--- Checking the Task Queue of the controllable. Returns false if no task is on the queue. true if there is a task.
+-- @param #CONTROLLABLE self
+-- @return Wrapper.Controllable#CONTROLLABLE self
+function CONTROLLABLE:HasTask() --R2.2
+
+  local HasTaskResult = false
+
+  local DCSControllable = self:GetDCSObject()
+
+  if DCSControllable then
+
+    local Controller = self:_GetController()
+    HasTaskResult = Controller:hasTask()
+  end
+
+  return HasTaskResult
 end
 
 
@@ -377,7 +477,7 @@ function CONTROLLABLE:TaskCombo( DCSTasks )
   }
   
   for TaskID, Task in ipairs( DCSTasks ) do
-    self:E( Task )
+    self:T( Task )
   end
 
   self:T3( { DCSTaskCombo } )
@@ -392,11 +492,11 @@ function CONTROLLABLE:TaskWrappedAction( DCSCommand, Index )
   self:F2( { DCSCommand } )
 
   local DCSTaskWrappedAction
-
+  
   DCSTaskWrappedAction = {
     id = "WrappedAction",
     enabled = true,
-    number = Index,
+    number = Index or 1,
     auto = false,
     params = {
       action = DCSCommand,
@@ -406,6 +506,22 @@ function CONTROLLABLE:TaskWrappedAction( DCSCommand, Index )
   self:T3( { DCSTaskWrappedAction } )
   return DCSTaskWrappedAction
 end
+
+--- Set a Task at a Waypoint using a Route list.
+-- @param #CONTROLLABLE self
+-- @param #table Waypoint The Waypoint!
+-- @param Dcs.DCSTasking.Task#Task Task The Task structure to be executed!
+-- @return Dcs.DCSTasking.Task#Task
+function CONTROLLABLE:SetTaskWaypoint( Waypoint, Task )
+
+  Waypoint.task = self:TaskCombo( { Task } )
+
+  self:T3( { Waypoint.task } )
+  return Waypoint.task
+end
+
+
+
 
 --- Executes a command action
 -- @param #CONTROLLABLE self
@@ -576,7 +692,7 @@ function CONTROLLABLE:TaskAttackUnit( AttackUnit, GroupAttack, WeaponExpend, Att
     }
   }
 
-  self:E( DCSTask )
+  self:T3( DCSTask )
   
   return DCSTask
 end
@@ -1088,7 +1204,7 @@ end
 -- @param Dcs.DCSTypes#AttributeNameArray TargetTypes Array of target categories allowed to engage. 
 -- @param #number Priority All en-route tasks have the priority parameter. This is a number (less value - higher priority) that determines actions related to what task will be performed first. 
 -- @return Dcs.DCSTasking.Task#Task The DCS task structure.
-function CONTROLLABLE:EnRouteTaskEngageTargets( Vec2, Radius, TargetTypes, Priority )
+function CONTROLLABLE:EnRouteTaskEngageTargetsInZone( Vec2, Radius, TargetTypes, Priority )
   self:F2( { self.ControllableName, Vec2, Radius, TargetTypes, Priority } )
 
 --  EngageTargetsInZone = { 
@@ -1423,6 +1539,84 @@ function CONTROLLABLE:TaskEmbarkToTransport( Point, Radius )
   return DCSTask
 end
 
+--- This creates a Task element, with an action to call a function as part of a Wrapped Task.
+-- This Task can then be embedded at a Waypoint by calling the method @{#CONTROLLABLE.SetTaskWaypoint}.
+-- @param #CONTROLLABLE self
+-- @param #string FunctionString The function name embedded as a string that will be called.
+-- @param ... The variable arguments passed to the function when called! These arguments can be of any type!
+-- @return #CONTROLLABLE
+-- @usage
+-- 
+--  local ZoneList = { 
+--    ZONE:New( "ZONE1" ), 
+--    ZONE:New( "ZONE2" ), 
+--    ZONE:New( "ZONE3" ), 
+--    ZONE:New( "ZONE4" ), 
+--    ZONE:New( "ZONE5" ) 
+--  }
+--  
+--  GroundGroup = GROUP:FindByName( "Vehicle" )
+--  
+--  --- @param Wrapper.Group#GROUP GroundGroup
+--  function RouteToZone( Vehicle, ZoneRoute )
+--  
+--    local Route = {}
+--    
+--    Vehicle:E( { ZoneRoute = ZoneRoute } )
+--    
+--    Vehicle:MessageToAll( "Moving to zone " .. ZoneRoute:GetName(), 10 )
+--  
+--    -- Get the current coordinate of the Vehicle
+--    local FromCoord = Vehicle:GetCoordinate()
+--    
+--    -- Select a random Zone and get the Coordinate of the new Zone.
+--    local RandomZone = ZoneList[ math.random( 1, #ZoneList ) ] -- Core.Zone#ZONE
+--    local ToCoord = RandomZone:GetCoordinate()
+--    
+--    -- Create a "ground route point", which is a "point" structure that can be given as a parameter to a Task
+--    Route[#Route+1] = FromCoord:WaypointGround( 72 )
+--    Route[#Route+1] = ToCoord:WaypointGround( 60, "Vee" )
+--    
+--    local TaskRouteToZone = Vehicle:TaskFunction( "RouteToZone", RandomZone )
+--    
+--    Vehicle:SetTaskWaypoint( Route, #Route, TaskRouteToZone ) -- Set for the given Route at Waypoint 2 the TaskRouteToZone.
+--  
+--    Vehicle:Route( Route, math.random( 10, 20 ) ) -- Move after a random seconds to the Route. See the Route method for details.
+--    
+--  end
+--    
+--    RouteToZone( GroundGroup, ZoneList[1] )
+-- 
+function CONTROLLABLE:TaskFunction( FunctionString, ... )
+  self:F2( { FunctionString, arg } )
+
+  local DCSTask
+
+  local DCSScript = {}
+  DCSScript[#DCSScript+1] = "local MissionControllable = GROUP:Find( ... ) "
+
+  if arg and arg.n > 0 then
+    local ArgumentKey = '_' .. tostring( arg ):match("table: (.*)")
+    self:SetState( self, ArgumentKey, arg )
+    DCSScript[#DCSScript+1] = "local Arguments = MissionControllable:GetState( MissionControllable, '" .. ArgumentKey .. "' ) "
+    --DCSScript[#DCSScript+1] = "MissionControllable:ClearState( MissionControllable, '" .. ArgumentKey .. "' ) "
+    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable, unpack( Arguments ) )"
+  else
+    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable )"
+  end
+
+  DCSTask = self:TaskWrappedAction(
+    self:CommandDoScript(
+      table.concat( DCSScript )
+    )
+  )
+
+  self:T( DCSTask )
+
+  return DCSTask
+
+end
+
 
 
 --- (AIR + GROUND) Return a mission task from a mission template.
@@ -1438,6 +1632,140 @@ function CONTROLLABLE:TaskMission( TaskMission )
   self:T3( { DCSTask } )
   return DCSTask
 end
+
+
+do -- Patrol methods
+
+  --- (GROUND) Patrol iteratively using the waypoints the for the (parent) group.
+  -- @param #CONTROLLABLE self
+  -- @return #CONTROLLABLE
+  function CONTROLLABLE:PatrolRoute()
+  
+    local PatrolGroup = self -- Wrapper.Group#GROUP
+    
+    if not self:IsInstanceOf( "GROUP" ) then
+      PatrolGroup = self:GetGroup() -- Wrapper.Group#GROUP
+    end
+    
+    self:E( { PatrolGroup = PatrolGroup:GetName() } )
+    
+    if PatrolGroup:IsGround() or PatrolGroup:IsShip() then
+    
+      local Waypoints = PatrolGroup:GetTemplateRoutePoints()
+      
+      -- Calculate the new Route.
+      local FromCoord = PatrolGroup:GetCoordinate()
+      local From = FromCoord:WaypointGround( 120 )
+      
+      table.insert( Waypoints, 1, From )
+
+      local TaskRoute = PatrolGroup:TaskFunction( "CONTROLLABLE.PatrolRoute" )
+      
+      self:E({Waypoints = Waypoints})
+      local Waypoint = Waypoints[#Waypoints]
+      PatrolGroup:SetTaskWaypoint( Waypoint, TaskRoute ) -- Set for the given Route at Waypoint 2 the TaskRouteToZone.
+    
+      PatrolGroup:Route( Waypoints ) -- Move after a random seconds to the Route. See the Route method for details.
+    end
+  end
+
+  --- (GROUND) Patrol randomly to the waypoints the for the (parent) group.
+  -- A random waypoint will be picked and the group will move towards that point.
+  -- @param #CONTROLLABLE self
+  -- @return #CONTROLLABLE
+  function CONTROLLABLE:PatrolRouteRandom( Speed, Formation, ToWaypoint )
+  
+    local PatrolGroup = self -- Wrapper.Group#GROUP
+    
+    if not self:IsInstanceOf( "GROUP" ) then
+      PatrolGroup = self:GetGroup() -- Wrapper.Group#GROUP
+    end
+
+    self:E( { PatrolGroup = PatrolGroup:GetName() } )
+    
+    if PatrolGroup:IsGround() or PatrolGroup:IsShip() then
+    
+      local Waypoints = PatrolGroup:GetTemplateRoutePoints()
+      
+      -- Calculate the new Route.
+      local FromCoord = PatrolGroup:GetCoordinate()
+      local FromWaypoint = 1
+      if ToWaypoint then
+        FromWaypoint = ToWaypoint
+      end
+      
+      -- Loop until a waypoint has been found that is not the same as the current waypoint.
+      -- Otherwise the object zon't move or drive in circles and the algorithm would not do exactly
+      -- what it is supposed to do, which is making groups drive around.
+      local ToWaypoint
+      repeat      
+        -- Select a random waypoint and check if it is not the same waypoint as where the object is about.
+        ToWaypoint = math.random( 1, #Waypoints )
+      until( ToWaypoint ~= FromWaypoint )
+      self:E( { FromWaypoint = FromWaypoint, ToWaypoint = ToWaypoint } )
+
+      local  Waypoint = Waypoints[ToWaypoint] -- Select random waypoint.
+      local ToCoord = COORDINATE:NewFromVec2( { x = Waypoint.x, y = Waypoint.y } )
+      -- Create a "ground route point", which is a "point" structure that can be given as a parameter to a Task
+      local Route = {}
+      Route[#Route+1] = FromCoord:WaypointGround( 0 )
+      Route[#Route+1] = ToCoord:WaypointGround( Speed, Formation )
+      
+      
+      local TaskRouteToZone = PatrolGroup:TaskFunction( "CONTROLLABLE.PatrolRouteRandom", Speed, Formation, ToWaypoint )
+      
+      PatrolGroup:SetTaskWaypoint( Route[#Route], TaskRouteToZone ) -- Set for the given Route at Waypoint 2 the TaskRouteToZone.
+    
+      PatrolGroup:Route( Route, 1 ) -- Move after a random seconds to the Route. See the Route method for details.
+    end
+  end
+
+  --- (GROUND) Patrol randomly to the waypoints the for the (parent) group.
+  -- A random waypoint will be picked and the group will move towards that point.
+  -- @param #CONTROLLABLE self
+  -- @return #CONTROLLABLE
+  function CONTROLLABLE:PatrolZones( ZoneList, Speed, Formation )
+  
+    if not type( ZoneList ) == "table" then
+      ZoneList = { ZoneList }
+    end
+  
+    local PatrolGroup = self -- Wrapper.Group#GROUP
+    
+    if not self:IsInstanceOf( "GROUP" ) then
+      PatrolGroup = self:GetGroup() -- Wrapper.Group#GROUP
+    end
+
+    self:E( { PatrolGroup = PatrolGroup:GetName() } )
+    
+    if PatrolGroup:IsGround() or PatrolGroup:IsShip() then
+    
+      local Waypoints = PatrolGroup:GetTemplateRoutePoints()
+      local Waypoint = Waypoints[math.random( 1, #Waypoints )] -- Select random waypoint.
+      
+      -- Calculate the new Route.
+      local FromCoord = PatrolGroup:GetCoordinate()
+      
+      -- Select a random Zone and get the Coordinate of the new Zone.
+      local RandomZone = ZoneList[ math.random( 1, #ZoneList ) ] -- Core.Zone#ZONE
+      local ToCoord = RandomZone:GetRandomCoordinate( 10 )
+      
+      -- Create a "ground route point", which is a "point" structure that can be given as a parameter to a Task
+      local Route = {}
+      Route[#Route+1] = FromCoord:WaypointGround( 120 )
+      Route[#Route+1] = ToCoord:WaypointGround( Speed, Formation )
+      
+      
+      local TaskRouteToZone = PatrolGroup:TaskFunction( "CONTROLLABLE.PatrolZones", ZoneList, Speed, Formation )
+      
+      PatrolGroup:SetTaskWaypoint( Route[#Route], TaskRouteToZone ) -- Set for the given Route at Waypoint 2 the TaskRouteToZone.
+    
+      PatrolGroup:Route( Route, 1 ) -- Move after a random seconds to the Route. See the Route method for details.
+    end
+  end
+
+end
+
 
 --- Return a Misson task to follow a given route defined by Points.
 -- @param #CONTROLLABLE self
@@ -1563,25 +1891,63 @@ end
 
 --- Make the controllable to follow a given route.
 -- @param #CONTROLLABLE self
--- @param #table GoPoints A table of Route Points.
--- @return #CONTROLLABLE self
-function CONTROLLABLE:Route( GoPoints )
-  self:F2( GoPoints )
+-- @param #table Route A table of Route Points.
+-- @param #number DelaySeconds Wait for the specified seconds before executing the Route.
+-- @return #CONTROLLABLE The CONTROLLABLE.
+function CONTROLLABLE:Route( Route, DelaySeconds )
+  self:F2( Route )
 
   local DCSControllable = self:GetDCSObject()
-
   if DCSControllable then
-    local Points = routines.utils.deepCopy( GoPoints )
-    local MissionTask = { id = 'Mission', params = { route = { points = Points, }, }, }
-    local Controller = self:_GetController()
-    --Controller.setTask( Controller, MissionTask )
-    self.TaskScheduler:Schedule( Controller, Controller.setTask, { MissionTask }, 1 )
+    local RouteTask = self:TaskRoute( Route ) -- Create a RouteTask, that will route the CONTROLLABLE to the Route.
+    self:SetTask( RouteTask, DelaySeconds or 1 ) -- Execute the RouteTask after the specified seconds (default is 1).
     return self
   end
 
   return nil
 end
 
+
+--- Make the GROUND Controllable to drive towards a specific point.
+-- @param #CONTROLLABLE self
+-- @param Core.Point#COORDINATE ToCoordinate A Coordinate to drive to.
+-- @param #number Speed (optional) Speed in km/h. The default speed is 999 km/h.
+-- @param #string Formation (optional) The route point Formation, which is a text string that specifies exactly the Text in the Type of the route point, like "Vee", "Echelon Right".
+-- @param #number DelaySeconds Wait for the specified seconds before executing the Route.
+-- @return #CONTROLLABLE The CONTROLLABLE.
+function CONTROLLABLE:RouteGroundTo( ToCoordinate, Speed, Formation, DelaySeconds )
+
+  local FromCoordinate = self:GetCoordinate()
+  
+  local FromWP = FromCoordinate:WaypointGround()
+  local ToWP = ToCoordinate:WaypointGround( Speed, Formation )
+
+  self:Route( { FromWP, ToWP }, DelaySeconds )
+
+  return self
+end
+
+
+--- Make the AIR Controllable fly towards a specific point.
+-- @param #CONTROLLABLE self
+-- @param Core.Point#COORDINATE ToCoordinate A Coordinate to drive to.
+-- @param Core.Point#COORDINATE.RoutePointAltType AltType The altitude type.
+-- @param Core.Point#COORDINATE.RoutePointType Type The route point type.
+-- @param Core.Point#COORDINATE.RoutePointAction Action The route point action.
+-- @param #number Speed (optional) Speed in km/h. The default speed is 999 km/h.
+-- @param #number DelaySeconds Wait for the specified seconds before executing the Route.
+-- @return #CONTROLLABLE The CONTROLLABLE.
+function CONTROLLABLE:RouteAirTo( ToCoordinate, AltType, Type, Action, Speed, DelaySeconds )
+
+  local FromCoordinate = self:GetCoordinate()
+  local FromWP = FromCoordinate:WaypointAir()
+
+  local ToWP = ToCoordinate:WaypointAir( AltType, Type, Action, Speed )
+
+  self:Route( { FromWP, ToWP }, DelaySeconds )
+
+  return self
+end
 
 
 --- (AIR + GROUND) Route the controllable to a given zone.
@@ -1633,6 +1999,59 @@ function CONTROLLABLE:TaskRouteToZone( Zone, Randomize, Speed, Formation )
       PointTo.speed = Speed
     else
       PointTo.speed = 20 / 1.6
+    end
+
+    local Points = { PointFrom, PointTo }
+
+    self:T3( Points )
+
+    self:Route( Points )
+
+    return self
+  end
+
+  return nil
+end
+
+--- (GROUND) Route the controllable to a given Vec2.
+-- A speed can be given in km/h.
+-- A given formation can be given.
+-- @param #CONTROLLABLE self
+-- @param #Vec2 Vec2 The Vec2 where to route to.
+-- @param #number Speed The speed.
+-- @param Base#FORMATION Formation The formation string.
+function CONTROLLABLE:TaskRouteToVec2( Vec2, Speed, Formation )
+
+  local DCSControllable = self:GetDCSObject()
+
+  if DCSControllable then
+
+    local ControllablePoint = self:GetVec2()
+
+    local PointFrom = {}
+    PointFrom.x = ControllablePoint.x
+    PointFrom.y = ControllablePoint.y
+    PointFrom.type = "Turning Point"
+    PointFrom.action = Formation or "Cone"
+    PointFrom.speed = 20 / 1.6
+
+
+    local PointTo = {}
+
+    PointTo.x = Vec2.x
+    PointTo.y = Vec2.y
+    PointTo.type = "Turning Point"
+
+    if Formation then
+      PointTo.action = Formation
+    else
+      PointTo.action = "Cone"
+    end
+
+    if Speed then
+      PointTo.speed = Speed
+    else
+      PointTo.speed = 60 / 3.6
     end
 
     local Points = { PointFrom, PointTo }
@@ -2118,6 +2537,57 @@ function CONTROLLABLE:OptionROTVertical()
   return nil
 end
 
+
+--- Set RTB on bingo fuel.
+-- @param #CONTROLLABLE self
+-- @param #boolean RTB true if RTB on bingo fuel (default), false if no RTB on bingo fuel.
+-- Warning! When you switch this option off, the airborne group will continue to fly until all fuel has been consumed, and will crash.
+-- @return #CONTROLLABLE self
+function CONTROLLABLE:OptionRTBBingoFuel( RTB ) --R2.2
+  self:F2( { self.ControllableName } )
+
+  RTB = RTB or true
+
+  local DCSControllable = self:GetDCSObject()
+  if DCSControllable then
+    local Controller = self:_GetController()
+
+    if self:IsAir() then
+      Controller:setOption( AI.Option.Air.id.RTB_ON_BINGO, RTB )
+    end
+
+    return self
+  end
+
+  return nil
+end
+
+
+--- Set RTB on ammo.
+-- @param #CONTROLLABLE self
+-- @param #boolean WeaponsFlag Weapons.flag enumerator.
+-- @return #CONTROLLABLE self
+function CONTROLLABLE:OptionRTBAmmo( WeaponsFlag )
+  self:F2( { self.ControllableName } )
+
+  local DCSControllable = self:GetDCSObject()
+  if DCSControllable then
+    local Controller = self:_GetController()
+
+    if self:IsAir() then
+      Controller:setOption( AI.Option.GROUND.id.RTB_ON_OUT_OF_AMMO, WeaponsFlag )
+    end
+
+    return self
+  end
+
+  return nil
+end
+
+
+
+
+
 --- Retrieve the controllable mission and allow to place function hooks within the mission waypoint plan.
 -- Use the method @{Controllable#CONTROLLABLE:WayPointFunction} to define the hook functions for specific waypoints.
 -- Use the method @{Controllable@CONTROLLABLE:WayPointExecute) to start the execution of the new mission plan.
@@ -2160,36 +2630,10 @@ function CONTROLLABLE:WayPointFunction( WayPoint, WayPointIndex, WayPointFunctio
   self:F2( { WayPoint, WayPointIndex, WayPointFunction } )
 
   table.insert( self.WayPoints[WayPoint].task.params.tasks, WayPointIndex )
-  self.WayPoints[WayPoint].task.params.tasks[WayPointIndex] = self:TaskFunction( WayPoint, WayPointIndex, WayPointFunction, arg )
+  self.WayPoints[WayPoint].task.params.tasks[WayPointIndex] = self:TaskFunction( WayPointFunction, arg )
   return self
 end
 
-
-function CONTROLLABLE:TaskFunction( WayPoint, WayPointIndex, FunctionString, FunctionArguments )
-  self:F2( { WayPoint, WayPointIndex, FunctionString, FunctionArguments } )
-
-  local DCSTask
-
-  local DCSScript = {}
-  DCSScript[#DCSScript+1] = "local MissionControllable = GROUP:Find( ... ) "
-
-  if FunctionArguments and #FunctionArguments > 0 then
-    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable, " .. table.concat( FunctionArguments, "," ) .. ")"
-  else
-    DCSScript[#DCSScript+1] = FunctionString .. "( MissionControllable )"
-  end
-
-  DCSTask = self:TaskWrappedAction(
-    self:CommandDoScript(
-      table.concat( DCSScript )
-    ), WayPointIndex
-  )
-
-  self:T3( DCSTask )
-
-  return DCSTask
-
-end
 
 --- Executes the WayPoint plan.
 -- The function gets a WayPoint parameter, that you can use to restart the mission at a specific WayPoint.
@@ -2216,5 +2660,33 @@ function CONTROLLABLE:WayPointExecute( WayPoint, WaitTime )
 
   return self
 end
+
+--- Returns if the Controllable contains AirPlanes.
+-- @param #CONTROLLABLE self
+-- @return #boolean true if Controllable contains AirPlanes.
+function CONTROLLABLE:IsAirPlane()
+  self:F2()
+
+  local DCSObject = self:GetDCSObject()
+
+  if DCSObject then
+    local Category = DCSObject:getDesc().category
+    return Category == Unit.Category.AIRPLANE
+  end
+
+  return nil
+end
+
+function CONTROLLABLE:GetSize()
+
+  local DCSObject = self:GetDCSObject()
+
+  if DCSObject then
+    return 1
+  else
+    return 0
+  end
+end
+
 
 -- Message APIs

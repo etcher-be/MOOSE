@@ -1,4 +1,4 @@
---- **Core R2.1** - EVENT models DCS **event dispatching** using a **publish-subscribe** model.
+--- **Core** -- EVENT models DCS **event dispatching** using a **publish-subscribe** model.
 -- 
 -- ![Banner Image](..\Presentations\EVENT\Dia1.JPG)
 -- 
@@ -157,33 +157,12 @@
 -- 
 -- When a static object is involved in the event, the Group and Player fields won't be populated.
 -- 
--- ====
--- 
--- # **API CHANGE HISTORY**
--- 
--- The underlying change log documents the API changes. Please read this carefully. The following notation is used:
--- 
---   * **Added** parts are expressed in bold type face.
---   * _Removed_ parts are expressed in italic type face.
--- 
--- YYYY-MM-DD: CLASS:**NewFunction**( Params ) replaces CLASS:_OldFunction_( Params )
--- YYYY-MM-DD: CLASS:**NewFunction( Params )** added
--- 
--- Hereby the change log:
--- 
---   * 2017-03-07: Added the correct event dispatching in case the event is subscribed by a GROUP.
--- 
---   * 2017-02-07: Did a complete revision of the Event Handing API and underlying mechanisms.
--- 
 -- ===
 -- 
--- # **AUTHORS and CONTRIBUTIONS**
--- 
+-- ### Author: **Sven Van de Velde (FlightControl)**
 -- ### Contributions: 
 -- 
--- ### Authors: 
--- 
---   * [**FlightControl**](https://forums.eagle.ru/member.php?u=89536): Design & Programming & documentation.
+-- ====
 --
 -- @module Event
 
@@ -471,16 +450,16 @@ end
 -- @param Core.Base#BASE EventClass The self instance of the class for which the event is.
 -- @param Dcs.DCSWorld#world.event EventID
 -- @return #EVENT.Events
-function EVENT:Remove( EventClass, EventID  )
+function EVENT:RemoveEvent( EventClass, EventID  )
 
-  self:E( { "Removing subscription for class: ", EventClass:GetClassNameAndID() } )
+  self:F2( { "Removing subscription for class: ", EventClass:GetClassNameAndID() } )
 
   local EventPriority = EventClass:GetEventPriority()
 
-  self.EventsDead = self.EventsDead or {}
-  self.EventsDead[EventID] = self.EventsDead[EventID] or {}
-  self.EventsDead[EventID][EventPriority] = self.EventsDead[EventID][EventPriority] or {}  
-  self.EventsDead[EventID][EventPriority][EventClass] = self.Events[EventID][EventPriority][EventClass]
+  self.Events = self.Events or {}
+  self.Events[EventID] = self.Events[EventID] or {}
+  self.Events[EventID][EventPriority] = self.Events[EventID][EventPriority] or {}  
+  self.Events[EventID][EventPriority][EventClass] = self.Events[EventID][EventPriority][EventClass]
     
   self.Events[EventID][EventPriority][EventClass] = nil
   
@@ -582,12 +561,13 @@ end
 -- @param Core.Base#BASE EventClass The self instance of the class for which the event is.
 -- @param EventID
 -- @return #EVENT
-function EVENT:OnEventForGroup( GroupName, EventFunction, EventClass, EventID )
-  self:F2( GroupName )
+function EVENT:OnEventForGroup( GroupName, EventFunction, EventClass, EventID, ... )
+  self:E( GroupName )
 
   local Event = self:Init( EventID, EventClass )
   Event.EventGroup = true
   Event.EventFunction = EventFunction
+  Event.Params = arg
   return self
 end
 
@@ -764,7 +744,10 @@ function EVENT:onEvent( Event )
 
   local EventMeta = _EVENTMETA[Event.id]
 
-  if self and self.Events and self.Events[Event.id] then
+  if self and 
+     self.Events and 
+     self.Events[Event.id] and
+     ( Event.initiator ~= nil or ( Event.initiator == nil and Event.id ~= EVENTS.PlayerLeaveUnit ) ) then
 
     if Event.initiator then    
 
@@ -889,9 +872,9 @@ function EVENT:onEvent( Event )
         -- Okay, we got the event from DCS. Now loop the SORTED self.EventSorted[] table for the received Event.id, and for each EventData registered, check if a function needs to be called.
         for EventClass, EventData in pairs( self.Events[Event.id][EventPriority] ) do
 
-          if Event.IniObjectCategory ~= Object.Category.STATIC then
-            --self:E( { "Evaluating: ", EventClass:GetClassNameAndID() } )
-          end
+          --if Event.IniObjectCategory ~= Object.Category.STATIC then
+          --  self:E( { "Evaluating: ", EventClass:GetClassNameAndID() } )
+          --end
           
           Event.IniGroup = GROUP:FindByName( Event.IniDCSGroupName )
           Event.TgtGroup = GROUP:FindByName( Event.TgtDCSGroupName )
@@ -941,7 +924,7 @@ function EVENT:onEvent( Event )
               end
             else
               -- The EventClass is not alive anymore, we remove it from the EventHandlers...
-              self:Remove( EventClass, Event.id )
+              self:RemoveEvent( EventClass, Event.id )
             end                      
           else
 
@@ -968,7 +951,7 @@ function EVENT:onEvent( Event )
                                       
                     local Result, Value = xpcall( 
                       function() 
-                        return EventData.EventFunction( EventClass, Event ) 
+                        return EventData.EventFunction( EventClass, Event, unpack( EventData.Params ) ) 
                       end, ErrorHandler )
       
                   else
@@ -984,14 +967,14 @@ function EVENT:onEvent( Event )
                                           
                       local Result, Value = xpcall( 
                         function() 
-                          return EventFunction( EventClass, Event ) 
+                          return EventFunction( EventClass, Event, unpack( EventData.Params ) ) 
                         end, ErrorHandler )
                     end
                   end
                 end
               else
                 -- The EventClass is not alive anymore, we remove it from the EventHandlers...
-                self:Remove( EventClass, Event.id )  
+                --self:RemoveEvent( EventClass, Event.id )  
               end
             else
           
@@ -1004,7 +987,7 @@ function EVENT:onEvent( Event )
                   
                   -- There is an EventFunction defined, so call the EventFunction.
                   if Event.IniObjectCategory ~= 3 then
-                    self:E( { "Calling EventFunction for Class ", EventClass:GetClassNameAndID(), EventPriority } )
+                    self:F2( { "Calling EventFunction for Class ", EventClass:GetClassNameAndID(), EventPriority } )
                   end                
                   local Result, Value = xpcall( 
                     function() 
@@ -1018,7 +1001,7 @@ function EVENT:onEvent( Event )
                     
                     -- Now call the default event function.
                     if Event.IniObjectCategory ~= 3 then
-                      self:E( { "Calling " .. EventMeta.Event .. " for Class ", EventClass:GetClassNameAndID(), EventPriority } )
+                      self:F2( { "Calling " .. EventMeta.Event .. " for Class ", EventClass:GetClassNameAndID(), EventPriority } )
                     end
                                   
                     local Result, Value = xpcall( 

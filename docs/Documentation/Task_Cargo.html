@@ -17,6 +17,11 @@
 				<a href="index.html">index</a>
 			</li></ul>
 		<ul>
+					<li><a href="AI_A2A.html">AI_A2A</a></li>
+					<li><a href="AI_A2A_Cap.html">AI_A2A_Cap</a></li>
+					<li><a href="AI_A2A_Dispatcher.html">AI_A2A_Dispatcher</a></li>
+					<li><a href="AI_A2A_GCI.html">AI_A2A_GCI</a></li>
+					<li><a href="AI_A2A_Patrol.html">AI_A2A_Patrol</a></li>
 					<li><a href="AI_Bai.html">AI_Bai</a></li>
 					<li><a href="AI_Balancer.html">AI_Balancer</a></li>
 					<li><a href="AI_Cap.html">AI_Cap</a></li>
@@ -68,6 +73,7 @@
 					<li><a href="Process_JTAC.html">Process_JTAC</a></li>
 					<li><a href="Process_Pickup.html">Process_Pickup</a></li>
 					<li><a href="Radio.html">Radio</a></li>
+					<li><a href="Rat.html">Rat</a></li>
 					<li><a href="Route.html">Route</a></li>
 					<li><a href="Scenery.html">Scenery</a></li>
 					<li><a href="ScheduleDispatcher.html">ScheduleDispatcher</a></li>
@@ -75,6 +81,7 @@
 					<li><a href="Scoring.html">Scoring</a></li>
 					<li><a href="Sead.html">Sead</a></li>
 					<li><a href="Set.html">Set</a></li>
+					<li><a href="Settings.html">Settings</a></li>
 					<li><a href="Smoke.html">Smoke</a></li>
 					<li><a href="Spawn.html">Spawn</a></li>
 					<li><a href="SpawnStatic.html">SpawnStatic</a></li>
@@ -82,6 +89,8 @@
 					<li><a href="Static.html">Static</a></li>
 					<li><a href="StaticObject.html">StaticObject</a></li>
 					<li><a href="Task.html">Task</a></li>
+					<li><a href="Task_A2A.html">Task_A2A</a></li>
+					<li><a href="Task_A2A_Dispatcher.html">Task_A2A_Dispatcher</a></li>
 					<li><a href="Task_A2G.html">Task_A2G</a></li>
 					<li><a href="Task_A2G_Dispatcher.html">Task_A2G_Dispatcher</a></li>
 					<li>Task_Cargo</li>
@@ -97,7 +106,7 @@
 	<div id="content">
    <h1>Module <code>Task_Cargo</code></h1>
    
-<p><strong>Tasking (Release 2.1)</strong> -- The TASK_CARGO models tasks for players to transport <a href="Cargo.html">Cargo</a>.</p>
+<p><strong>Tasking</strong> -- The TASK_CARGO models tasks for players to transport <a href="Cargo.html">Cargo</a>.</p>
 
    
 
@@ -117,33 +126,14 @@ Cargo can be transported, picked-up, deployed and sling-loaded from and to other
     <li><a href="##(TASK_CARGO_TRANSPORT)">#TASK<em>CARGO</em>TRANSPORT</a>: Defines a task for a human player to transport a set of cargo between various zones.</li>
 </ul>
 
-<p>==</p>
-
-<h1><strong>API CHANGE HISTORY</strong></h1>
-
-<p>The underlying change log documents the API changes. Please read this carefully. The following notation is used:</p>
-
-<ul>
-    <li><strong>Added</strong> parts are expressed in bold type face.</li>
-    <li><em>Removed</em> parts are expressed in italic type face.</li>
-</ul>
-
-<p>Hereby the change log:</p>
-
-<p>2017-03-09: Revised version.</p>
-
 <hr/>
 
-<h1><strong>AUTHORS and CONTRIBUTIONS</strong></h1>
+<h3>Author: <strong>Sven Van de Velde (FlightControl)</strong></h3>
 
 <h3>Contributions:</h3>
 
-<h3>Authors:</h3>
-
-<ul>
-    <li><strong>FlightControl</strong>: Concept, Design &amp; Programming.
-    </li>
-</ul>
+<hr/>
+<p>  </p>
 
 	<h2>Global(s)</h2>
 	<table class="function_list">
@@ -191,6 +181,18 @@ and various dedicated deployment zones.</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).CargoItemCount">TASK_CARGO.CargoItemCount</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).CargoLimit">TASK_CARGO.CargoLimit</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).DeployZones">TASK_CARGO.DeployZones</a></td>
 		<td class="summary">
 
@@ -209,7 +211,19 @@ and various dedicated deployment zones.</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).GetGoalTotal">TASK_CARGO:GetGoalTotal()</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).GetPlannedMenuText">TASK_CARGO:GetPlannedMenuText()</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).GetSmokeColor">TASK_CARGO:GetSmokeColor()</a></td>
 		<td class="summary">
 
 </td>
@@ -239,6 +253,12 @@ and various dedicated deployment zones.</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetCargoLimit">TASK_CARGO:SetCargoLimit(CargoLimit)</a></td>
+		<td class="summary">
+<p>Set a limit on the amount of cargo items that can be loaded into the Carriers.</p>
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetCargoPickup">TASK_CARGO:SetCargoPickup(Cargo, TaskUnit)</a></td>
 		<td class="summary">
 
@@ -257,13 +277,19 @@ and various dedicated deployment zones.</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetPenaltyOnFailed">TASK_CARGO:SetPenaltyOnFailed(Text, Penalty, TaskUnit)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetGoalTotal">TASK_CARGO:SetGoalTotal()</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetScoreOnFail">TASK_CARGO:SetScoreOnFail(Text, Penalty, TaskUnit)</a></td>
 		<td class="summary">
 <p>Set a penalty when the A2G attack has failed.</p>
 </td>
 		</tr>
 		<tr>
-		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetScoreOnDestroy">TASK_CARGO:SetScoreOnDestroy(Text, Score, TaskUnit)</a></td>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetScoreOnProgress">TASK_CARGO:SetScoreOnProgress(Text, Score, TaskUnit)</a></td>
 		<td class="summary">
 <p>Set a score when a target in scope of the A2G attack, has been destroyed .</p>
 </td>
@@ -272,6 +298,18 @@ and various dedicated deployment zones.</p>
 		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetScoreOnSuccess">TASK_CARGO:SetScoreOnSuccess(Text, Score, TaskUnit)</a></td>
 		<td class="summary">
 <p>Set a score when all the targets in scope of the A2G attack, have been destroyed.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SetSmokeColor">TASK_CARGO.SetSmokeColor(Color, self, SmokeColor)</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO).SmokeColor">TASK_CARGO.SmokeColor</a></td>
+		<td class="summary">
+
 </td>
 		</tr>
 		<tr>
@@ -339,6 +377,12 @@ and various dedicated deployment zones.</p>
 </td>
 		</tr>
 		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO_TRANSPORT).ReportOrder">TASK_CARGO_TRANSPORT:ReportOrder(ReportGroup)</a></td>
+		<td class="summary">
+
+</td>
+		</tr>
+		<tr>
 		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO_TRANSPORT).__CargoDeployed">TASK_CARGO_TRANSPORT:__CargoDeployed(Delay, TaskUnit, Cargo, DeployZone)</a></td>
 		<td class="summary">
 <p>Asynchronous Event Trigger for Event CargoDeployed.</p>
@@ -348,6 +392,12 @@ and various dedicated deployment zones.</p>
 		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO_TRANSPORT).__CargoPickedUp">TASK_CARGO_TRANSPORT:__CargoPickedUp(Delay, TaskUnit, Cargo)</a></td>
 		<td class="summary">
 <p>Asynchronous Event Trigger for Event CargoPickedUp.</p>
+</td>
+		</tr>
+		<tr>
+		<td class="name" nowrap="nowrap"><a href="##(TASK_CARGO_TRANSPORT).onafterGoal">TASK_CARGO_TRANSPORT:onafterGoal(TaskUnit, From, Event, To)</a></td>
+		<td class="summary">
+
 </td>
 		</tr>
 	</table>
@@ -503,7 +553,7 @@ based on the tasking capabilities defined in <a href="Task.html##(TASK)">Task#TA
 		<dl class="function">
 <dt>
 
-		<em></em>
+		<em><a href="Core.Cargo.html##(CARGO)">Core.Cargo#CARGO</a></em>
 <a id="#(FSM_PROCESS).Cargo" >
 <strong>FSM_PROCESS.Cargo</strong>
 </a>
@@ -565,6 +615,37 @@ based on the tasking capabilities defined in <a href="Task.html##(TASK)">Task#TA
 <dt>
 
 		<em></em>
+<a id="#(TASK_CARGO).CargoItemCount" >
+<strong>TASK_CARGO.CargoItemCount</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+	
+<p> Map of Carriers having a cargo item count to check the cargo loading limits.</p>
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+		<em></em>
+<a id="#(TASK_CARGO).CargoLimit" >
+<strong>TASK_CARGO.CargoLimit</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+		<em></em>
 <a id="#(TASK_CARGO).DeployZones" >
 <strong>TASK_CARGO.DeployZones</strong>
 </a>
@@ -617,6 +698,19 @@ Core.Zone#ZONE_BASE> The Deployment Zones.</p>
 		<dl class="function">
 <dt>
 
+<a id="#(TASK_CARGO).GetGoalTotal" >
+<strong>TASK_CARGO:GetGoalTotal()</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(TASK_CARGO).GetPlannedMenuText" >
 <strong>TASK_CARGO:GetPlannedMenuText()</strong>
 </a>
@@ -624,6 +718,22 @@ Core.Zone#ZONE_BASE> The Deployment Zones.</p>
 <dd>
 	
 
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(TASK_CARGO).GetSmokeColor" >
+<strong>TASK_CARGO:GetSmokeColor()</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+	
+<p>@return SmokeColor</p>
 
 </dd>
 </dl>
@@ -757,6 +867,33 @@ self</p>
 		<dl class="function">
 <dt>
 
+<a id="#(TASK_CARGO).SetCargoLimit" >
+<strong>TASK_CARGO:SetCargoLimit(CargoLimit)</strong>
+</a>
+</dt>
+<dd>
+	
+<p>Set a limit on the amount of cargo items that can be loaded into the Carriers.</p>
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em> CargoLimit </em></code>: 
+Specifies a number of cargo items that can be loaded in the helicopter.</p>
+
+				</li>
+		</ul>
+		<h3>Return value</h3>
+				
+<p><em><a href="##(TASK_CARGO)">#TASK_CARGO</a>:</em></p>
+
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(TASK_CARGO).SetCargoPickup" >
 <strong>TASK_CARGO:SetCargoPickup(Cargo, TaskUnit)</strong>
 </a>
@@ -857,8 +994,21 @@ ist<Core.Zone#ZONE> DeployZones</p>
 		<dl class="function">
 <dt>
 
-<a id="#(TASK_CARGO).SetPenaltyOnFailed" >
-<strong>TASK_CARGO:SetPenaltyOnFailed(Text, Penalty, TaskUnit)</strong>
+<a id="#(TASK_CARGO).SetGoalTotal" >
+<strong>TASK_CARGO:SetGoalTotal()</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(TASK_CARGO).SetScoreOnFail" >
+<strong>TASK_CARGO:SetScoreOnFail(Text, Penalty, TaskUnit)</strong>
 </a>
 </dt>
 <dd>
@@ -895,8 +1045,8 @@ The penalty in points.</p>
 		<dl class="function">
 <dt>
 
-<a id="#(TASK_CARGO).SetScoreOnDestroy" >
-<strong>TASK_CARGO:SetScoreOnDestroy(Text, Score, TaskUnit)</strong>
+<a id="#(TASK_CARGO).SetScoreOnProgress" >
+<strong>TASK_CARGO:SetScoreOnProgress(Text, Score, TaskUnit)</strong>
 </a>
 </dt>
 <dd>
@@ -964,6 +1114,52 @@ The score in points.</p>
 		<h3>Return value</h3>
 				
 <p><em><a href="##(TASK_CARGO)">#TASK_CARGO</a>:</em></p>
+
+
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(TASK_CARGO).SetSmokeColor" >
+<strong>TASK_CARGO.SetSmokeColor(Color, self, SmokeColor)</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+		<h3>Parameters</h3>
+		<ul>
+				<li>
+				
+<p><code><em> Color </em></code>: 
+Might be SMOKECOLOR.Blue, SMOKECOLOR.Red SMOKECOLOR.Orange, SMOKECOLOR.White or SMOKECOLOR.Green</p>
+
+				</li>
+				<li>
+				
+<p><code><em> self </em></code>: </p>
+
+				</li>
+				<li>
+				
+<p><code><em> SmokeColor </em></code>: </p>
+
+				</li>
+		</ul>
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+		<em></em>
+<a id="#(TASK_CARGO).SmokeColor" >
+<strong>TASK_CARGO.SmokeColor</strong>
+</a>
+</dt>
+<dd>
+	
 
 
 </dd>
@@ -1341,6 +1537,27 @@ Return false to cancel Transition.</p>
 		<dl class="function">
 <dt>
 
+<a id="#(TASK_CARGO_TRANSPORT).ReportOrder" >
+<strong>TASK_CARGO_TRANSPORT:ReportOrder(ReportGroup)</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+		<h3>Parameter</h3>
+		<ul>
+				<li>
+				
+<p><code><em> ReportGroup </em></code>: </p>
+
+				</li>
+		</ul>
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
 <a id="#(TASK_CARGO_TRANSPORT).__CargoDeployed" >
 <strong>TASK_CARGO_TRANSPORT:__CargoDeployed(Delay, TaskUnit, Cargo, DeployZone)</strong>
 </a>
@@ -1407,6 +1624,42 @@ The Unit (Client) that PickedUp the cargo. You can use this to retrieve the Play
 				
 <p><code><em><a href="Core.Cargo.html##(CARGO)">Core.Cargo#CARGO</a> Cargo </em></code>: 
 The Cargo that got PickedUp by the TaskUnit. You can use this to check Cargo Status.</p>
+
+				</li>
+		</ul>
+</dd>
+</dl>
+		<dl class="function">
+<dt>
+
+<a id="#(TASK_CARGO_TRANSPORT).onafterGoal" >
+<strong>TASK_CARGO_TRANSPORT:onafterGoal(TaskUnit, From, Event, To)</strong>
+</a>
+</dt>
+<dd>
+	
+
+
+		<h3>Parameters</h3>
+		<ul>
+				<li>
+				
+<p><code><em> TaskUnit </em></code>: </p>
+
+				</li>
+				<li>
+				
+<p><code><em> From </em></code>: </p>
+
+				</li>
+				<li>
+				
+<p><code><em> Event </em></code>: </p>
+
+				</li>
+				<li>
+				
+<p><code><em> To </em></code>: </p>
 
 				</li>
 		</ul>
