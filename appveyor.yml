@@ -7,8 +7,12 @@ skip_tags: false
 
 environment:
   fast_finish: true
-  LUAROCKS_VER: 2.4.1
-  LUA_VER: 5.1.5
+
+  matrix:
+  - LUA: "lua 5.1"
+
+platform:
+  - x64
 
 init:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -40,6 +44,24 @@ init:
   
 install:
   - cmd: choco install 7zip.commandline
+  - set PATH=C:\Python27\Scripts;%LR_EXTERNAL%;%PATH%
+  - if /I "%platform%"=="x64" set HR_TARGET=vs_64
+  - if /I "%platform%"=="mingw" set HR_TARGET=mingw
+  - if /I "%platform%"=="mingw" set PATH=C:\MinGW\bin;%PATH%
+  - if not exist "%LR_EXTERNAL%" (
+      mkdir "%LR_EXTERNAL%" &&
+      mkdir "%LR_EXTERNAL%\lib" &&
+      mkdir "%LR_EXTERNAL%\include"
+    )
+  - if not exist c:\hererocks (
+      pip install hererocks &&
+      hererocks c:\hererocks --%LUA% --target %HR_TARGET% -rlatest
+    )
+  - call c:\hererocks\bin\activate
+
+before_build:
+  - if "%LUA%" EQU "lua 5.1" (luarocks show bit32 >nul 2>&1 || luarocks install bit32)
+  - luarocks show luafilesystem >nul 2>&1 || luarocks install luafilesystem
   
 
 cache:
@@ -47,10 +69,11 @@ cache:
   - C:\ProgramData\chocolatey\bin
 
 build_script:
+  - luarocks make rockspecs/lua-path-scm-0.rockspec 
   - cmd: echo "Hello World!"
-  - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   - cmd: Moose_update_missions.bat missions
+  - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
 
 test: off
 
