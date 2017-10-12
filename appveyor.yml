@@ -81,7 +81,7 @@ build_script:
 test: off
 
 artifacts:
-  - path: '**\*.miz'
-    name: miz
   - path: 'Moose Mission Setup/Moose.lua'
     name: moose.lua
+  - path: '**\*.miz'
+    name: miz
