@@ -48,16 +48,6 @@ install:
   - if /I "%platform%"=="x64" set HR_TARGET=vs_64
   - if /I "%platform%"=="mingw" set HR_TARGET=mingw
   - if /I "%platform%"=="mingw" set PATH=C:\MinGW\bin;%PATH%
-  - if not exist "%LR_EXTERNAL%" (
-      mkdir "%LR_EXTERNAL%" &&
-      mkdir "%LR_EXTERNAL%\lib" &&
-      mkdir "%LR_EXTERNAL%\include"
-    )
-  - if not exist c:\hererocks (
-      pip install hererocks &&
-      hererocks c:\hererocks --%LUA% --target %HR_TARGET% -rlatest
-    )
-  - call c:\hererocks\bin\activate
 
 before_build:
   - if "%LUA%" EQU "lua 5.1" (luarocks show bit32 >nul 2>&1 || luarocks install bit32)
