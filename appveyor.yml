@@ -7,12 +7,8 @@ skip_tags: false
 
 environment:
   fast_finish: true
-#  PYTHON: "C:\\Python35"
-#  PYTHON_VERSION: "3.5.2"
-#  GH_MAIL:
-#    secure: lRD0NTgFubnB8Ms3IyTAeWVODbX6j5pgcn3Q4Ye3a9Y=
-#  GH_TOKEN:
-#    secure: +Pie5rykLN4kjgp/QVj8xmdID7awCtvMG22pkM9ONWbFa9hY4O4AsmYq/1lc+jQQ
+  LUAROCKS_VER: 2.4.1
+  LUA_VER: 5.1.5
 
 init:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -53,6 +49,7 @@ cache:
 build_script:
   - cmd: echo "Hello World!"
   - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
+  - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   - cmd: Moose_update_missions.bat missions
 
 test: off
