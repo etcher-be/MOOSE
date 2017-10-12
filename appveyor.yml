@@ -48,10 +48,6 @@ install:
   - if /I "%platform%"=="x64" set HR_TARGET=vs_64
   - if /I "%platform%"=="mingw" set HR_TARGET=mingw
   - if /I "%platform%"=="mingw" set PATH=C:\MinGW\bin;%PATH%
-
-before_build:
-  - if "%LUA%" EQU "lua 5.1" (luarocks show bit32 >nul 2>&1 || luarocks install bit32)
-  - luarocks show luafilesystem >nul 2>&1 || luarocks install luafilesystem
   
 
 cache:
