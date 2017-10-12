@@ -53,7 +53,7 @@ cache:
 build_script:
   - cmd: echo "Hello World!"
   - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
-  - cmd: 'Moose Mission Setup\\Moose Mission Update\\Moose_update_missions.bat missions'
+  - cmd: Moose_update_missions.bat missions
 
 test: off
 
