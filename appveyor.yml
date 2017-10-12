@@ -7,6 +7,7 @@ skip_tags: false
 
 environment:
   fast_finish: true
+  LUAROCKS_VER: 2.4.1
 
   matrix:
   - LUA: "lua 5.1"
