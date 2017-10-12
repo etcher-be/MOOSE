@@ -6,13 +6,33 @@ skip_commits:
 skip_tags: false
 
 environment:
-  fast_finish: true
   LUAROCKS_VER: 2.4.1
-
   matrix:
-  - LUA: "lua 5.1"
+  - LUA_VER: 5.1.5
+
+matrix:
+  allow_failures:
+    - configuration: 2010
+      platform: x64
+    - configuration: 2008
+      platform: x64
+    - configuration: MinGW
+      platform: x64
+
+
+
+# Abuse this section so we can have a matrix with different Compiler versions
+# Is there a better way? Like injecting an array in the matrix?
+configuration:
+  - 2015
+  - 2013
+  - 2012
+  - MinGW
+  - 2010 # only works for x86
+  - 2008 # only works for x86
 
 platform:
+  - x86
   - x64
 
 init:
@@ -45,17 +65,20 @@ init:
   
 install:
   - cmd: choco install 7zip.commandline
-  - set PATH=C:\Python27\Scripts;%LR_EXTERNAL%;%PATH%
-  - if /I "%platform%"=="x64" set HR_TARGET=vs_64
-  - if /I "%platform%"=="mingw" set HR_TARGET=mingw
-  - if /I "%platform%"=="mingw" set PATH=C:\MinGW\bin;%PATH%
+  # Make compiler command line tools available
+  - call .appveyor\set_compiler_env.bat
+  # Setup Lua development/build environment
+  - call .appveyor\install.bat
   
 
 cache:
   - C:\ProgramData\chocolatey\lib
   - C:\ProgramData\chocolatey\bin
+  - c:\lua -> appveyor.yml
+  - c:\external -> appveyor.yml
 
 build_script:
+  - luarocks make rockspecs/foo-scm-0.rockspec --local
   - cmd: echo "Hello World!"
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   - cmd: Moose_update_missions.bat missions
