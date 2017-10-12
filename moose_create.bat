@@ -1,1 +1,1 @@
-"Moose_Framework\\Moose Mission Setup\\Moose_Create.lua" "S" %1 "Moose Development\\Moose" "Moose Mission Setup"
+lua "Moose Mission Setup\\Moose_Create.lua" "S" %1 "Moose Development\\Moose" "Moose Mission Setup"
