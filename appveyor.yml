@@ -55,7 +55,6 @@ cache:
   - C:\ProgramData\chocolatey\bin
 
 build_script:
-  - luarocks make rockspecs/lua-path-scm-0.rockspec 
   - cmd: echo "Hello World!"
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   - cmd: Moose_update_missions.bat missions
