@@ -78,6 +78,8 @@ build_script:
   - luarocks make rockspecs/foo-scm-0.rockspec --local
   - cmd: echo "Hello World!"
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
+  # Update the moose documentation
+  - cmd: ./Utils/GenerateDocumentations.bat
   - cmd: Moose_update_missions.bat missions
   - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
 
