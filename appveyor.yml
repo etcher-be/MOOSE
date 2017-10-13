@@ -63,6 +63,7 @@ install:
   - call .appveyor\set_compiler_env.bat
   # Setup Lua development/build environment
   - call .appveyor\install.bat
+  - cmd: luarocks install luasrcdiet
   
 
 cache:
