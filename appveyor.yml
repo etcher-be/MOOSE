@@ -79,7 +79,7 @@ build_script:
   - cmd: echo "Hello World!"
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   # Update the moose documentation
-  - cmd: ./Utils/GenerateDocumentations.bat
+  - cmd: lua luadocumentor -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
   - cmd: Moose_update_missions.bat missions
   - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
 
