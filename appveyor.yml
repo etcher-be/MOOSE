@@ -77,6 +77,8 @@ cache:
 build_script:
   - luarocks make rockspecs/foo-scm-0.rockspec --local
   - cmd: echo "Hello World!"
+  # check the environment
+  - cmd: set
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   # Update the moose documentation
   - cmd: lua luadocumentor -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
