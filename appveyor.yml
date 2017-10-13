@@ -64,8 +64,8 @@ install:
   # Setup Lua development/build environment
   - call .appveyor\install.bat
   # Install luasrcdiet to strip lua source code from comments etc
-  - cmd: luarocks --local install luasrcdiet
-  - cmd: luarocks --local install luadocumentor
+  - cmd: luarocks install luasrcdiet
+  - cmd: luarocks install luadocumentor
   
 
 cache:
@@ -81,6 +81,7 @@ build_script:
   - cmd: set
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   # Update the moose documentation
+  - cmd: dir \luadocumentor /s
   - cmd: luadocumentor -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
   - cmd: Moose_update_missions.bat missions
   - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
