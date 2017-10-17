@@ -84,13 +84,17 @@ build_script:
   # Update the moose documentation
   # cmd: dir "c:\lua\x64\5.1.5\LuaRocks\systree" /S
   - cmd: luadocumentor.bat -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
-  - cmd: Moose_update_missions.bat missions
+  - cmd: luasrcdiet.bat --basic --opt-emptylines "Moose Mission Setup"\Moose.lua
   - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
+  - cmd: Moose_update_missions.bat missions
 
 test: off
 
 artifacts:
   - path: 'Moose Mission Setup/Moose.lua'
     name: moose.lua
+  - path: 'Moose Mission Setup/Moose_.lua'
+    name: moose_.lua
   - path: '**\*.miz'
     name: miz
+
