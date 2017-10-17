@@ -81,8 +81,8 @@ build_script:
   - cmd: set
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
   # Update the moose documentation
-  # cmd: dir \luadocumentor /s
-  - cmd: lua  luadocumentor -f "./doc" -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
+  - cmd: dir "c:\lua\x64\5.1.5\LuaRocks\systree" /S
+  - cmd: lua luadocumentor -f "./doc" -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
   - cmd: Moose_update_missions.bat missions
   - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
 
