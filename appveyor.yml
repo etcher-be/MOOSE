@@ -66,12 +66,9 @@ for:
 
 
   build_script:
-	  - cmd: echo "Build for master branch"
-	  # check the environment
-	  - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
-	  # Update the moose documentation
-	  # cmd: dir "c:\lua\x64\5.1.5\LuaRocks\systree" /S
-	  - cmd: luadocumentor.bat -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
+    - cmd: echo "Build for master branch"
+    - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
+    - cmd: luadocumentor.bat -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
 
 -
   branches:
