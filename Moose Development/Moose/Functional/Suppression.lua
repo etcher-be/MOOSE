@@ -33,6 +33,7 @@
 --- Suppression class
 -- @type Suppression
 -- @field #string ClassName Name of the class.
+-- @field Core.Controllable#CONTROLLABLE Controllable of the FSM. Must be a ground group.
 -- @field #number Tsuppress_min Minimum time in seconds the group gets suppressed.
 -- @field #number Tsuppress_max Maximum time in seconds the group gets suppressed.
 -- @field #number life Relative life in precent of the group.
@@ -44,7 +45,7 @@
 -- @field #number LifeThreshold Life of group in percent at which the group will be ordered to retreat.
 -- @field #number IniGroupStrength Number of units in a group at start.
 -- @field #number GroupStrengthThreshold Threshold of group strength before retreat is ordered.
--- @extends Core.Fsm#FSM_CONTROLLABLE
+-- @extends Core.Fsm#FSM
 -- 
 
 ---# Suppression class, extends @{Core.Fsm#FSM_CONTROLLABLE}
@@ -62,9 +63,9 @@ Suppression={
   Thit = nil,
   Nhit = 0,
   Zone_Retreat = nil,
-  LifeThreshold = 25,
+  LifeThreshold = 30,
   IniGroupStrength = nil,
-  GroupStrengthThreshold=80,
+  GroupStrengthThreshold=50,
 }
 
 --- Some ID to identify who we are in output of the DCS.log file.
@@ -102,66 +103,33 @@ function Suppression:New(Group)
   -- Inherits from FSM_CONTROLLABLE
   local self=BASE:Inherit(self, FSM_CONTROLLABLE:New()) -- #Suppression
   
-  
   -- Set the controllable for the FSM.
   self:SetControllable(Group)
   
-  env.info(Suppression.id.."ROE Open Fire - alarm state RED")
-  self.Controllable:OptionROEOpenFire()
-  self.Controllable:OptionAlarmStateRed()
-  
-  -- Initial group strength.
+    -- Initial group strength.
   self.IniGroupStrength=#Group:GetUnits()
-  
   
   -- Get life of group in %.
   local life_min, life_max, life_ave, groupstrength=self:_GetLife()
   
-  -- Group is initially in state CombatReady.
-  self:SetStartState("none")
-  
-  -- Transitions:
-  ---------------
-  
-    -- Transition from anything to "Suppressed" after event "Hit".
-  self:AddTransition("*", "Start", "CombatReady")
   
   -- Transition from anything to "Suppressed" after event "Hit".
-  --self:AddTransition("*", "Hit", "*")
+  self:AddTransition("*", "Start", "CombatReady")
   
-  -- Transition from "Suppressed" back to "CombatReady after the unit had time to recover.
-  --self:AddTransition("*", "Recovered", "*")
+  self:AddTransition("*", "Hit", "*")
   
-  -- Transition from "Suppressed" back to "CombatReady after the unit had time to recover.
-  --self:AddTransition("*", "Suppress", "Suppressed")
+  self:AddTransition("*", "Suppress", "*")
   
-  -- Transition from "Suppressed" to "Hiding" after event "Hit".
-  --self:AddTransition("*", "TakeCover", "Hiding")
+  self:AddTransition("*", "Recovered", "*")
   
-  -- Transition from anything to "Retreating" after e.g. being severely damaged.
-  --self:AddTransition("*", "Retreat", "Retreating")
+  self:AddTransition("*", "Retreat", "Retreating")
   
-  -- Transition from anything to "Dead" after group died.
-  --self:AddTransition("*", "Died", "Dead")
+  self:SetEventPriority(1)
   
-  -- Check status of the group.
-  --self:AddTransition("*", "Status", "*")
-  
-  --self:TakeCover()
-  
-  self:AddTransition("CombatReady", "Hit", "Suppressed")
-  --self:AddTransition("Suppressed",  "Hit", "Retreating")
-  --self:AddTransition("Suppressed",  "Hit", "Suppressed")
-  self:AddTransition("Suppressed",  "Recovered", "CombatReady")
-  --self:AddTransition("Retreating",  "Recovered", "Retreating")
-  --self:AddTransition("Hiding", "Recovered", "CombatReady")
-  
-  -- return self
-  return self                
-
+  return self
 end
 
-                                                                                                                                                                                                                                                                      
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- Set minimum and (optionally) maximum time a unit is suppressed each time it gets hit.
 -- @param #Suppression self
@@ -183,13 +151,15 @@ function Suppression:SetRetreatZone(zone)
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- After "Start" event.
 -- @param #Suppression self
-function Suppression:onafterStart(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("onafterStart: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+function Suppression:onafterStart(Controllable, From, Event, To)
+  env.info(Suppression.id..self:_EventFromTo("onafterStart", Event, From, To))
   
-  -- Handle DCS event hit.
+  --Handle DCS event hit.
   self:HandleEvent(EVENTS.Hit, self._OnHit)
   
   -- Handle DCS event dead.
@@ -199,74 +169,17 @@ end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
---- Before "Status" event.
--- @param #Suppression self
-function Suppression:OnBeforeStatus(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnBeforeStatus: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-  local text=string.format("Group %s is in state %s.", Controlable:GetName(), self:GetState())
-  MESSAGE:New(text, 10):ToAll()
-end
-
---- After "Status" event.
--- @param #Suppression self
-function Suppression:OnAfterStatus(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnAfterStatus: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-  -- Get new status in 30 sec.
-  self:__Status(30)
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Before "Hit" event. (Of course, this is not really before the group got hit.)
--- @param #Suppression self
--- @param Wrapper.Controllable#CONTROLLABLE Controlable Controllable of the group.
--- @param #string From From state.
--- @param #string Event Event.
--- @param #string To To state.
--- @param Core.Point#COORDINATE Fallback Fallback coordinates (or nil if no attacker could be found).
-function Suppression:OnBeforeHit(Controlable, From, Event, To, Fallback)
-  env.info(Suppression.id..string.format("OnBeforeHit: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-  
-  -- Increase Hit counter.
-  self.Nhit=self.Nhit+1
-  
-  -- Info on hit times.
-  env.info(Suppression.id..string.format("Group has just been hit %d times.", self.Nhit))
-  
-end
-
 --- After "Hit" event.
 -- @param #Suppression self
-function Suppression:OnAfterHit(Controlable, From, Event, To, Fallback)
-  env.info(Suppression.id..string.format("OnAfterHit: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+function Suppression:onafterHit(Controllable, From, Event, To, Unit)
+  env.info(Suppression.id..self:_EventFromTo("onafterHit", Event, From, To))
   
-  -- Suppress fire of group.
-  self:_Suppress()
-  --self:Suppress()
+  Unit:Flare(FLARECOLOR.Red)
+  self:Suppress(Unit)
+  
   
   -- Get life of group in %.
   local life_min, life_max, life_ave, groupstrength=self:_GetLife()
-  
-  if self:is("CombatReady") then
-    env.info(Suppression.id..string.format("Group %s is currently CombatReady.", Controlable:GetName()))
-    --self:Suppress()
-  elseif self:Is("Suppressed") then
-    env.info(Suppression.id..string.format("Group %s is currently Suppressed.", Controlable:GetName()))
-  elseif self:Is("Retreating") then
-    env.info(Suppression.id..string.format("Group %s is currently Retreating.", Controlable:GetName()))
-  elseif self:is("Hiding") then
-    env.info(Suppression.id..string.format("Group %s is currently Hiding.", Controlable:GetName()))
-  end
-
---[[
-  -- After three hits fall back a bit.
-  local nfallback=3
-  if self.Nhit==nfallback then
-    env.info(Suppression.id..string.format("Group %s is falling back after %d hits.", Controlable:GetName(), nfallback))
-    Fallback:SmokeGreen()
-    local FallbackMarkerID=Fallback:MarkToAll("Fall back position for group "..Controlable:GetName())
-    self:_FallBack(Fallback)
-  end
   
   -- If life of one unit is below threshold, the group is ordered to retreat (if a zone has been specified).
   if not self:Is("Retreating") then
@@ -275,29 +188,24 @@ function Suppression:OnAfterHit(Controlable, From, Event, To, Fallback)
       self:Retreat()
     end
   end
-]]
+    
+end
+
+--- After "Suppress" event.
+-- @param #Suppression self
+function Suppression:onafterSuppress(Controllable, From, Event, To, Unit)
+  env.info(Suppression.id..self:_EventFromTo("onafterSuppress", Event, From, To))
   
+  Unit:Flare(FLARECOLOR.Green)
+  self:_Suppress()
+    
 end
 
---- Before suppress event.
--- @param #Suppression self
-function Suppression:OnBeforeSuppress(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnBeforeSuppress: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-end
-
---- Before suppress event.
--- @param #Suppression self
-function Suppression:OnAfterSuppress(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnAfterSuppress: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-end
-
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+--[[
 --- Before "Recovered" event.
 -- @param #Suppression self
-function Suppression:OnBeforeRecovered(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnBeforeRecovered: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+function Suppression:onbeforeRecovered(Controllable, From, Event, To)
+  env.info(Suppression.id..self:_EventFromTo("onbeforeRecovered", Event, From, To))
   
   -- Current time.
   local Tnow=timer.getTime()
@@ -306,34 +214,40 @@ function Suppression:OnBeforeRecovered(Controlable, From, Event, To)
   env.info(Suppression.id..string.format("OnBeforeRecovered: Time: %d  - Time over: %d", Tnow, self.TsuppressionOver))
   
   -- Recovery is only possible if enough time since the last hit has passed.
-  if Tnow > self.TsuppressionOver then
+  if Tnow >= self.TsuppressionOver then
     return true
   else
     return false
   end
   
 end
+]]
 
 --- After "Recovered" event.
 -- @param #Suppression self
-function Suppression:OnAfterRecovered(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnAfterRecovered: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+function Suppression:onafterRecovered(Controllable, From, Event, To)
+  env.info(Suppression.id..self:_EventFromTo("onafterRecovered", Event, From, To))
+  
+    -- Current time.
+  local Tnow=timer.getTime()
   
   -- Send message.
-  MESSAGE:New(string.format("Group %s has recovered.", Controlable:GetName()), 30):ToAll()
+  if Tnow >= self.TsuppressionOver then
+    MESSAGE:New(string.format("Group %s has recovered. ROE Open Fire!", Controllable:GetName()), 30):ToAll()
   
-  --env.info(Suppression.id.."ROE Open Fire after recovered")
-  --self.Controllable:OptionROEOpenFire()
+    env.info(Suppression.id.."ROE Open Fire after recovered")
+    self.Controllable:OptionROEOpenFire()  --Wrapper.Controllable#CONTROLLABLE
+  else
+    env.info(Suppression.id.."Suppression time not over yet.")
+  end
   
-  -- Nothing to do yet. Just monitoring the event.
 end
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- Before "Retreat" event.
 -- @param #Suppression self
-function Suppression:OnBeforeRetreat(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnBeforeRetreat: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+function Suppression:onbeforeRetreat(Controllable, From, Event, To)
+  env.info(Suppression.id..self:_EventFromTo("onbeforeRetreat", Event, From, To))
     
   -- Retreat is only possible if a zone has been defined by the user.
   if self.Zone_Retreat==nil then
@@ -351,191 +265,41 @@ end
 
 --- After "Retreat" event.
 -- @param #Suppression self
-function Suppression:OnAfterRetreat(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnAfterRetreat: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+function Suppression:onafterRetreat(Controllable, From, Event, To)
+  env.info(Suppression.id..self:_EventFromTo("onafterRetreat", Event, From, To))
     
   -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
-  Controlable:OptionAlarmStateGreen()
+  self.Controllable:OptionAlarmStateGreen()
   
   -- Route the group to a zone.
-  MESSAGE:New(string.format("Group %s is retreating!", Controlable:GetName()), 30):ToAll()
+  local text=string.format("Group %s is retreating! Alarm state green.", self.Controllable:GetName())
+  MESSAGE:New(text, 30):ToAll()
+  env.info(Suppression.id..text)
   self:_RetreatToZone(self.Zone_Retreat, 50, "Vee")
   
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Before "TakeCover" event.
--- @param #Suppression self
-function Suppression:OnBeforeTakeCover(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnBeforeTakeCover: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-  
-  -- We search objects in a zone with radius 100 m around the group.
-  -- TODO: Maybe make the zone radius larger for vehicles.
-  local Zone = ZONE_GROUP:New("Zone_Hiding", Controlable, 500)
-
-  -- Scan for Scenery objects to run/drive to.
-  Zone:Scan(Object.Category.SCENERY)
-
-  local gothideout=false
-  for SceneryTypeName, SceneryData in pairs( Zone:GetScannedScenery() ) do
-    for SceneryName, SceneryObject in pairs( SceneryData ) do
-      local SceneryObject = SceneryObject -- Wrapper.Scenery#SCENERY
-      local text=self.Controllable:GetName().. " scenery: " .. SceneryObject:GetTypeName() .. ", Coord LL DMS: " .. SceneryObject:GetCoordinate():ToStringLLDMS()
-      MESSAGE:New(text, 10):ToAll()
-      env.info(Suppression.id..text)
-      -- TODO: Add check if scenery name matches a specific type like tree or building. This might be tricky though!
-    end
-  end  
-  
-  -- Only take cover if we found a hideout.
-  return gothideout
-  
-end
-
---- After "TakeCover" event.
--- @param #Suppression self
-function Suppression:OnAfterTakeCover(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnAfterTakeCover: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-  
-  local text=string.format("Group %s is taking cover!", Controlable:GetName())
-  MESSAGE:New(text, 30):ToAll()
-  
-  -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
-  Controlable:OptionAlarmStateGreen()
-  
-  -- Route the group to a zone.
-  MESSAGE:New(string.format("Group %s would be(!) hiding now!", Controlable:GetName()), 30):ToAll()
-  
-  --TODO: Search place to hide. For each unit (disperse) or same for all?
-  
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Entering "CombatReady" state. The group will be able to fight back.
--- @param #Suppression self
-function Suppression:OnEnterCombatReady(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnEnterCombatReady: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-  -- Nothing to do yet. Just monitoring the event
-end
-
---- Leaving "CombatReady" state.
--- @param #Suppression self
-function Suppression:OnLeaveCombatReady(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnLeaveCombatReady: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-  -- Nothing to do yet. Just monitoring the event
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Entering "Suppressed" state. Group will not fight but hold their weapons.
--- @param #Suppression self
-function Suppression:OnEnterSuppressed(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnEnterSuppression: %s event %s from %s to %s", Controlable:GetName(), Event, From, To)) 
-  -- Nothing to do yet. Just monitoring the event
-end
-
---- Leaving "Suppressed" state.
--- @param #Suppression self
-function Suppression:OnLeaveSuppressed(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnLeaveSuppression: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-
-  -- Group can fight again.
-  if To~="Suppressed" then
-    env.info(Suppression.id.."ROE Open Fire")
-    self.Controllable:OptionROEOpenFire()
-
-    local text=string.format("Suppression of group %s ended at %f and should have ended at %f.", self.Controllable:GetName(), timer.getTime(), self.TsuppressionOver)
-    env.info(Suppression.id..text)
-  end
-  
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Entering "Retreating" state. Group will be send to a zone.
--- @param #Suppression self
--- @param Wrapper.Controllable#CONTROLLABLE Controlable Controllable of the AI group.
-function Suppression:OnEnterRetreating(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnEnterRetreating: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))    
-end
-
---- Leaving "Retreating" state.
--- @param #Suppression self
--- @param Wrapper.Controllable#CONTROLLABLE Controlable Controllable of the AI group.
-function Suppression:OnLeaveRetreating(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnLeveRetreating: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-
-  -- Set the ALARM STATE back to AUTO.
-  Controlable:OptionAlarmStateAuto()
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Entering "Hiding" state. Group will try to take cover at neargy scenery objects.
--- @param #Suppression self
--- @param Wrapper.Controllable#CONTROLLABLE Controlable Controllable of the AI group.
-function Suppression:OnEnterHiding(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnEnterHiding: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))    
-end
-
---- Leaving "Hiding" state.
--- @param #Suppression self
--- @param Wrapper.Controllable#CONTROLLABLE Controlable Controllable of the AI group.
-function Suppression:OnLeaveHiding(Controlable, From, Event, To)
-  env.info(Suppression.id..string.format("OnLeveHiding: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
-
-  -- Set the ALARM STATE back to AUTO.
-  Controlable:OptionAlarmStateAuto()
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- Event Handler
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- Handle the DCS event hit.
 -- @param #Suppression self
 -- @param Core.Event#EVENTDATA EventData
 function Suppression:_OnHit(EventData)
+  env.info("oneventhit")
   self:E( {Suppression.id.."_OnHit", EventData })
   env.info(Suppression.id.."Initiator   : "..EventData.IniDCSGroupName)
   env.info(Suppression.id.."Target      : "..EventData.TgtDCSGroupName)
-  --env.info(Suppression.id.."Controllable: "..self.Controllable:GetName())
   
   if EventData.TgtDCSGroup then
   
     local TargetGroup=EventData.TgtGroup --Wrapper.Group#GROUP
     
     if EventData.TgtDCSGroupName==self.Controllable:GetName() then
-
-      -- Figure out who shot.    
-      local InitiatorName="unknown"
-      local Fallback=nil
-      if EventData.IniDCSUnit then
+    
+      self:Hit(EventData.TgtUnit)
       
-        local InitiatorUnit=EventData.IniUnit --Wrapper.Unit#UNIT
-        InitiatorName=EventData.IniDCSGroupName
-        
-        local TC=TargetGroup:GetCoordinate()
-        local IC=InitiatorUnit:GetCoordinate()
-        
-        -- Create a fall back point.
-        Fallback=self:_FallBackCoord(TC, IC , 200) -- Core.Point#COORDINATE        
-      end
-      
-      -- Get life of group in %.
-      local life_min, life_max, life_ave, groupstrength=self:_GetLife()
-      
-      -- Debug message.
-      local text=string.format("Group %s was hit by %s. Life min=%02d %%, max=%02d %%, average=%02d %%, group=%3.0f", EventData.TgtDCSGroupName, InitiatorName, life_min, life_max, life_ave, groupstrength)
-      MESSAGE:New(text, 10):ToAll()
-      env.info(Suppression.id..text)
-      
-      -- Trigger Hit event.
-      self:Hit(Fallback)
     end
   end
 end
@@ -567,6 +331,8 @@ function Suppression:_OnDead(EventData)
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- Suppress fire of a unit.
 -- @param #Suppression self
@@ -576,11 +342,11 @@ function Suppression:_Suppress()
   local Tnow=timer.getTime()
   
   -- Controllable
-  local Controlable=self.Controllable
+  local Controllable=self.Controllable
   
   -- Group will hold their weapons.
   env.info(Suppression.id.."ROE Hold fire!")
-  Controlable:OptionROEHoldFire()
+  Controllable:OptionROEHoldFire()
   
   -- Get randomized time the unit is suppressed.
   local Tsuppress=math.random(self.Tsuppress_min, self.Tsuppress_max)
@@ -601,16 +367,17 @@ function Suppression:_Suppress()
     self.TsuppressionOver=Tnow+Tsuppress
   end
   
-  -- Recovery event will be called in Tsuppress seconds. (We add one second to be sure the time has really passed when recovery is checked.)
+  -- Recovery event will be called in Tsuppress seconds.
   if renew then
+    env.info(Suppression.id.."Tover-Tnow = "..self.TsuppressionOver-Tnow)
     self:__Recovered(self.TsuppressionOver-Tnow)
   end
   
   -- Debug message.
-  local text=string.format("Group %s is suppressed for %d seconds.", Controlable:GetName(), Tsuppress)
+  local text=string.format("Group %s is suppressed for %d seconds. Suppression ends at %d:%02d.", Controllable:GetName(), Tsuppress, self.TsuppressionOver/60, self.TsuppressionOver%60)
   MESSAGE:New(text, 30):ToAll()
   env.info(Suppression.id..text)
-  text=string.format("Suppression starts at %f and ends at %f.", Tnow, self.TsuppressionOver)
+  text=string.format("Suppression starts at %6.2f and ends at %6.2f.", Tnow, self.TsuppressionOver)
   env.info(Suppression.id..text)
 
 end
@@ -623,7 +390,7 @@ end
 -- @return #number Largest life value of all units.
 -- @return #number Average life value.
 function Suppression:_GetLife()
-  local group=self.Controllable
+  local group=self.Controllable --Wrapper.Group#GROUP
   if group and group:IsAlive() then
     local life_min=100
     local life_max=0
@@ -651,7 +418,7 @@ function Suppression:_GetLife()
     
     return life_min, life_max, life_ave, groupstrength
   else
-    return 0, 0, 0
+    return 0, 0, 0, 0
   end
 end
 
@@ -668,7 +435,7 @@ function Suppression:_RetreatToZone(zone, speed, formation)
   speed = speed or 999
   formation = formation or "Vee"
 
-  -- 
+  -- Name of zone.
   env.info(Suppression.id.."Retreat zone : "..zone:GetName())
 
   -- Get a random point in the retreat zone.
@@ -765,4 +532,14 @@ function Suppression._Passing_Waypoint(group, Fsm, i)
   env.info(Suppression.id..text)
 end
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--- Return event-from-to string. 
+-- @param #Suppression self
+-- @param #string BA
+-- @param #string event
+-- @param #string from
+-- @param #string to
+-- @return #string From-to info.
+function Suppression:_EventFromTo(BA, Event, From, To)
+  return string.format("%s: %s event %s %s --> %s", BA, self.Controllable:GetName(), Event, From, To)
+end
