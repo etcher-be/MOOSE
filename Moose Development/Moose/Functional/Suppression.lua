@@ -106,6 +106,9 @@ function Suppression:New(Group)
   -- Set the controllable for the FSM.
   self:SetControllable(Group)
   
+  env.info(Suppression.id.."ROE Open Fire")
+  self.Controllable:OptionROEOpenFire()
+  
   -- Initial group strength.
   self.IniGroupStrength=#Group:GetUnits()
   
@@ -129,19 +132,19 @@ function Suppression:New(Group)
   self:AddTransition("*", "Recovered", "*")
   
     -- Transition from "Suppressed" back to "CombatReady after the unit had time to recover.
-  self:AddTransition("*", "Suppress", "Suppressed")
+  --self:AddTransition("*", "Suppress", "Suppressed")
   
   -- Transition from "Suppressed" to "Hiding" after event "Hit".
-  self:AddTransition("*", "TakeCover", "Hiding")
+  --self:AddTransition("*", "TakeCover", "Hiding")
   
   -- Transition from anything to "Retreating" after e.g. being severely damaged.
-  self:AddTransition("*", "Retreat", "Retreating")
+  --self:AddTransition("*", "Retreat", "Retreating")
   
   -- Transition from anything to "Dead" after group died.
-  self:AddTransition("*", "Died", "Dead")
+  --self:AddTransition("*", "Died", "Dead")
   
   -- Check status of the group.
-  self:AddTransition("*", "Status", "*")
+  --self:AddTransition("*", "Status", "*")
   
   --self:TakeCover()
   
@@ -237,7 +240,7 @@ function Suppression:OnAfterHit(Controlable, From, Event, To, Fallback)
   
   if self:is("CombatReady") then
     env.info(Suppression.id..string.format("Group %s is currently CombatReady.", Controlable:GetName()))
-    self:Suppress()
+    --self:Suppress()
   elseif self:Is("Suppressed") then
     env.info(Suppression.id..string.format("Group %s is currently Suppressed.", Controlable:GetName()))
   elseif self:Is("Retreating") then
@@ -245,7 +248,8 @@ function Suppression:OnAfterHit(Controlable, From, Event, To, Fallback)
   elseif self:is("Hiding") then
     env.info(Suppression.id..string.format("Group %s is currently Hiding.", Controlable:GetName()))
   end
-  
+
+--[[
   -- After three hits fall back a bit.
   local nfallback=3
   if self.Nhit==nfallback then
@@ -262,6 +266,7 @@ function Suppression:OnAfterHit(Controlable, From, Event, To, Fallback)
       self:Retreat()
     end
   end
+]]
   
 end
 
@@ -414,10 +419,13 @@ function Suppression:OnLeaveSuppressed(Controlable, From, Event, To)
   env.info(Suppression.id..string.format("OnLeaveSuppression: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
 
   -- Group can fight again.
-  self.Controllable:OptionROEOpenFire()
+  if To~="Suppressed" then
+    env.info(Suppression.id.."ROE Open Fire")
+    self.Controllable:OptionROEOpenFire()
 
-  local text=string.format("Suppression of group %s ended at %f and should have ended at %f.", self.Controllable:GetName(), timer.getTime(), self.TsuppressionOver)
-  env.info(Suppression.id..text)
+    local text=string.format("Suppression of group %s ended at %f and should have ended at %f.", self.Controllable:GetName(), timer.getTime(), self.TsuppressionOver)
+    env.info(Suppression.id..text)
+  end
   
 end
 
@@ -546,10 +554,12 @@ function Suppression:_Suppress()
   local Controlable=self.Controllable
   
   -- Group will hold their weapons.
+  env.info(Suppression.id.."ROE Hold fire!")
   Controlable:OptionROEHoldFire()
   
   -- Get randomized time the unit is suppressed.
   local Tsuppress=math.random(self.Tsuppress_min, self.Tsuppress_max)
+  Tsuppress=10
   
   -- Time the suppression started
   self.TsuppressionStart=Tnow
@@ -608,8 +618,8 @@ function Suppression:_GetLife()
           life_max=life
         end
         life_ave=life_ave+life
-        local text=string.format("n=%d: Life = %3.1f, Life0 = %3.1f, min=%3.1f, max=%3.1f, ave=%3.1f, group=%3.1f", n, unit:GetLife(), unit:GetLife0(), life_min, life_max, life_ave/n,groupstrength)
-        env.info(Suppression.id..text)      
+        local text=string.format("n=%02d: Life = %3.1f, Life0 = %3.1f, min=%3.1f, max=%3.1f, ave=%3.1f, group=%3.1f", n, unit:GetLife(), unit:GetLife0(), life_min, life_max, life_ave/n,groupstrength)
+        --env.info(Suppression.id..text)
       end
     end
     life_ave=life_ave/n
