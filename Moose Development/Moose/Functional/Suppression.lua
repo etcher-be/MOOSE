@@ -106,8 +106,9 @@ function Suppression:New(Group)
   -- Set the controllable for the FSM.
   self:SetControllable(Group)
   
-  env.info(Suppression.id.."ROE Open Fire")
+  env.info(Suppression.id.."ROE Open Fire - alarm state RED")
   self.Controllable:OptionROEOpenFire()
+  self.Controllable:OptionAlarmStateRed()
   
   -- Initial group strength.
   self.IniGroupStrength=#Group:GetUnits()
@@ -126,12 +127,12 @@ function Suppression:New(Group)
   self:AddTransition("*", "Start", "CombatReady")
   
   -- Transition from anything to "Suppressed" after event "Hit".
-  self:AddTransition("*", "Hit", "*")
+  --self:AddTransition("*", "Hit", "*")
   
   -- Transition from "Suppressed" back to "CombatReady after the unit had time to recover.
-  self:AddTransition("*", "Recovered", "*")
+  --self:AddTransition("*", "Recovered", "*")
   
-    -- Transition from "Suppressed" back to "CombatReady after the unit had time to recover.
+  -- Transition from "Suppressed" back to "CombatReady after the unit had time to recover.
   --self:AddTransition("*", "Suppress", "Suppressed")
   
   -- Transition from "Suppressed" to "Hiding" after event "Hit".
@@ -147,6 +148,13 @@ function Suppression:New(Group)
   --self:AddTransition("*", "Status", "*")
   
   --self:TakeCover()
+  
+  self:AddTransition("CombatReady", "Hit", "Suppressed")
+  --self:AddTransition("Suppressed",  "Hit", "Retreating")
+  --self:AddTransition("Suppressed",  "Hit", "Suppressed")
+  self:AddTransition("Suppressed",  "Recovered", "CombatReady")
+  --self:AddTransition("Retreating",  "Recovered", "Retreating")
+  --self:AddTransition("Hiding", "Recovered", "CombatReady")
   
   -- return self
   return self                
@@ -234,6 +242,7 @@ function Suppression:OnAfterHit(Controlable, From, Event, To, Fallback)
   
   -- Suppress fire of group.
   self:_Suppress()
+  --self:Suppress()
   
   -- Get life of group in %.
   local life_min, life_max, life_ave, groupstrength=self:_GetLife()
@@ -270,6 +279,19 @@ function Suppression:OnAfterHit(Controlable, From, Event, To, Fallback)
   
 end
 
+--- Before suppress event.
+-- @param #Suppression self
+function Suppression:OnBeforeSuppress(Controlable, From, Event, To)
+  env.info(Suppression.id..string.format("OnBeforeSuppress: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+end
+
+--- Before suppress event.
+-- @param #Suppression self
+function Suppression:OnAfterSuppress(Controlable, From, Event, To)
+  env.info(Suppression.id..string.format("OnAfterSuppress: %s event %s from %s to %s", Controlable:GetName(), Event, From, To))
+end
+
+
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- Before "Recovered" event.
@@ -299,6 +321,9 @@ function Suppression:OnAfterRecovered(Controlable, From, Event, To)
   
   -- Send message.
   MESSAGE:New(string.format("Group %s has recovered.", Controlable:GetName()), 30):ToAll()
+  
+  --env.info(Suppression.id.."ROE Open Fire after recovered")
+  --self.Controllable:OptionROEOpenFire()
   
   -- Nothing to do yet. Just monitoring the event.
 end
@@ -476,8 +501,8 @@ end
 -- @param Core.Event#EVENTDATA EventData
 function Suppression:_OnHit(EventData)
   self:E( {Suppression.id.."_OnHit", EventData })
-  --env.info(Suppression.id.."Initiator   : "..EventData.IniDCSGroupName)
-  --env.info(Suppression.id.."Target      : "..EventData.TgtDCSGroupName)
+  env.info(Suppression.id.."Initiator   : "..EventData.IniDCSGroupName)
+  env.info(Suppression.id.."Target      : "..EventData.TgtDCSGroupName)
   --env.info(Suppression.id.."Controllable: "..self.Controllable:GetName())
   
   if EventData.TgtDCSGroup then
@@ -519,7 +544,7 @@ end
 -- @param #Suppression self
 -- @param Core.Event#EVENTDATA EventData
 function Suppression:_OnDead(EventData)
-  self:E({Suppression.id.."_OnDead", EventData})
+  --self:E({Suppression.id.."_OnDead", EventData})
   
   if EventData.IniDCSUnit then
     if EventData.IniDCSGroupName==self.Controllable:GetName() then
