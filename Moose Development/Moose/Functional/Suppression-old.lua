@@ -49,7 +49,6 @@
 -- @field #number Nhit Number of times the group was hit.
 -- @field #string Formation Formation which will be used when falling back, taking cover or retreating. Default "Vee".
 -- @field #number Speed Speed the unit will use when falling back, taking cover or retreating. Default 999.
--- @field #boolean MenuON If true creates a entry in the F10 menu.
 -- @field #boolean FallbackON If true, group can fall back, i.e. move away from the attacking unit.
 -- @field #number FallbackWait Time in seconds the unit will wait at the fall back point before it resumes its mission.
 -- @field #number FallbackDist Distance in meters the unit will fall back.
@@ -57,7 +56,6 @@
 -- @field #boolean TakecoverON If true, group can hide at a nearby scenery object.
 -- @field #number TakecoverWait Time in seconds the group will hide before it will resume its mission.
 -- @field #number TakecoverRange Range in which the group will search for scenery objects to hide at.
--- @field Wrapper.Scenery#SCENERY hideout Scenery object where the group will try to take cover.
 -- @field #number PminFlee Minimum probability in percent that a group will flee (fall back or take cover) at each hit event. Default is 10 %.
 -- @field #number PmaxFlee Maximum probability in percent that a group will flee (fall back or take cover) at each hit event. Default is 90 %.
 -- @field Core.Zone#ZONE RetreatZone Zone to which a group retreats.
@@ -71,7 +69,7 @@
 -- 
 
 ---# SUPPRESSION class, extends @{Core.Fsm#FSM_CONTROLLABLE}
--- Mimic suppressive enemy fire and let groups flee or retreat.
+-- Mimic suppressive fire and make ground units take cover.
 -- 
 -- ## Some Example...
 -- 
@@ -90,7 +88,6 @@ SUPPRESSION={
   Nhit = 0,
   Formation = "Vee",
   Speed = 999,
-  MenuON = true,
   FallbackON = true,
   FallbackWait = 60,
   FallbackDist = 100,
@@ -98,7 +95,6 @@ SUPPRESSION={
   TakecoverON = true,
   TakecoverWait = 120,
   TakecoverRange = 300,
-  hideout = nil,
   PminFlee = 10,
   PmaxFlee = 90,
   RetreatZone = nil,
@@ -119,7 +115,7 @@ SUPPRESSION.ROE={
 }
 
 --- Enumerator of possible alarm states.
--- @field #list AlarmState
+-- @field #list ROE
 SUPPRESSION.AlarmState={
   Auto="Auto",
   Green="Green",
@@ -175,33 +171,121 @@ function SUPPRESSION:New(Group)
   -- Initial group strength.
   self.IniGroupStrength=#Group:GetUnits()
   
-  -- Transitions 
+  -- Get life of group in %.
+  local life_min, life_max, life_ave, groupstrength=self:_GetLife()
   
-  -- Old transitions.
---[[
-  self:AddTransition("*", "Hit",       "*")
-  self:AddTransition("*", "Suppress",  "*")
+  -- Create main F10 menu if it is not there yet.
+  if not SUPPRESSION.MenuF10 then
+    SUPPRESSION.MenuF10 = MENU_MISSION:New("Suppression")
+  end
+  
+  -- Create submenu for this group.
+  self:_CreateMenuGroup()
+  
+  
+  -- Transitions
+  self:AddTransition("*", "Start", "CombatReady")
+  
+  --- Start Handler OnBefore for SUPPRESSION
+  -- @function [parent=#SUPPRESSION] OnBeforeStart
+  -- @param #SUPPRESSION self
+  -- @param #string From
+  -- @param #string Event
+  -- @param #string To
+  -- @return #boolean
+  
+  --- Start Handler OnAfter for SUPPRESSION
+  -- @function [parent=#SUPPRESSION] OnAfterStart
+  -- @param #SUPPRESSION self
+  -- @param #string From
+  -- @param #string Event
+  -- @param #string To
+  
+  --- Start Trigger for SUPPRESSION
+  -- @function [parent=#SUPPRESSION] Start
+  -- @param #SUPPRESSION self
+  
+  --- Start Asynchronous Trigger for SUPPRESSION
+  -- @function [parent=#SUPPRESSION] __Start
+  -- @param #SUPPRESSION self
+  -- @param #number Delay
+  
+  
+  self:AddTransition("*", "Hit", "*")
+  
+  self:AddTransition("*", "Suppress", "*")
+  
   self:AddTransition("*", "Recovered", "*")
-  self:AddTransition("*", "FallBack",  "FallingBack")
+  
+  self:AddTransition("*", "FallBack", "FallingBack")
+  
   self:AddTransition("*", "TakeCover", "TakingCover")
-  self:AddTransition("*", "Retreat",   "Retreating")
+  
+  self:AddTransition("*", "Retreat", "Retreating")
+  
   self:AddTransition("*", "FightBack", "CombatReady")
-  self:AddTransition("*", "Dead",      "*")
-]]
-
-  -- New transitons. After hit we go to suppressed and take it from there. Should be cleaner.
-  self:AddTransition("*",           "Start",     "CombatReady")
-  self:AddTransition("CombatReady", "Hit",       "Suppressed")
-  self:AddTransition("Suppressed",  "Hit",       "Suppressed")
-  self:AddTransition("Suppressed",  "Recovered", "CombatReady")
-  self:AddTransition("Suppressed",  "TakeCover", "TakingCover")
-  self:AddTransition("Suppressed",  "FallBack",  "FallingBack")
-  self:AddTransition("Suppressed",  "Retreat",   "Retreating")
-  self:AddTransition("TakingCover", "FightBack", "CombatReady")
-  self:AddTransition("FallingBack", "FightBack", "CombatReady")  
-  self:AddTransition("*",           "Dead",      "*")
+  
+  self:AddTransition("*", "Dead", "*")
   
   return self
+end
+
+--- Create F10 main menu, i.e. F10/Suppression.
+-- @param #SUPPRESSION self
+function SUPPRESSION:_CreateMenuGroup()
+  self.SubMenuName=self.Controllable:GetName()
+  self.MenuGroup=MENU_MISSION:New(self.SubMenuName, SUPPRESSION.MenuF10)
+  MENU_MISSION_COMMAND:New("Fallback!", self.MenuGroup, self.OrderFallBack, self)
+  MENU_MISSION_COMMAND:New("Take Cover!", self.MenuGroup, self.OrderTakeCover, self)
+  MENU_MISSION_COMMAND:New("Retreat!", self.MenuGroup, self.OrderRetreat, self)
+  MENU_MISSION_COMMAND:New("Report Status", self.MenuGroup, self.Status, self, true)
+end
+
+--- Status of group. Current ROE, alarm state, life.
+-- @param #SUPPRESSION self
+-- @param #boolean message Send message to all players.
+function SUPPRESSION:Status(message)
+
+  local name=self.Controllable:GetName()
+  local nunits=#self.Controllable:GetUnits()
+  local roe=self.CurrentROE
+  local state=self.CurrentAlarmState
+  local life_min, life_max, life_ave, groupstrength=self:_GetLife()
+  
+  local text=string.format("Status of group %s\n", name)
+  text=text..string.format("Number of units: %d of %d\n", nunits, self.IniGroupStrength)
+  text=text..string.format("Current state: %s\n", self:GetState())
+  text=text..string.format("ROE: %s\n", roe)  
+  text=text..string.format("Alarm state: %s\n", state)
+  text=text..string.format("Life min: %3.0f\n", life_min)
+  text=text..string.format("Life max: %3.0f\n", life_max)
+  text=text..string.format("Life ave: %3.0f\n", life_ave)
+  text=text..string.format("Group strength: %3.0f", groupstrength)
+  
+  MESSAGE:New(text, 10):ToAllIf(message or self.debug)
+  env.info(SUPPRESSION.id..text)
+end
+
+
+--- Order group to fall back between 100 and 150 meters in a random direction.
+-- @param #SUPPRESSION self
+function SUPPRESSION:OrderFallBack()
+  local group=self.Controllable --Wrapper.Controllable#CONTROLLABLE
+  local vicinity=group:GetCoordinate():GetRandomVec2InRadius(150, 100)
+  local coord=COORDINATE:NewFromVec2(vicinity)
+  self:FallBack(self.Controllable)
+end
+
+--- Order group to take cover at a nearby scenery object.
+-- @param #SUPPRESSION self
+function SUPPRESSION:OrderTakeCover()
+  self:TakeCover()
+end
+
+--- Order group to retreat to a pre-defined zone.
+-- @param #SUPPRESSION self
+function SUPPRESSION:OrderRetreat()
+  self:Retreat()
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -320,13 +404,6 @@ function SUPPRESSION:SetTakecoverRange(range)
   self.TakecoverRange=range
 end
 
---- Set hideout place explicitly.
--- @param #SUPPRESSION self
--- @param Wrapper.Scenery#SCENERY Hideout Place where the group will hide after the TakeCover event.
-function SUPPRESSION:SetTakecoverRange(Hideout)
-  self.hideout=Hideout
-end
-
 --- Set minimum probability that a group flees (falls back or takes cover) after a hit event. Default is 10%.
 -- @param #SUPPRESSION self
 -- @param #number probability Probability in percent.
@@ -334,11 +411,11 @@ function SUPPRESSION:SetMinimumFleeProbability(probability)
   self.PminFlee=probability or 10
 end
 
---- Set maximum probability that a group flees (falls back or takes cover) after a hit event. Default is 90%.
+--- Set maximum probability that a group flees (falls back or takes cover) after a hit event. Default is 10%.
 -- @param #SUPPRESSION self
 -- @param #number probability Probability in percent.
 function SUPPRESSION:SetMinimumFleeProbability(probability)
-  self.PmaxFlee=probability or 90
+  self.PmaxFlee=probability or 10
 end
 
 --- Set damage threshold before a group is ordered to retreat if a retreat zone was defined.
@@ -387,76 +464,6 @@ function SUPPRESSION:SetDefaultROE(roe)
   end
 end
 
---- Create an F10 menu entry for the suppressed group. The menu is mainly for debugging purposes.
--- @param #SUPPRESSION self
--- @param #boolean switch Enable=true or disable=false menu group. Default is true.
-function SUPPRESSION:Fallback(switch)
-  if switch==nil then
-    switch=true
-  end
-  self.MenuON=switch
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Create F10 main menu, i.e. F10/Suppression. The menu is mainly for debugging purposes.
--- @param #SUPPRESSION self
-function SUPPRESSION:_CreateMenuGroup()
-  local SubMenuName=self.Controllable:GetName()
-  local MenuGroup=MENU_MISSION:New(self.SubMenuName, SUPPRESSION.MenuF10)
-  MENU_MISSION_COMMAND:New("Fallback!", self.MenuGroup, self.OrderFallBack, self)
-  MENU_MISSION_COMMAND:New("Take Cover!", self.MenuGroup, self.OrderTakeCover, self)
-  MENU_MISSION_COMMAND:New("Retreat!", self.MenuGroup, self.OrderRetreat, self)
-  MENU_MISSION_COMMAND:New("Report Status", self.MenuGroup, self.Status, self, true)
-end
-
---- Order group to fall back between 100 and 150 meters in a random direction.
--- @param #SUPPRESSION self
-function SUPPRESSION:OrderFallBack()
-  local group=self.Controllable --Wrapper.Controllable#CONTROLLABLE
-  local vicinity=group:GetCoordinate():GetRandomVec2InRadius(150, 100)
-  local coord=COORDINATE:NewFromVec2(vicinity)
-  self:FallBack(self.Controllable)
-end
-
---- Order group to take cover at a nearby scenery object.
--- @param #SUPPRESSION self
-function SUPPRESSION:OrderTakeCover()
-  self:TakeCover()
-end
-
---- Order group to retreat to a pre-defined zone.
--- @param #SUPPRESSION self
-function SUPPRESSION:OrderRetreat()
-  self:Retreat()
-end
-
---- Status of group. Current ROE, alarm state, life.
--- @param #SUPPRESSION self
--- @param #boolean message Send message to all players.
-function SUPPRESSION:Status(message)
-
-  local name=self.Controllable:GetName()
-  local nunits=#self.Controllable:GetUnits()
-  local roe=self.CurrentROE
-  local state=self.CurrentAlarmState
-  local life_min, life_max, life_ave, groupstrength=self:_GetLife()
-  
-  local text=string.format("Status of group %s\n", name)
-  text=text..string.format("Number of units: %d of %d\n", nunits, self.IniGroupStrength)
-  text=text..string.format("Current state: %s\n", self:GetState())
-  text=text..string.format("ROE: %s\n", roe)  
-  text=text..string.format("Alarm state: %s\n", state)
-  text=text..string.format("Hits taken: %d\n", self.Nhit)
-  text=text..string.format("Life min: %3.0f\n", life_min)
-  text=text..string.format("Life max: %3.0f\n", life_max)
-  text=text..string.format("Life ave: %3.0f\n", life_ave)
-  text=text..string.format("Group strength: %3.0f", groupstrength)
-  
-  MESSAGE:New(text, 10):ToAllIf(message or self.debug)
-  env.info(SUPPRESSION.id..text)
-end
-
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -478,29 +485,19 @@ function SUPPRESSION:onafterStart(Controllable, From, Event, To)
     rzone=self.RetreatZone:GetName()
   end
   
-  -- Set retreat damage value if it was not set by user input.
+  -- Set retreat damage value.
   if self.RetreatDamage==nil then
     if self.RetreatZone then
       if self.IniGroupStrength==1 then
         self.RetreatDamage=60  -- 40% of life is left.
-      elseif self.IniGroupStrength==2 then
-        self.RetreatDamage=50  -- 50% of group left, i.e. 1 of 2. We already order a retreat, because if for a group 2 two a zone is defined it would not be used at all.
       else
-        self.RetreatDamage=66  -- 34% of the group is left, e.g. 1 of 3,4 or 5, 2 of 6,7 or 8, 3 of 9,10 or 11, 4/12, 4/13, 4/14, 5/15, ... 
+        self.RetreatDamage=80  -- 20% of the group is left.
       end
     else
       self.RetreatDamage=100   -- If no retreat then this should be set to 100%.
     end
   end
   
-  -- Create main F10 menu if it is not there yet.
-  if self.MenuON then 
-    if not SUPPRESSION.MenuF10 then
-      SUPPRESSION.MenuF10 = MENU_MISSION:New("Suppression")
-    end
-    self:_CreateMenuGroup()
-  end
-    
   -- Set the current ROE and alam state.
   self:_SetAlarmState(self.DefaultAlarmState)
   self:_SetROE(self.DefaultROE)
@@ -564,11 +561,16 @@ end
 -- @param Wrapper.Unit#UNIT AttackUnit Unit that attacked.
 function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   self:_EventFromTo("onafterHit", Event, From, To)
-    
-  -- Suppress unit.
-  if From=="CombatReady" or From=="Suppressed" then
-    self:_Suppress()
+  
+  -- Flare unit that was hit.
+  if self.flare or self.debug then
+    if Unit then
+      Unit:FlareRed()
+    end
   end
+  
+  -- Suppress unit.
+  self:Suppress(Unit)
   
   -- Get life of group in %.
   local life_min, life_max, life_ave, groupstrength=self:_GetLife()
@@ -582,6 +584,8 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
     Damage=100-groupstrength
   end
   
+  --env.info(SUPPRESSION.id.."Damage = "..Damage.." thres = "..self.RetreatDamage)
+  
   -- Condition for retreat.
   local RetreatCondition = Damage > self.RetreatDamage and self.RetreatZone
     
@@ -591,14 +595,13 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   -- If no retreat zone has been specified, RetreatDamage is 100.
   local Pflee=(self.PmaxFlee-self.PminFlee)/self.RetreatDamage * Damage + self.PminFlee
   
+  env.info(SUPPRESSION.id.."Pflee = "..Pflee)
+  
   -- Evaluate flee condition.
   local P=math.random(0,100)
   local FleeCondition =  P < Pflee
   
-  local text
-  text=string.format("Group %s: Life min=%5.1f, max=%5.1f, ave=%5.1f, group=%5.1f", Controllable:GetName(), life_min, life_max, life_ave,groupstrength)
-  text=string.format("Group %s: Damage = %5.1f  - retreat threshold = %5.1f", Controllable:GetName(), Damage, self.RetreatDamage)
-  text=string.format("Group %s: Flee probability = %5.1f  Prand = %5.1f", Controllable:GetName(), Pflee, P)
+  --env.info(SUPPRESSION.id.."Prand = "..P)
   
   if RetreatCondition then
   
@@ -615,7 +618,7 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
     elseif self.TakecoverON then
     
       -- Trigger TakeCover event.
-      self:TakeCover(self.hideout)
+      self:TakeCover()
       
     end
   end
@@ -625,6 +628,23 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
     self:Status()
   end
   
+end
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--- After "Suppress" event. Group will be suppressed be setting its ROE to weapon hold.
+-- @param #SUPPRESSION self
+-- @param Wrapper.Controllable#CONTROLLABLE Controllable Controllable of the group.
+-- @param #string From From state.
+-- @param #string Event Event.
+-- @param #string To To state.
+-- @param Wrapper.Unit#UNIT Unit Unit that was hit.
+function SUPPRESSION:onafterSuppress(Controllable, From, Event, To, Unit)
+  self:_EventFromTo("onafterSuppress", Event, From, To)
+  
+  -- Suppress unit.
+  self:_Suppress()
+
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -684,22 +704,6 @@ end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
---- After "FightBack" event. ROE and Alarm state are set back to default.
--- @param #SUPPRESSION self
--- @param Wrapper.Controllable#CONTROLLABLE Controllable Controllable of the group.
--- @param #string From From state.
--- @param #string Event Event.
--- @param #string To To state.
-function SUPPRESSION:onafterFightBack(Controllable, From, Event, To)
-  self:_EventFromTo("onafterFightBack", Event, From, To)
-  
-  -- Set ROE and alarm state back to default.
-  self:_SetROE()
-  self:_SetAlarmState()
-end
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 --- Before "FallBack" event. We check that group is not already falling back.
 -- @param #SUPPRESSION self
 -- @param Wrapper.Controllable#CONTROLLABLE Controllable Controllable of the group.
@@ -739,11 +743,6 @@ function SUPPRESSION:onafterFallBack(Controllable, From, Event, To, AttackUnit)
   -- Heading from attacker to attacked unit.
   local heading=self:_Heading(ACoord, DCoord)
   
-  -- Overwrite heading with user specified heading.
-  if self.FallbackHeading then
-    heading=self.FallbackHeading
-  end
-  
   -- Create a coordinate ~ 100 m in opposite direction of the attacking unit.
   local Coord=DCoord:Translate(self.FallbackDist, heading)
   
@@ -751,12 +750,9 @@ function SUPPRESSION:onafterFallBack(Controllable, From, Event, To, AttackUnit)
   local MarkerID=Coord:MarkToAll("Fall back position for group "..Controllable:GetName())
   
   -- Smoke the coordinate.
-  if self.smoke or self.debug then
+  if self.debug or self.smoke then
     Coord:SmokeBlue()
   end
-  
-  -- Set ROE to weapon hold.
-  self:_SetAlarmState(SUPPRESSION.ROE.Hold)
   
   -- Set alarm state to GREEN and let the unit run away.
   self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
@@ -768,24 +764,33 @@ end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+--- After "FightBack" event. Alarm state is set back to default.
+-- @param #SUPPRESSION self
+-- @param Wrapper.Controllable#CONTROLLABLE Controllable Controllable of the group.
+-- @param #string From From state.
+-- @param #string Event Event.
+-- @param #string To To state.
+function SUPPRESSION:onafterFightBack(Controllable, From, Event, To)
+  self:_EventFromTo("onafterFightBack", Event, From, To)
+  
+  -- Set alarm state back to default.
+  self:_SetAlarmState()
+end
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 --- Before "TakeCover" event. Search an area around the group for possible scenery objects where the group can hide.
 -- @param #SUPPRESSION self
 -- @param Wrapper.Controllable#CONTROLLABLE Controllable Controllable of the group.
 -- @param #string From From state.
 -- @param #string Event Event.
 -- @param #string To To state.
--- @param Wrapper.Scenery#SCENERY Hideout Place where the group will hide.
-function SUPPRESSION:onbeforeTakeCover(Controllable, From, Event, To, Hideout)
+function SUPPRESSION:onbeforeTakeCover(Controllable, From, Event, To)
   self:_EventFromTo("onbeforeTakeCover", Event, From, To)
   
   --TODO: Need to test this!
   if From=="TakingCover" then
     return false
-  end
-  
-  -- Hideout is specified explicitly by the user. No need to search.
-  if Hideout ~= nil then
-    return true
   end
   
   -- We search objects in a zone with radius ~300 m around the group.
@@ -815,8 +820,9 @@ function SUPPRESSION:onbeforeTakeCover(Controllable, From, Event, To, Hideout)
     end
   end
   
-  -- Get random hideout place.
+  self.hideout=nil
   local gothideout=false
+  
   if #hideouts>0 then
   
     if self.debug then
@@ -824,7 +830,7 @@ function SUPPRESSION:onbeforeTakeCover(Controllable, From, Event, To, Hideout)
     end
     
     -- Pick a random location.
-    Hideout=hideouts[math.random(#hideouts)]
+    self.hideout=hideouts[math.random(#hideouts)]
     gothideout=true
   else
     env.error(SUPPRESSION.id.."No hideouts found!")
@@ -841,32 +847,29 @@ end
 -- @param #string From From state.
 -- @param #string Event Event.
 -- @param #string To To state.
--- @param Wrapper.Scenery#SCENERY Hideout Place where the group will hide.
-function SUPPRESSION:onafterTakeCover(Controllable, From, Event, To, Hideout)
+function SUPPRESSION:onafterTakeCover(Controllable, From, Event, To)
   self:_EventFromTo("onafterTakeCover", Event, From, To)
-      
-  local Coord=Hideout:GetCoordinate()
+    
+  -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
+  self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
+  
+  local hideout=self.hideout --Wrapper.Scenery#SCENERY
+  local coord=hideout:GetCoordinate()
   
   if self.debug then
-    local MarkerID=Coord:MarkToAll(string.format("Hideout place (%s) for group %s", Hideout:GetTypeName(), Controllable:GetName()))
-    local text=string.format("Group %s is taking cover at %s!", Controllable:GetName(), Hideout:GetTypeName())
+    local MarkerID=coord:MarkToAll(string.format("Hideout place (%s) for group %s", hideout:GetTypeName(), Controllable:GetName()))
+    local text=string.format("Group %s is taking cover at %s!", Controllable:GetName(), hideout:GetTypeName())
     MESSAGE:New(text, 10):ToAll()
     env.info(text)
   end
   
   -- Smoke place of hideout.
   if self.smoke or self.debug then
-    Coord:SmokeBlue()
+    coord:SmokeBlue()
   end
   
-  -- Set ROE to weapon hold.
-  self:_SetAlarmState(SUPPRESSION.ROE.Hold)
-  
-  -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
-  self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
-  
   -- Make the group run away.
-  self:_Run(Coord, self.Speed, self.Formation, self.TakecoverWait)
+  self:_Run(coord, self.Speed, self.Formation, self.TakecoverWait)
     
 end
 
@@ -915,21 +918,16 @@ function SUPPRESSION:onafterRetreat(Controllable, From, Event, To)
   local ZoneVec2=ZoneCoord:GetVec2()
 
   -- Debug smoke zone and point.
-  if self.smoke or self.debug then
+  if self.debug or self.smoke then
     ZoneCoord:SmokeBlue()
   end
   if self.debug then
     self.RetreatZone:SmokeZone(SMOKECOLOR.Red, 12)
   end
   
-  -- Set ROE to weapon hold.
-  self:_SetAlarmState(SUPPRESSION.ROE.Hold)
-  
-  -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
-  self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
-  
-  -- Make unit run to retreat zone and wait there for ~two hours.
-  self:_Run(ZoneCoord, self.Speed, self.Formation, self.RetreatWait)
+  -- Make unit run to retreat zone and wait there for two hours.
+  local wait=60*120
+  self:_Run(ZoneCoord, self.Speed, self.Formation, wait)
   
 end
 
@@ -1005,11 +1003,6 @@ function SUPPRESSION:onEvent(event)
   
     if TgtGroupName==name then
     
-      -- Flare unit that was hit.
-      if self.flare or self.debug then
-        TgtUnit:FlareRed()
-      end
-    
       -- FSM Hit event.
       self:Hit(TgtUnit, IniUnit)
     end
@@ -1021,12 +1014,13 @@ function SUPPRESSION:onEvent(event)
   
     if IniGroupName == name then
       
-      -- Flare unit that died.
-      if self.flare or self.debug then
+      -- Flare dead unit
+      if self.debug or self.smoke then
         IniUnit:FlareWhite()
       end
       
-      -- FSM Dead event.
+
+      -- Call dead event.
       self:__Dead(1)
       
     end
@@ -1054,6 +1048,7 @@ function SUPPRESSION:_Suppress()
   -- Get randomized time the unit is suppressed.
   local sigma=(self.Tsuppress_max-self.Tsuppress_min)/4
   local Tsuppress=self:_Random_Gaussian(self.Tsuppress_ave,sigma,self.Tsuppress_min, self.Tsuppress_max)
+  --Tsuppress=self.Tsuppress_ave
   
   -- Time at which the suppression is over.
   local renew=true
@@ -1079,7 +1074,6 @@ function SUPPRESSION:_Suppress()
 
 end
 
-
 --- Make group run/drive to a certain point. We put in several intermediate waypoints because sometimes the group stops before it arrived at the desired point.
 --@param #SUPPRESSION self
 --@param Core.Point#COORDINATE fin Coordinate where we want to go.
@@ -1093,17 +1087,13 @@ function SUPPRESSION:_Run(fin, speed, formation, wait)
   wait=wait or 30
 
   local group=self.Controllable -- Wrapper.Controllable#CONTROLLABLE
-  
-  -- Clear all tasks.
   group:ClearTasks()
   
-  -- Current coordinates of group.
   local ini=group:GetCoordinate()
   
   -- Distance between current and final point. 
   local dist=ini:Get2DDistance(fin)
   
-  -- Heading from ini to fin.
   local heading=self:_Heading(ini, fin)
   
   -- Distance between intermedeate waypoints.
@@ -1366,5 +1356,4 @@ function SUPPRESSION:_EventFromTo(BA, Event, From, To)
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
