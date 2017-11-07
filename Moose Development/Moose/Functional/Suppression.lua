@@ -175,6 +175,9 @@ function SUPPRESSION:New(Group)
   -- Initial group strength.
   self.IniGroupStrength=#Group:GetUnits()
   
+  self:SetDefaultROE("Return")
+  self:SetDefaultAlarmState("Red")
+  
   -- Transitions 
   
   -- Old transitions.
@@ -403,11 +406,11 @@ end
 -- @param #SUPPRESSION self
 function SUPPRESSION:_CreateMenuGroup()
   local SubMenuName=self.Controllable:GetName()
-  local MenuGroup=MENU_MISSION:New(self.SubMenuName, SUPPRESSION.MenuF10)
-  MENU_MISSION_COMMAND:New("Fallback!", self.MenuGroup, self.OrderFallBack, self)
-  MENU_MISSION_COMMAND:New("Take Cover!", self.MenuGroup, self.OrderTakeCover, self)
-  MENU_MISSION_COMMAND:New("Retreat!", self.MenuGroup, self.OrderRetreat, self)
-  MENU_MISSION_COMMAND:New("Report Status", self.MenuGroup, self.Status, self, true)
+  local MenuGroup=MENU_MISSION:New(SubMenuName, SUPPRESSION.MenuF10)
+  MENU_MISSION_COMMAND:New("Fallback!", MenuGroup, self.OrderFallBack, self)
+  MENU_MISSION_COMMAND:New("Take Cover!", MenuGroup, self.OrderTakeCover, self)
+  MENU_MISSION_COMMAND:New("Retreat!", MenuGroup, self.OrderRetreat, self)
+  MENU_MISSION_COMMAND:New("Report Status", MenuGroup, self.Status, self, true)
 end
 
 --- Order group to fall back between 100 and 150 meters in a random direction.
@@ -756,7 +759,7 @@ function SUPPRESSION:onafterFallBack(Controllable, From, Event, To, AttackUnit)
   end
   
   -- Set ROE to weapon hold.
-  self:_SetAlarmState(SUPPRESSION.ROE.Hold)
+  self:_SetROE(SUPPRESSION.ROE.Hold)
   
   -- Set alarm state to GREEN and let the unit run away.
   self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
