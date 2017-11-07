@@ -78,7 +78,7 @@
 -- @field #SUPPRESSION
 SUPPRESSION={
   ClassName = "SUPPRESSION",
-  debug = false,
+  debug = true,
   flare = true,
   smoke = true,
   Type = nil,
@@ -194,8 +194,15 @@ function SUPPRESSION:New(Group)
 
   -- New transitons. After hit we go to suppressed and take it from there. Should be cleaner.
   self:AddTransition("*",           "Start",     "CombatReady")
+  
+  --self:AddTransition("*",           "Hit",       "Suppressed")
+  
   self:AddTransition("CombatReady", "Hit",       "Suppressed")
   self:AddTransition("Suppressed",  "Hit",       "Suppressed")
+  
+  --self:AddTransition("FallingBack",  "Hit",      "Retreating")
+  --self:AddTransition("TakingCover",  "Hit",      "Retreating")
+  
   self:AddTransition("Suppressed",  "Recovered", "CombatReady")
   self:AddTransition("Suppressed",  "TakeCover", "TakingCover")
   self:AddTransition("Suppressed",  "FallBack",  "FallingBack")
@@ -547,14 +554,7 @@ end
 -- @param Wrapper.Unit#UNIT Unit Unit that was hit.
 -- @param Wrapper.Unit#UNIT AttackUnit Unit that attacked.
 function SUPPRESSION:onbeforeHit(Controllable, From, Event, To, Unit, AttackUnit)
-  self:_EventFromTo("onbeforeHit", Event, From, To)
-  
-  -- Increase Hit counter.
-  self.Nhit=self.Nhit+1
-  
-  -- Info on hit times.
-  env.info(SUPPRESSION.id..string.format("Group %s has just been hit %d times.", Controllable:GetName(), self.Nhit))
-  
+  self:_EventFromTo("onbeforeHit", Event, From, To)  
 end
 
 --- After "Hit" event.
@@ -582,11 +582,12 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   if self.IniGroupStrength==1 then
     Damage=100-life_min
   else
+    --TODO: Take group strength or live_ave or min/max from those!
     Damage=100-groupstrength
   end
   
   -- Condition for retreat.
-  local RetreatCondition = Damage > self.RetreatDamage and self.RetreatZone
+  local RetreatCondition = Damage >= self.RetreatDamage and self.RetreatZone
     
   -- Probability that a unit flees. The probability increases linearly with the damage of the group/unit.
   -- If Damage=0             ==> P=Pmin
@@ -600,8 +601,11 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   
   local text
   text=string.format("Group %s: Life min=%5.1f, max=%5.1f, ave=%5.1f, group=%5.1f", Controllable:GetName(), life_min, life_max, life_ave,groupstrength)
+  env.info(SUPPRESSION.id..text)
   text=string.format("Group %s: Damage = %5.1f  - retreat threshold = %5.1f", Controllable:GetName(), Damage, self.RetreatDamage)
+  env.info(SUPPRESSION.id..text)
   text=string.format("Group %s: Flee probability = %5.1f  Prand = %5.1f", Controllable:GetName(), Pflee, P)
+  env.info(SUPPRESSION.id..text)
   
   if RetreatCondition then
   
@@ -863,7 +867,7 @@ function SUPPRESSION:onafterTakeCover(Controllable, From, Event, To, Hideout)
   end
   
   -- Set ROE to weapon hold.
-  self:_SetAlarmState(SUPPRESSION.ROE.Hold)
+  self:_SetROE(SUPPRESSION.ROE.Hold)
   
   -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
   self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
@@ -904,9 +908,6 @@ end
 -- @param #string To To state.
 function SUPPRESSION:onafterRetreat(Controllable, From, Event, To)
   self:_EventFromTo("onafterRetreat", Event, From, To)
-    
-  -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
-  self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
   
   -- Route the group to a zone.
   local text=string.format("Group %s is retreating! Alarm state green.", Controllable:GetName())
@@ -926,7 +927,7 @@ function SUPPRESSION:onafterRetreat(Controllable, From, Event, To)
   end
   
   -- Set ROE to weapon hold.
-  self:_SetAlarmState(SUPPRESSION.ROE.Hold)
+  self:_SetROE(SUPPRESSION.ROE.Hold)
   
   -- Set the ALARM STATE to GREEN. Then the unit will move even if it is under fire.
   self:_SetAlarmState(SUPPRESSION.AlarmState.Green)
@@ -971,6 +972,8 @@ end
 function SUPPRESSION:onEvent(event)
   --self:E(event)
   
+  local Tnow=timer.getTime()
+  
   local name=self.Controllable:GetName()
   local ini = event.initiator
   local tgt = event.target
@@ -1008,13 +1011,23 @@ function SUPPRESSION:onEvent(event)
   
     if TgtGroupName==name then
     
+      env.info(SUPPRESSION.id.."Hit event at t = "..Tnow)
+    
       -- Flare unit that was hit.
       if self.flare or self.debug then
         TgtUnit:FlareRed()
       end
+      
+      -- Increase Hit counter.
+      self.Nhit=self.Nhit+1
+  
+      -- Info on hit times.
+      env.info(SUPPRESSION.id..string.format("Group %s has just been hit %d times.", self.Controllable:GetName(), self.Nhit))
+      
+      self:Status()
     
       -- FSM Hit event.
-      self:Hit(TgtUnit, IniUnit)
+      self:__Hit(3, TgtUnit, IniUnit)
     end
     
   end
@@ -1023,14 +1036,18 @@ function SUPPRESSION:onEvent(event)
   if event.id == world.event.S_EVENT_DEAD then
   
     if IniGroupName == name then
+    
+      env.info(SUPPRESSION.id.."Dead event at t = "..Tnow)
       
       -- Flare unit that died.
       if self.flare or self.debug then
         IniUnit:FlareWhite()
       end
       
+      self:Status()
+      
       -- FSM Dead event.
-      self:__Dead(1)
+      self:__Dead(0.1)
       
     end
   end
@@ -1233,8 +1250,8 @@ function SUPPRESSION:_GetLife()
         end
         life_ave=life_ave+life
         if self.debug then
-          local text=string.format("n=%02d: Life = %3.1f, Life0 = %3.1f, min=%3.1f, max=%3.1f, ave=%3.1f, group=%3.1f", n, unit:GetLife(), unit:GetLife0(), life_min, life_max, life_ave/n,groupstrength)
-          env.info(SUPPRESSION.id..text)
+          --local text=string.format("n=%02d: Life = %3.1f, Life0 = %3.1f, min=%3.1f, max=%3.1f, ave=%3.1f, group=%3.1f", n, unit:GetLife(), unit:GetLife0(), life_min, life_max, life_ave/n,groupstrength)
+          --env.info(SUPPRESSION.id..text)
         end
       end
       
