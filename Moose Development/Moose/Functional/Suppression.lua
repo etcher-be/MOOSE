@@ -89,7 +89,7 @@ SUPPRESSION={
   IniGroupStrength = nil,
   Nhit = 0,
   Formation = "Vee",
-  Speed = 999,
+  Speed = 4,
   MenuON = true,
   FallbackON = true,
   FallbackWait = 60,
@@ -144,22 +144,22 @@ SUPPRESSION.id="SFX | "
 
 --- Creates a new AI_suppression object.
 -- @param #SUPPRESSION self
--- @param Wrapper.Group#GROUP Group The GROUP object for which suppression should be applied.
+-- @param Wrapper.Group#GROUP group The GROUP object for which suppression should be applied.
 -- @return #SUPPRESSION SUPPRESSION object.
 -- @return nil If group does not exist or is not a ground group.
-function SUPPRESSION:New(Group)
+function SUPPRESSION:New(group)
 
   -- Check that group is present.
-  if Group then
-    env.info(SUPPRESSION.id.."Suppressive fire for group "..Group:GetName())
+  if group then
+    env.info(SUPPRESSION.id.."Suppressive fire for group "..group:GetName())
   else
     env.info(SUPPRESSION.id.."Suppressive fire: Requested group does not exist! (Has to be a MOOSE group.)")
     return nil
   end
   
   -- Check that we actually have a GROUND group.
-  if Group:IsGround()==false then
-    env.error(SUPPRESSION.id.."SUPPRESSION fire group "..Group:GetName().." has to be a GROUND group!")
+  if group:IsGround()==false then
+    env.error(SUPPRESSION.id.."SUPPRESSION fire group "..group:GetName().." has to be a GROUND group!")
     return nil
   end
 
@@ -167,13 +167,24 @@ function SUPPRESSION:New(Group)
   local self=BASE:Inherit(self, FSM_CONTROLLABLE:New()) -- #SUPPRESSION
   
   -- Set the controllable for the FSM.
-  self:SetControllable(Group)
+  self:SetControllable(group)
+  
+  local DCSgroup=Group.getByName(group:GetName())
+  local DCSunit=DCSgroup:getUnit(1)
+  local DCSdesc=DCSunit:getDesc()
+  
+  self.SpeedMax=DCSdesc.speedMax
+  self.SpeedMaxOffRoad=DCSdesc.speedMaxOffRoad
+  env.info(SUPPRESSION.id..string.format("Speed max on  road = %6.2f", self.SpeedMax))
+  env.info(SUPPRESSION.id..string.format("Speed max off road = %6.2f", self.SpeedMaxOffRoad))
+  
+  self.Speed=self.SpeedMaxOffRoad
   
   -- Type of group.
-  self.Type=Group:GetTypeName()
+  self.Type=group:GetTypeName()
   
   -- Initial group strength.
-  self.IniGroupStrength=#Group:GetUnits()
+  self.IniGroupStrength=#group:GetUnits()
   
   self:SetDefaultROE("Return")
   self:SetDefaultAlarmState("Red")
@@ -400,7 +411,7 @@ end
 --- Create an F10 menu entry for the suppressed group. The menu is mainly for debugging purposes.
 -- @param #SUPPRESSION self
 -- @param #boolean switch Enable=true or disable=false menu group. Default is true.
-function SUPPRESSION:Fallback(switch)
+function SUPPRESSION:MenuOn(switch)
   if switch==nil then
     switch=true
   end
@@ -450,7 +461,7 @@ function SUPPRESSION:Status(message)
   local nunits=#self.Controllable:GetUnits()
   local roe=self.CurrentROE
   local state=self.CurrentAlarmState
-  local life_min, life_max, life_ave, groupstrength=self:_GetLife()
+  local life_min, life_max, life_ave, life_ave0, groupstrength=self:_GetLife()
   
   local text=string.format("Status of group %s\n", name)
   text=text..string.format("Number of units: %d of %d\n", nunits, self.IniGroupStrength)
@@ -461,6 +472,7 @@ function SUPPRESSION:Status(message)
   text=text..string.format("Life min: %3.0f\n", life_min)
   text=text..string.format("Life max: %3.0f\n", life_max)
   text=text..string.format("Life ave: %3.0f\n", life_ave)
+  text=text..string.format("Life ave0: %3.0f\n", life_ave0)
   text=text..string.format("Group strength: %3.0f", groupstrength)
   
   MESSAGE:New(text, 10):ToAllIf(message or self.debug)
@@ -545,7 +557,7 @@ end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
---- Before "Hit" event. Counts number of hits. (Of course, this is not really before the group got hit.)
+--- Before "Hit" event. (Of course, this is not really before the group got hit.)
 -- @param #SUPPRESSION self
 -- @param Wrapper.Controllable#CONTROLLABLE Controllable Controllable of the group.
 -- @param #string From From state.
@@ -554,7 +566,21 @@ end
 -- @param Wrapper.Unit#UNIT Unit Unit that was hit.
 -- @param Wrapper.Unit#UNIT AttackUnit Unit that attacked.
 function SUPPRESSION:onbeforeHit(Controllable, From, Event, To, Unit, AttackUnit)
-  self:_EventFromTo("onbeforeHit", Event, From, To)  
+  self:_EventFromTo("onbeforeHit", Event, From, To)
+  local Tnow=timer.getTime()
+  env.info(SUPPRESSION.id..string.format("Last hit = %s  %s", tostring(self.LastHit), tostring(Tnow)))
+  if self.LastHit==nil then
+    self.LastHit=Tnow
+    return true
+  else
+    if Tnow-self.LastHit<3 then
+      return false
+    else
+      self.LastHit=Tnow
+      return true
+    end
+  end
+  
 end
 
 --- After "Hit" event.
@@ -574,7 +600,7 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   end
   
   -- Get life of group in %.
-  local life_min, life_max, life_ave, groupstrength=self:_GetLife()
+  local life_min, life_max, life_ave, life_ave0, groupstrength=self:_GetLife()
   
   -- Damage in %. If group consists only of one unit, we take its life value.
   -- If group has multiple units, we take the remaining (relative) group strength.
@@ -1025,9 +1051,11 @@ function SUPPRESSION:onEvent(event)
       env.info(SUPPRESSION.id..string.format("Group %s has just been hit %d times.", self.Controllable:GetName(), self.Nhit))
       
       self:Status()
+      local life=tgt:getLife()/(tgt:getLife0()+1)*100
+      env.info(SUPPRESSION.id..string.format("Target unit life = %5.1f", life))
     
       -- FSM Hit event.
-      self:__Hit(3, TgtUnit, IniUnit)
+      self:Hit(TgtUnit, IniUnit)
     end
     
   end
@@ -1126,21 +1154,20 @@ function SUPPRESSION:_Run(fin, speed, formation, wait)
   -- Heading from ini to fin.
   local heading=self:_Heading(ini, fin)
   
-  -- Distance between intermedeate waypoints.
-  local dx
-  if dist < 100 then
-    dx=25
-  elseif dist < 500 then
-    dx=50
+  -- Number of waypoints.
+  local nx
+  if dist <= 50 then
+    nx=2
+  elseif dist <= 100 then
+    nx=3
+  elseif dist <= 500 then
+    nx=4
   else
-    dx=100
+    nx=5
   end
   
   -- Number of intermediate waypoints.
-  local nx=dist/dx
-  if nx<1 then
-    nx=0
-  end
+  local dx=dist/(nx-1)
     
   -- Waypoint and task arrays.
   local wp={}
@@ -1148,9 +1175,11 @@ function SUPPRESSION:_Run(fin, speed, formation, wait)
   
   -- First waypoint is the current position of the group.
   wp[1]=ini:WaypointGround(speed, formation)
+  local MarkerID=ini:MarkToAll(string.format("Waypoing %d of group %s (initial)", #wp, self.Controllable:GetName()))
   tasks[1]=group:TaskFunction("SUPPRESSION._Passing_Waypoint", self, 1, false)
   
-  for i=1,nx do
+  env.info(SUPPRESSION.id..string.format("Number of waypoints %d", nx))
+  for i=1,nx-2 do
   
     local x=dx*i
     local coord=ini:Translate(x, heading)
@@ -1162,9 +1191,11 @@ function SUPPRESSION:_Run(fin, speed, formation, wait)
     local MarkerID=coord:MarkToAll(string.format("Waypoing %d of group %s", #wp, self.Controllable:GetName()))
     
   end
+  env.info(SUPPRESSION.id..string.format("Total distance: %4.1f", dist))
   
   -- Final waypoint.
   wp[#wp+1]=fin:WaypointGround(speed, formation)
+  local MarkerID=fin:MarkToAll(string.format("Waypoing %d of group %s (final)", #wp, self.Controllable:GetName()))
   
     -- Task to hold.
   local ConditionWait=group:TaskCondition(nil, nil, nil, nil, wait, nil)
@@ -1221,7 +1252,8 @@ end
 -- @param #SUPPRESSION self
 -- @return #number Smallest life value of all units.
 -- @return #number Largest life value of all units.
--- @return #number Average life value.
+-- @return #number Average life value of all alife groups
+-- @return #number Average life value of all groups including already dead ones.
 -- @return #number Relative group strength.
 function SUPPRESSION:_GetLife()
 
@@ -1232,9 +1264,12 @@ function SUPPRESSION:_GetLife()
     local life_min=1000
     local life_max=-1000
     local life_ave=0
+    local life_ave0=0
     local n=0
     local units=group:GetUnits()
     local groupstrength=#units/self.IniGroupStrength*100
+    
+    env.info(SUPPRESSION.id..string.format("Group %s _GetLife nunits = %d", self.Controllable:GetName(), #units))
     
     for _,unit in pairs(units) do
     
@@ -1256,9 +1291,15 @@ function SUPPRESSION:_GetLife()
       end
       
     end
-    life_ave=life_ave/n
     
-    return life_min, life_max, life_ave, groupstrength
+    if self.IniGroupStrength ~= #units then
+      life_ave0=life_ave/(self.IniGroupStrength-#units)
+    else
+      life_ave0=life_ave/n
+    end
+    life_ave=life_ave/n    
+    
+    return life_min, life_max, life_ave, life_ave0, groupstrength
   else
     return 0, 0, 0, 0
   end
@@ -1380,11 +1421,10 @@ end
 -- @param #string To To state.
 function SUPPRESSION:_EventFromTo(BA, Event, From, To)
   if self.debug then
-    local text=string.format("%s: %s event %s %s --> %s", BA, self.Controllable:GetName(), Event, From, To)
+    local text=string.format("%s: %s EVENT %s: %s --> %s", BA, self.Controllable:GetName(), Event, From, To)
     env.info(SUPPRESSION.id..text)
   end
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
