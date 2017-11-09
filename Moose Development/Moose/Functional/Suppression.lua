@@ -39,7 +39,10 @@
 -- @field #boolean debug Write debug messages to DCS log file and send debug messages to all players.
 -- @field #boolean flare Flare units when they get hit or die.
 -- @field #boolean smoke Smoke places to which the group retreats, falls back or hides.
+-- @field #list DCSdesc Table containing all DCS descriptors of the group.
 -- @field #string Type Type of the group.
+-- @field #number SpeedMax Maximum speed of group in km/h.
+-- @field #boolean IsInfantry True if group has attribute Infantry.
 -- @field Core.Controllable#CONTROLLABLE Controllable Controllable of the FSM. Must be a ground group.
 -- @field #number Tsuppress_ave Average time in seconds a group gets suppressed. Actual value is sampled randomly from a Gaussian distribution.
 -- @field #number Tsuppress_min Minimum time in seconds the group gets suppressed.
@@ -81,7 +84,10 @@ SUPPRESSION={
   debug = true,
   flare = true,
   smoke = true,
+  DCSdesc = nil,
   Type = nil,
+  IsInfantry=nil,
+  SpeedMax = nil,
   Tsuppress_ave = 15,
   Tsuppress_min = 5,
   Tsuppress_max = 25,
@@ -91,7 +97,7 @@ SUPPRESSION={
   Formation = "Vee",
   Speed = 4,
   MenuON = true,
-  FallbackON = true,
+  FallbackON = false,
   FallbackWait = 60,
   FallbackDist = 100,
   FallbackHeading = nil,
@@ -169,16 +175,20 @@ function SUPPRESSION:New(group)
   -- Set the controllable for the FSM.
   self:SetControllable(group)
   
+  -- Get DCS descriptors of group.
   local DCSgroup=Group.getByName(group:GetName())
   local DCSunit=DCSgroup:getUnit(1)
-  local DCSdesc=DCSunit:getDesc()
+  self.DCSdesc=DCSunit:getDesc()
   
-  self.SpeedMax=DCSdesc.speedMax
-  self.SpeedMaxOffRoad=DCSdesc.speedMaxOffRoad
-  env.info(SUPPRESSION.id..string.format("Speed max on  road = %6.2f", self.SpeedMax))
-  env.info(SUPPRESSION.id..string.format("Speed max off road = %6.2f", self.SpeedMaxOffRoad))
+  -- Get max speed the group can do and convert to km/h.
+  self.SpeedMax=self.DCSdesc.speedMaxOffRoad*3.6
+  --self.SpeedMaxOffRoad=DCSdesc.speedMaxOffRoad
   
-  self.Speed=self.SpeedMaxOffRoad
+  -- Set speed to maximum.
+  self.Speed=self.SpeedMax
+  
+  -- Is this infantry or not.
+  self.IsInfantry=DCSunit:hasAttribute("Infantry")
   
   -- Type of group.
   self.Type=group:GetTypeName()
@@ -186,6 +196,7 @@ function SUPPRESSION:New(group)
   -- Initial group strength.
   self.IniGroupStrength=#group:GetUnits()
   
+  -- Set ROE and Alarm State.
   self:SetDefaultROE("Return")
   self:SetDefaultAlarmState("Red")
   
@@ -288,9 +299,10 @@ end
 
 --- Set speed a group moves at for fall back, hide or retreat.
 -- @param #SUPPRESSION self
--- @param #number speed Speed in km/h of group. Default 999 km/h.
+-- @param #number speed Speed in km/h of group. Default max speed the group can do.
 function SUPPRESSION:SetSpeed(speed)
-  self.Speed=speed or 999
+  self.Speed=speed or self.SpeedMax
+  self.Speed=math.min(self.Speed, self.SpeedMax)
 end
 
 --- Enable fall back if a group is hit.
@@ -506,9 +518,9 @@ function SUPPRESSION:onafterStart(Controllable, From, Event, To)
       if self.IniGroupStrength==1 then
         self.RetreatDamage=60  -- 40% of life is left.
       elseif self.IniGroupStrength==2 then
-        self.RetreatDamage=50  -- 50% of group left, i.e. 1 of 2. We already order a retreat, because if for a group 2 two a zone is defined it would not be used at all.
+        self.RetreatDamage=49.9  -- 50% of group left, i.e. 1 of 2. We already order a retreat, because if for a group 2 two a zone is defined it would not be used at all.
       else
-        self.RetreatDamage=66  -- 34% of the group is left, e.g. 1 of 3,4 or 5, 2 of 6,7 or 8, 3 of 9,10 or 11, 4/12, 4/13, 4/14, 5/15, ... 
+        self.RetreatDamage=66.5  -- 34% of the group is left, e.g. 1 of 3,4 or 5, 2 of 6,7 or 8, 3 of 9,10 or 11, 4/12, 4/13, 4/14, 5/15, ... 
       end
     else
       self.RetreatDamage=100   -- If no retreat then this should be set to 100%.
@@ -530,6 +542,7 @@ function SUPPRESSION:onafterStart(Controllable, From, Event, To)
   local text=string.format("\n******************************************************\n")
   text=text..string.format("Suppressed group   = %s\n", Controllable:GetName())
   text=text..string.format("Type               = %s\n", self.Type)
+  text=text..string.format("IsInfantry         = %s\n", tostring(self.IsInfantry))  
   text=text..string.format("Group strength     = %d\n", self.IniGroupStrength)
   text=text..string.format("Average time       = %5.1f seconds\n", self.Tsuppress_ave)
   text=text..string.format("Minimum time       = %5.1f seconds\n", self.Tsuppress_min)
@@ -548,6 +561,9 @@ function SUPPRESSION:onafterStart(Controllable, From, Event, To)
   text=text..string.format("Retreat zone       = %s\n", rzone)
   text=text..string.format("Retreat damage     = %5.1f %%\n", self.RetreatDamage)
   text=text..string.format("Retreat wait       = %5.1f seconds\n", self.RetreatWait)
+  text=text..string.format("Speed              = %5.1f km/h\n", self.Speed)
+  text=text..string.format("Speed max          = %5.1f km/h\n", self.SpeedMax)
+  text=text..string.format("Formation          = %s\n", self.Formation)
   text=text..string.format("******************************************************\n")
   env.info(SUPPRESSION.id..text)
     
@@ -567,20 +583,30 @@ end
 -- @param Wrapper.Unit#UNIT AttackUnit Unit that attacked.
 function SUPPRESSION:onbeforeHit(Controllable, From, Event, To, Unit, AttackUnit)
   self:_EventFromTo("onbeforeHit", Event, From, To)
-  local Tnow=timer.getTime()
-  env.info(SUPPRESSION.id..string.format("Last hit = %s  %s", tostring(self.LastHit), tostring(Tnow)))
+  
+  --local Tnow=timer.getTime()
+  --env.info(SUPPRESSION.id..string.format("Last hit = %s  %s", tostring(self.LastHit), tostring(Tnow)))
+  
+  return true
+  --[[
   if self.LastHit==nil then
+  
+    -- First time group was hit
     self.LastHit=Tnow
     return true
+    
   else
-    if Tnow-self.LastHit<3 then
+  
+    -- Allow next hit only after a certain time has passed
+    if Tnow-self.LastHit < 3 then
       return false
     else
       self.LastHit=Tnow
       return true
     end
+    
   end
-  
+  ]]
 end
 
 --- After "Hit" event.
@@ -609,7 +635,7 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
     Damage=100-life_min
   else
     --TODO: Take group strength or live_ave or min/max from those!
-    Damage=100-groupstrength
+    Damage=100-life_ave0
   end
   
   -- Condition for retreat.
@@ -619,19 +645,24 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   -- If Damage=0             ==> P=Pmin
   -- if Damage=RetreatDamage ==> P=Pmax
   -- If no retreat zone has been specified, RetreatDamage is 100.
-  local Pflee=(self.PmaxFlee-self.PminFlee)/self.RetreatDamage * Damage + self.PminFlee
+  local Pflee=(self.PmaxFlee-self.PminFlee)/self.RetreatDamage * math.min(Damage, self.RetreatDamage) + self.PminFlee
   
   -- Evaluate flee condition.
   local P=math.random(0,100)
   local FleeCondition =  P < Pflee
   
   local text
-  text=string.format("Group %s: Life min=%5.1f, max=%5.1f, ave=%5.1f, group=%5.1f", Controllable:GetName(), life_min, life_max, life_ave,groupstrength)
+  text=string.format("Group %s: Life min=%5.1f, max=%5.1f, ave=%5.1f, ave0=%5.1f group=%5.1f", Controllable:GetName(), life_min, life_max, life_ave, life_ave0, groupstrength)
   env.info(SUPPRESSION.id..text)
-  text=string.format("Group %s: Damage = %5.1f  - retreat threshold = %5.1f", Controllable:GetName(), Damage, self.RetreatDamage)
+  text=string.format("Group %s: Damage = %5.1f (%5.1f retreat threshold).", Controllable:GetName(), Damage, self.RetreatDamage)
   env.info(SUPPRESSION.id..text)
-  text=string.format("Group %s: Flee probability = %5.1f  Prand = %5.1f", Controllable:GetName(), Pflee, P)
+  text=string.format("Group %s: P_Flee = %5.1f %5.1f=P_rand (P_Flee > Prand ==> Flee)", Controllable:GetName(), Pflee, P)
   env.info(SUPPRESSION.id..text)
+  
+  -- Group is obviously destroyed.
+  if Damage>99.9 then
+    return
+  end
   
   if RetreatCondition then
   
@@ -647,9 +678,14 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
       
     elseif self.TakecoverON then
     
-      -- Trigger TakeCover event.
-      self:TakeCover(self.hideout)
+      -- Search place to hide or take specified one.
+      local Hideout=self.hideout
+      if self.hideout==nil then
+        Hideout=self:_SearchHideout()
+      end
       
+      -- Trigger TakeCover event.
+      self:TakeCover(Hideout)
     end
   end
   
@@ -816,56 +852,13 @@ function SUPPRESSION:onbeforeTakeCover(Controllable, From, Event, To, Hideout)
     return false
   end
   
-  -- Hideout is specified explicitly by the user. No need to search.
+  -- Block transition if no hideout place is given.
   if Hideout ~= nil then
     return true
-  end
-  
-  -- We search objects in a zone with radius ~300 m around the group.
-  local Zone = ZONE_GROUP:New("Zone_Hiding", Controllable, self.TakecoverRange)
-
-  -- Scan for Scenery objects to run/drive to.
-  Zone:Scan(Object.Category.SCENERY)
-  
-  -- Array with all possible hideouts, i.e. scenery objects in the vicinity of the group.
-  local hideouts={}
-
-  for SceneryTypeName, SceneryData in pairs(Zone:GetScannedScenery()) do
-    for SceneryName, SceneryObject in pairs(SceneryData) do
-    
-      local SceneryObject = SceneryObject -- Wrapper.Scenery#SCENERY
-      
-      if self.debug then
-        -- Place markers on every possible scenery object.
-        local MarkerID=SceneryObject:GetCoordinate():MarkToAll(string.format("%s scenery object %s", Controllable:GetName(),SceneryObject:GetTypeName()))
-        local text=string.format("%s scenery: %s, Coord %s", Controllable:GetName(), SceneryObject:GetTypeName(), SceneryObject:GetCoordinate():ToStringLLDMS())
-        env.info(SUPPRESSION.id..text)
-      end
-      
-      table.insert(hideouts, SceneryObject)
-      -- TODO: Add check if scenery name matches a specific type like tree or building. This might be tricky though!
-      
-    end
-  end
-  
-  -- Get random hideout place.
-  local gothideout=false
-  if #hideouts>0 then
-  
-    if self.debug then
-      env.info(SUPPRESSION.id.."Number of hideouts "..#hideouts)
-    end
-    
-    -- Pick a random location.
-    Hideout=hideouts[math.random(#hideouts)]
-    gothideout=true
   else
-    env.error(SUPPRESSION.id.."No hideouts found!")
+    return false
   end
-  
-  -- Only take cover if we found a hideout.
-  return gothideout
-  
+
 end
 
 --- After "TakeCover" event. Group will run to a nearby scenery object and "hide" there for a certain time.
@@ -1014,9 +1007,15 @@ function SUPPRESSION:onEvent(event)
     IniUnit=UNIT:FindByName(IniUnitName)
     if IniUnit then
       IniGroup=IniUnit:GetGroup()
-      IniGroupName=IniGroup:GetName()
+      IniGroupName=ini:getGroup():getName()
+      --IniGroupName=IniGroup:GetName()
     end
   end
+  
+  --self:E(IniUnit)
+  --self:E(IniGroup)
+  --self:E(IniUnitName)
+  --self:E(IniGroupName)
   
   -- TARGET
   local TgtUnit=nil        -- Wrapper.Unit#UNIT
@@ -1028,7 +1027,8 @@ function SUPPRESSION:onEvent(event)
     TgtUnit=UNIT:FindByName(TgtUnitName) 
     if TgtUnit then
       TgtGroup=TgtUnit:GetGroup()
-      TgtGroupName=TgtGroup:GetName()
+      TgtGroupName=tgt:getGroup():getName()
+      --TgtGroupName=TgtGroup:GetName()
     end
   end    
   
@@ -1050,18 +1050,20 @@ function SUPPRESSION:onEvent(event)
       -- Info on hit times.
       env.info(SUPPRESSION.id..string.format("Group %s has just been hit %d times.", self.Controllable:GetName(), self.Nhit))
       
-      self:Status()
+      --self:Status()
       local life=tgt:getLife()/(tgt:getLife0()+1)*100
       env.info(SUPPRESSION.id..string.format("Target unit life = %5.1f", life))
     
       -- FSM Hit event.
-      self:Hit(TgtUnit, IniUnit)
+      self:__Hit(3, TgtUnit, IniUnit)
     end
     
   end
   
   -- Event DEAD
   if event.id == world.event.S_EVENT_DEAD then
+  
+    --env.info(SUPPRESSION.id.."Dead event for anyone at t = "..Tnow.." group "..tostring(IniGroupName).." name = "..tostring(name))
   
     if IniGroupName == name then
     
@@ -1075,7 +1077,7 @@ function SUPPRESSION:onEvent(event)
       self:Status()
       
       -- FSM Dead event.
-      self:__Dead(0.1)
+      self:Dead()
       
     end
   end
@@ -1234,7 +1236,7 @@ end
 function SUPPRESSION._Passing_Waypoint(group, Fsm, i, final)
 
   -- Debug message.
-  local text=string.format("Group %s passing waypoint %d.", group:GetName(), i)
+  local text=string.format("Group %s passing waypoint %d (final=%s)", group:GetName(), i, tostring(final))
   MESSAGE:New(text,10):ToAllIf(Fsm.debug)
   if Fsm.debug then
     --env.info(SUPPRESSION.id..text)
@@ -1247,6 +1249,57 @@ function SUPPRESSION._Passing_Waypoint(group, Fsm, i, final)
   end  
 end
 
+
+--- Search a place to hide. This is any scenery object in the vicinity.
+--@param #SUPPRESSION self
+--@return Wrapper.Scenery#SCENERY Hideout scenery object.
+--@return nil If no scenery object is within search radius.
+function SUPPRESSION:_SearchHideout()
+  -- We search objects in a zone with radius ~300 m around the group.
+  local Zone = ZONE_GROUP:New("Zone_Hiding", self.Controllable, self.TakecoverRange)
+
+  -- Scan for Scenery objects to run/drive to.
+  Zone:Scan(Object.Category.SCENERY)
+  
+  -- Array with all possible hideouts, i.e. scenery objects in the vicinity of the group.
+  local hideouts={}
+
+  for SceneryTypeName, SceneryData in pairs(Zone:GetScannedScenery()) do
+    for SceneryName, SceneryObject in pairs(SceneryData) do
+    
+      local SceneryObject = SceneryObject -- Wrapper.Scenery#SCENERY
+      
+      if self.debug then
+        -- Place markers on every possible scenery object.
+        local MarkerID=SceneryObject:GetCoordinate():MarkToAll(string.format("%s scenery object %s", self.Controllable:GetName(),SceneryObject:GetTypeName()))
+        local text=string.format("%s scenery: %s, Coord %s", self.Controllable:GetName(), SceneryObject:GetTypeName(), SceneryObject:GetCoordinate():ToStringLLDMS())
+        env.info(SUPPRESSION.id..text)
+      end
+      
+      table.insert(hideouts, SceneryObject)
+      -- TODO: Add check if scenery name matches a specific type like tree or building. This might be tricky though!
+      
+    end
+  end
+  
+  -- Get random hideout place.
+  local Hideout=nil
+  if #hideouts>0 then
+  
+    if self.debug then
+      env.info(SUPPRESSION.id.."Number of hideouts "..#hideouts)
+    end
+    
+    -- Pick a random location.
+    Hideout=hideouts[math.random(#hideouts)]
+    
+  else
+    env.error(SUPPRESSION.id.."No hideouts found!")
+  end
+  
+  return Hideout
+
+end
 
 --- Get (relative) life in percent of a group. Function returns the value of the units with the smallest and largest life. Also the average value of all groups is returned.
 -- @param #SUPPRESSION self
@@ -1261,12 +1314,14 @@ function SUPPRESSION:_GetLife()
   
   if group and group:IsAlive() then
   
-    local life_min=1000
-    local life_max=-1000
+    local units=group:GetUnits()
+  
+    local life_min=9999
+    local life_max=-9999
     local life_ave=0
     local life_ave0=0
     local n=0
-    local units=group:GetUnits()
+    
     local groupstrength=#units/self.IniGroupStrength*100
     
     env.info(SUPPRESSION.id..string.format("Group %s _GetLife nunits = %d", self.Controllable:GetName(), #units))
@@ -1285,11 +1340,16 @@ function SUPPRESSION:_GetLife()
         end
         life_ave=life_ave+life
         if self.debug then
-          --local text=string.format("n=%02d: Life = %3.1f, Life0 = %3.1f, min=%3.1f, max=%3.1f, ave=%3.1f, group=%3.1f", n, unit:GetLife(), unit:GetLife0(), life_min, life_max, life_ave/n,groupstrength)
-          --env.info(SUPPRESSION.id..text)
+          local text=string.format("n=%02d: Life = %3.1f, Life0 = %3.1f, min=%3.1f, max=%3.1f, ave=%3.1f, group=%3.1f", n, unit:GetLife(), unit:GetLife0(), life_min, life_max, life_ave/n,groupstrength)
+          env.info(SUPPRESSION.id..text)
         end
       end
       
+    end
+    
+    -- If the counter did not increase (can happen!) return 0
+    if n==0 then
+      return 0,0,0,0,0
     end
     
     if self.IniGroupStrength ~= #units then
@@ -1297,11 +1357,12 @@ function SUPPRESSION:_GetLife()
     else
       life_ave0=life_ave/n
     end
+    life_ave0=life_ave/self.IniGroupStrength
     life_ave=life_ave/n    
     
     return life_min, life_max, life_ave, life_ave0, groupstrength
   else
-    return 0, 0, 0, 0
+    return 0, 0, 0, 0, 0
   end
 end
 
@@ -1427,4 +1488,5 @@ function SUPPRESSION:_EventFromTo(BA, Event, From, To)
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
