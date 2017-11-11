@@ -1,6 +1,8 @@
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- **Functional** - Suppress fire of ground units when they get hit.
 -- 
+-- ![Banner Image](..\Presentations\SUPPRESSION\SUPPRESSION.jpg)
+-- 
 -- ====
 -- 
 -- When ground units get hit by (suppressive) enemy fire, they will not be able to shoot back for a certain amount of time.
@@ -76,7 +78,94 @@
 ---# SUPPRESSION class, extends @{Core.Fsm#FSM_CONTROLLABLE}
 -- Mimic suppressive enemy fire and let groups flee or retreat.
 -- 
--- ## Some Example...
+-- ## Suppression Process
+-- 
+-- ![Process](..\Presentations\SUPPRESSION\Suppression_Process.png)
+-- 
+-- The suppression process can be described as follows.
+-- 
+-- ### CombatReady
+-- 
+-- A group starts in the state **CombatReady**. In this state the group is ready to fight. The ROE is set to either "Weapon Free" or "Return Fire".
+-- The alarm state is set to either "Auto" or "Red".
+-- 
+-- ### Event Hit
+-- The most important event in this scenario is the **Hit** event. This is an event of the FSM and triggered by the DCS event hit.
+-- 
+-- ### Suppressed
+-- After the **Hit** event the group changes its state to **Suppressed**. Technically, the ROE of the group is changed to "Weapon Hold".
+-- The suppression of the group will last a certain amount of time. It is randomized an will vary each time the group is hit.
+-- The expected suppression time is set to 15 seconds by default. But the actual value is sampled from a Gaussian distribution.
+--  
+-- ![Process](..\Presentations\SUPPRESSION\Suppression_Gaussian.png)
+-- 
+-- The graph shows the distribution of suppression times if a group would be hit 100,000 times. As can be seen, on most hits the group gets
+-- suppressed for around 15 seconds. Other values are also possible but they become less likely the further away from the "expected" suppression time they are.
+-- Minimal and maximal suppression times can also be specified. By default these are set to 5 and 25 seconds, respectively. This can also be seen in the graph
+-- because the tails of the Gaussian distribution are cut off at these values.
+-- 
+-- ### Event Recovered
+-- After the suppression time is over, the event **Recovered** is initiated and the group becomes **CombatReady** again.
+-- The ROE of the group will be set to "Weapon Free".
+-- 
+-- Of course, it can also happen that a group is hit again while it is still suppressed. In that case a new random suppression time is calculated.
+-- If the new suppression time is longer than the remaining suppression of the previous hit, then the group recovers when the suppression time of the last
+-- hit has passed.
+-- If the new suppression time is shorter than the remaining suppression, the group will recover after the longer time of the first suppression has passed
+-- 
+-- For example:
+-- 
+-- * A group gets hit the first time and is suppressed for - let's say - 15 seconds.
+-- * After 10 seconds, i.e. when 5 seconds of the old suppression are left, the group gets hit a again.
+-- * A new suppression time is calculated which can be smaller or larger than the remaining 5 seconds.
+-- * If the new suppression time is smaller, e.g. three seconds, than five seconds, the group will recover after the 5 remaining seconds of the first suppression have passed.
+-- * If the new suppression time is longer than last suppression time, e.g. 10 seconds, then the group will recover after the 10 seconds of the new hit have passed.
+-- 
+-- Generally speaking, the suppression times are not just added on top of each other. Because this could easily lead to the situation that a group 
+-- never becomes CombatReady again before it gets destroyed.
+-- 
+-- ## Flee Events and States
+-- Apart from being suppressed the groups can also flee from the enemy under certain conditions.
+-- 
+-- ### Event Retreat
+-- The first option is a retreat. This can be enabled by setting a retreat zone, i.e. a trigger zone defined in the mission editor.
+-- 
+-- If the group takes a certain amount of damage, the event **Retreat** will be called and the group will start to move to the retreat zone.
+-- The group will be in the state **Retreating**, which means that its ROE is set to "Weapon Hold" and the alarm state is set to "Green".
+-- Setting the alarm state to green is necessary to enable the group to move under fire.
+-- 
+-- If no option retreat zone has been specified, the option retreat is not available.
+-- 
+-- ### Fallback
+-- 
+-- If a group is attacked by another ground group, it has the option to fall back, i.e. move away from the enemy. The probability of the event **FallBack** to
+-- happen depends on the damage of the group that was hit. The more a group gets damaged, the more likely **FallBack** event becomes.
+-- 
+-- If the group enters the state **FallingBack** it will move 100 meters in the opposite direction of the attacking unit. ROE and alarmstate are set to "Weapon Hold"
+-- and "Green", respectively.
+-- 
+-- At the fallback point the group will wait for 60 seconds before it resumes its normal mission.
+-- 
+-- ### TakeCover
+-- 
+-- If a group is hit by either another ground or air unit, it has the option to "take cover" or "hide". This means that the group will move to a random
+-- scenery object in it vicinity.
+-- 
+-- Analogously to the fall back case, the probability of a **TakeCover** event to occur, depends on the damage of the group. The more a group is damaged, the more
+-- likely it becomes that a group takes cover.
+-- 
+-- When a **TakeCover** event occurs an area with a radius of 300 meters around the hit group is searched for an arbitrary scenery object.
+-- If at least one scenery object is found, the group will move there. One it has reached its "hideout", it will wait there for two minutes before it resumes its
+-- normal mission.
+-- 
+-- If more than one scenery object is found, the group will move to a random one.
+-- If no scenery object is near the group the **TakeCover** event is rejected and the group will not move.
+-- 
+-- # Examples
+-- 
+-- ![Process](..\Presentations\SUPPRESSION\Suppression_Example_01.png)
+-- 
+-- 
 -- 
 -- @field #SUPPRESSION
 SUPPRESSION={
@@ -197,34 +286,13 @@ function SUPPRESSION:New(group)
   self.IniGroupStrength=#group:GetUnits()
   
   -- Set ROE and Alarm State.
-  self:SetDefaultROE("Return")
-  self:SetDefaultAlarmState("Red")
+  self:SetDefaultROE("Free")
+  self:SetDefaultAlarmState("Auto")
   
   -- Transitions 
-  
-  -- Old transitions.
---[[
-  self:AddTransition("*", "Hit",       "*")
-  self:AddTransition("*", "Suppress",  "*")
-  self:AddTransition("*", "Recovered", "*")
-  self:AddTransition("*", "FallBack",  "FallingBack")
-  self:AddTransition("*", "TakeCover", "TakingCover")
-  self:AddTransition("*", "Retreat",   "Retreating")
-  self:AddTransition("*", "FightBack", "CombatReady")
-  self:AddTransition("*", "Dead",      "*")
-]]
-
-  -- New transitons. After hit we go to suppressed and take it from there. Should be cleaner.
   self:AddTransition("*",           "Start",     "CombatReady")
-  
-  --self:AddTransition("*",           "Hit",       "Suppressed")
-  
   self:AddTransition("CombatReady", "Hit",       "Suppressed")
-  self:AddTransition("Suppressed",  "Hit",       "Suppressed")
-  
-  --self:AddTransition("FallingBack",  "Hit",      "Retreating")
-  --self:AddTransition("TakingCover",  "Hit",      "Retreating")
-  
+  self:AddTransition("Suppressed",  "Hit",       "Suppressed") 
   self:AddTransition("Suppressed",  "Recovered", "CombatReady")
   self:AddTransition("Suppressed",  "TakeCover", "TakingCover")
   self:AddTransition("Suppressed",  "FallBack",  "FallingBack")
@@ -516,9 +584,9 @@ function SUPPRESSION:onafterStart(Controllable, From, Event, To)
   if self.RetreatDamage==nil then
     if self.RetreatZone then
       if self.IniGroupStrength==1 then
-        self.RetreatDamage=60  -- 40% of life is left.
+        self.RetreatDamage=60.0  -- 40% of life is left.
       elseif self.IniGroupStrength==2 then
-        self.RetreatDamage=49.9  -- 50% of group left, i.e. 1 of 2. We already order a retreat, because if for a group 2 two a zone is defined it would not be used at all.
+        self.RetreatDamage=50.0  -- 50% of group left, i.e. 1 of 2. We already order a retreat, because if for a group 2 two a zone is defined it would not be used at all.
       else
         self.RetreatDamage=66.5  -- 34% of the group is left, e.g. 1 of 3,4 or 5, 2 of 6,7 or 8, 3 of 9,10 or 11, 4/12, 4/13, 4/14, 5/15, ... 
       end
@@ -569,6 +637,7 @@ function SUPPRESSION:onafterStart(Controllable, From, Event, To)
     
   -- Add event handler.
   world.addEventHandler(self)
+  self:HandleEvent(EVENTS.Dead, self._OnEventDead)
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -629,17 +698,10 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   local life_min, life_max, life_ave, life_ave0, groupstrength=self:_GetLife()
   
   -- Damage in %. If group consists only of one unit, we take its life value.
-  -- If group has multiple units, we take the remaining (relative) group strength.
-  local Damage
-  if self.IniGroupStrength==1 then
-    Damage=100-life_min
-  else
-    --TODO: Take group strength or live_ave or min/max from those!
-    Damage=100-life_ave0
-  end
+  local Damage=100-life_ave0
   
   -- Condition for retreat.
-  local RetreatCondition = Damage >= self.RetreatDamage and self.RetreatZone
+  local RetreatCondition = Damage >= self.RetreatDamage-0.01 and self.RetreatZone
     
   -- Probability that a unit flees. The probability increases linearly with the damage of the group/unit.
   -- If Damage=0             ==> P=Pmin
@@ -654,13 +716,13 @@ function SUPPRESSION:onafterHit(Controllable, From, Event, To, Unit, AttackUnit)
   local text
   text=string.format("Group %s: Life min=%5.1f, max=%5.1f, ave=%5.1f, ave0=%5.1f group=%5.1f", Controllable:GetName(), life_min, life_max, life_ave, life_ave0, groupstrength)
   env.info(SUPPRESSION.id..text)
-  text=string.format("Group %s: Damage = %5.1f (%5.1f retreat threshold).", Controllable:GetName(), Damage, self.RetreatDamage)
+  text=string.format("Group %s: Damage = %8.4f (%8.4f retreat threshold).", Controllable:GetName(), Damage, self.RetreatDamage)
   env.info(SUPPRESSION.id..text)
   text=string.format("Group %s: P_Flee = %5.1f %5.1f=P_rand (P_Flee > Prand ==> Flee)", Controllable:GetName(), Pflee, P)
   env.info(SUPPRESSION.id..text)
   
   -- Group is obviously destroyed.
-  if Damage>99.9 then
+  if Damage >= 99.9 then
     return
   end
   
@@ -877,7 +939,7 @@ function SUPPRESSION:onafterTakeCover(Controllable, From, Event, To, Hideout)
     local MarkerID=Coord:MarkToAll(string.format("Hideout place (%s) for group %s", Hideout:GetTypeName(), Controllable:GetName()))
     local text=string.format("Group %s is taking cover at %s!", Controllable:GetName(), Hideout:GetTypeName())
     MESSAGE:New(text, 10):ToAll()
-    env.info(text)
+    env.info(SUPPRESSION.id..text)
   end
   
   -- Smoke place of hideout.
@@ -956,6 +1018,7 @@ function SUPPRESSION:onafterRetreat(Controllable, From, Event, To)
   
 end
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- After "Dead" event, when a unit has died. When all units of a group are dead, FSM is stopped and eventhandler removed.
 -- @param #SUPPRESSION self
@@ -969,7 +1032,7 @@ function SUPPRESSION:onafterDead(Controllable, From, Event, To)
   -- Number of units left in the group.
   local nunits=#self.Controllable:GetUnits()
       
-  local text=string.format("Unit from group %s just died! %d units left.", self.Controllable:GetName(), nunits)
+  local text=string.format("Group %s: One of our units just died! %d units left.", self.Controllable:GetName(), nunits)
   MESSAGE:New(text, 10):ToAllIf(self.debug)
   env.info(SUPPRESSION.id..text)
       
@@ -977,6 +1040,7 @@ function SUPPRESSION:onafterDead(Controllable, From, Event, To)
   if nunits==0 then
     env.info(string.format("Stopping SUPPRESSION for group %s.", Controllable:GetName()))
     self:Stop()
+    self:UnHandleEvent(EVENTS.Dead)
     world.removeEventHandler(self)
   end
   
@@ -997,47 +1061,48 @@ function SUPPRESSION:onEvent(event)
   local ini = event.initiator
   local tgt = event.target
 
+
   -- INITIATOR
   local IniUnit=nil        -- Wrapper.Unit#UNIT
   local IniGroup=nil       -- Wrapper.Group#GROUP
   local IniUnitName=nil
-  local IniGroupName=nil  
+  local IniGroupName=nil
+  local IniGroupNameDCS=nil  
   if ini ~= nil then
     IniUnitName = ini:getName()
+    IniGroupNameDCS=ini:getGroup():getName()
+    -- TODO: For event Dead this sometimes (not always) gave nill! Don't know why. So I (re-)introduced the self:_OnEventDead function.
     IniUnit=UNIT:FindByName(IniUnitName)
     if IniUnit then
       IniGroup=IniUnit:GetGroup()
-      IniGroupName=ini:getGroup():getName()
-      --IniGroupName=IniGroup:GetName()
+      IniGroupName=IniGroup:GetName()
     end
   end
   
-  --self:E(IniUnit)
-  --self:E(IniGroup)
-  --self:E(IniUnitName)
-  --self:E(IniGroupName)
   
   -- TARGET
   local TgtUnit=nil        -- Wrapper.Unit#UNIT
   local TgtGroup=nil       -- Wrapper.Group#GROUP
   local TgtUnitName=nil
-  local TgtGroupName=nil  
+  local TgtGroupName=nil
+  local TgtGroupNameDCS=nil  
   if tgt ~= nil then
     TgtUnitName = tgt:getName()
-    TgtUnit=UNIT:FindByName(TgtUnitName) 
+    TgtGroupNameDCS=tgt:getGroup():getName()
+    TgtUnit=UNIT:FindByName(TgtUnitName)
     if TgtUnit then
       TgtGroup=TgtUnit:GetGroup()
-      TgtGroupName=tgt:getGroup():getName()
-      --TgtGroupName=TgtGroup:GetName()
+      TgtGroupName=TgtGroup:GetName()
     end
   end    
+  
   
   -- Event HIT
   if event.id == world.event.S_EVENT_HIT then
   
-    if TgtGroupName==name then
+    if TgtGroupName == name then
     
-      env.info(SUPPRESSION.id.."Hit event at t = "..Tnow)
+      env.info(SUPPRESSION.id..string.format("Hit event at t = %5.1f", Tnow))
     
       -- Flare unit that was hit.
       if self.flare or self.debug then
@@ -1060,29 +1125,40 @@ function SUPPRESSION:onEvent(event)
     
   end
   
-  -- Event DEAD
-  if event.id == world.event.S_EVENT_DEAD then
-  
-    --env.info(SUPPRESSION.id.."Dead event for anyone at t = "..Tnow.." group "..tostring(IniGroupName).." name = "..tostring(name))
-  
-    if IniGroupName == name then
-    
-      env.info(SUPPRESSION.id.."Dead event at t = "..Tnow)
-      
-      -- Flare unit that died.
-      if self.flare or self.debug then
-        IniUnit:FlareWhite()
-      end
-      
-      self:Status()
-      
-      -- FSM Dead event.
-      self:Dead()
-      
-    end
-  end
-  
 end
+
+--- Event handler for Dead event of suppressed groups.
+--@param #SUPPRESSION self
+function SUPPRESSION:_OnEventDead(Event)
+
+  local GroupNameSelf=self.Controllable:GetName()
+  local GroupNameIni=Event.IniGroupName
+
+  if  GroupNameIni== GroupNameSelf then
+    
+    -- Dead Unit.
+    local IniUnit=Event.IniUnit --Wrapper.Unit#UNIT
+    local IniUnitName=Event.IniUnitName
+    
+    if not IniUnit then
+      env.error(SUPPRESSION.id..string.format("Group %s: Dead unit does not exist! Unit name %s.", GroupNameIni, IniUnitName))
+    end
+    
+    -- Flare unit that died.
+    if self.flare or self.debug then
+      IniUnit:FlareWhite()
+    end
+    
+    -- Get status.
+    self:Status()
+    
+    -- FSM Dead event.
+    self:__Dead(0.1)
+    
+  end
+
+end
+
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1352,12 +1428,10 @@ function SUPPRESSION:_GetLife()
       return 0,0,0,0,0
     end
     
-    if self.IniGroupStrength ~= #units then
-      life_ave0=life_ave/(self.IniGroupStrength-#units)
-    else
-      life_ave0=life_ave/n
-    end
+    -- Average life relative to initial group strength including the dead ones.
     life_ave0=life_ave/self.IniGroupStrength
+    
+    -- Average life of all alive units.
     life_ave=life_ave/n    
     
     return life_min, life_max, life_ave, life_ave0, groupstrength
@@ -1488,5 +1562,4 @@ function SUPPRESSION:_EventFromTo(BA, Event, From, To)
 end
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
