@@ -123,6 +123,9 @@ MOOSE Functional Classes provide various functions that are useful in mission de
   * [ATC_GROUND](Documentation/ATC_Ground.html#ATC_GROUND_NEVADA): ATC Ground operations for Nevada.
   * [ATC_GROUND](Documentation/ATC_Ground.html#ATC_GROUND_NORMANDY): ATC Ground operations for Normandy.
 
+* [ZONE\_CAPTURE\_COALITION](Documentation/ZoneCaptureCoalition.html): Create a zone capturing process around a zone! Zones can be guarded, attacked, empty or captured.
+
+
 ## 2.4. MOOSE Wrapper Classes
 
 MOOSE Wrapper Classes provide an object oriented hierarchical mechanism to manage the DCS objects within the simulator.
@@ -235,6 +238,11 @@ Those people who have experience in lua development or are excited to contribute
 
 Please consult the **[Contribution Guide](Contribution_Guide.html)** for more information.
   
+
+## 3.4. Debug your code interactively using LDT
+
+Have a look at the **[Interactive Debug Guide](Interactive_Debug_Guide.html)** to setup your system so you can debug your mission code.
+
 
 
 # 4. MOOSE Support Channels
