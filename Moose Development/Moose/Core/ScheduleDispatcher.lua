@@ -87,12 +87,12 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
   self:T3( self.Schedule[Scheduler][CallID] )
 
   self.Schedule[Scheduler][CallID].CallHandler = function( CallID )
-    self:F2( CallID )
+    --self:E( CallID )
 
     local ErrorHandler = function( errmsg )
       env.info( "Error in timer function: " .. errmsg )
-      if debug ~= nil then
-        env.info( debug.traceback() )
+      if BASE.Debug ~= nil then
+        env.info( BASE.Debug.traceback() )
       end
       return errmsg
     end
@@ -111,7 +111,7 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
       
       --self:T3( { Schedule = Schedule } )
 
-      local ScheduleObject = Scheduler.SchedulerObject
+      local SchedulerObject = Scheduler.SchedulerObject
       --local ScheduleObjectName = Scheduler.SchedulerObject:GetNameAndClassID()
       local ScheduleFunction = Schedule.Function
       local ScheduleArguments = Schedule.Arguments
@@ -122,9 +122,10 @@ function SCHEDULEDISPATCHER:AddSchedule( Scheduler, ScheduleFunction, ScheduleAr
       local ScheduleID = Schedule.ScheduleID
       
       local Status, Result
-      if ScheduleObject then
+      --self:E( { SchedulerObject = SchedulerObject } )
+      if SchedulerObject then
         local function Timer()
-          return ScheduleFunction( ScheduleObject, unpack( ScheduleArguments ) ) 
+          return ScheduleFunction( SchedulerObject, unpack( ScheduleArguments ) ) 
         end
         Status, Result = xpcall( Timer, ErrorHandler )
       else

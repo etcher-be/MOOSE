@@ -198,6 +198,8 @@ BASE = {
   ClassID = 0,
   Events = {},
   States = {},
+  Debug = debug,
+  Scheduler = nil,
 }
 
 
@@ -705,10 +707,15 @@ do -- Scheduling
     ObjectName = self.ClassName .. self.ClassID
     
     self:F3( { "ScheduleOnce: ", ObjectName,  Start } )
-    self.SchedulerObject = self
+    
+    if not self.Scheduler then
+      self.Scheduler = SCHEDULER:New( self )
+    end
+    
+    self.Scheduler.SchedulerObject = self.Scheduler
     
     local ScheduleID = _SCHEDULEDISPATCHER:AddSchedule( 
-      self, 
+      self.Scheduler, 
       SchedulerFunction,
       { ... },
       Start,
@@ -717,9 +724,9 @@ do -- Scheduling
       nil
     )
     
-    self._.Schedules[#self.Schedules+1] = ScheduleID
+    self._.Schedules[#self._.Schedules+1] = ScheduleID
   
-    return self._.Schedules
+    return self._.Schedules[#self._.Schedules]
   end
 
   --- Schedule a new time event. Note that the schedule will only take place if the scheduler is *started*. Even for a single schedule event, the scheduler needs to be started also.
@@ -739,10 +746,15 @@ do -- Scheduling
     ObjectName = self.ClassName .. self.ClassID
     
     self:F3( { "ScheduleRepeat: ", ObjectName, Start, Repeat, RandomizeFactor, Stop } )
-    self.SchedulerObject = self
+
+    if not self.Scheduler then
+      self.Scheduler = SCHEDULER:New( self )
+    end
+    
+    self.Scheduler.SchedulerObject = self.Scheduler
     
     local ScheduleID = _SCHEDULEDISPATCHER:AddSchedule( 
-      self, 
+      self.Scheduler, 
       SchedulerFunction,
       { ... },
       Start,
@@ -751,9 +763,9 @@ do -- Scheduling
       Stop
     )
     
-    self._.Schedules[SchedulerFunction] = ScheduleID
+    self._.Schedules[#self._.Schedules+1] = ScheduleID
   
-    return self._.Schedules
+    return self._.Schedules[#self._.Schedules]
   end
 
   --- Stops the Schedule.
@@ -763,7 +775,7 @@ do -- Scheduling
   
     self:F3( { "ScheduleStop:" } )
     
-  _SCHEDULEDISPATCHER:Stop( self, self._.Schedules[SchedulerFunction] )
+  _SCHEDULEDISPATCHER:Stop( self.Scheduler, self._.Schedules[SchedulerFunction] )
   end
 
 end
@@ -820,7 +832,7 @@ end
 -- TODO: Make trace function using variable parameters.
 
 --- Set trace on or off
--- Note that when trace is off, no debug statement is performed, increasing performance!
+-- Note that when trace is off, no BASE.Debug statement is performed, increasing performance!
 -- When Moose is loaded statically, (as one file), tracing is switched off by default.
 -- So tracing must be switched on manually in your mission if you are using Moose statically.
 -- When moose is loading dynamically (for moose class development), tracing is switched on by default.
@@ -842,7 +854,7 @@ end
 -- @return #boolean
 function BASE:IsTrace()
 
-  if debug and ( _TraceAll == true ) or ( _TraceClass[self.ClassName] or _TraceClassMethod[self.ClassName] ) then
+  if BASE.Debug and ( _TraceAll == true ) or ( _TraceClass[self.ClassName] or _TraceClassMethod[self.ClassName] ) then
     return true
   else
     return false
@@ -898,10 +910,10 @@ end
 -- @param Arguments A #table or any field.
 function BASE:_F( Arguments, DebugInfoCurrentParam, DebugInfoFromParam )
 
-  if debug and ( _TraceAll == true ) or ( _TraceClass[self.ClassName] or _TraceClassMethod[self.ClassName] ) then
+  if BASE.Debug and ( _TraceAll == true ) or ( _TraceClass[self.ClassName] or _TraceClassMethod[self.ClassName] ) then
 
-    local DebugInfoCurrent = DebugInfoCurrentParam and DebugInfoCurrentParam or debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = DebugInfoFromParam and DebugInfoFromParam or debug.getinfo( 3, "l" )
+    local DebugInfoCurrent = DebugInfoCurrentParam and DebugInfoCurrentParam or BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = DebugInfoFromParam and DebugInfoFromParam or BASE.Debug.getinfo( 3, "l" )
     
     local Function = "function"
     if DebugInfoCurrent.name then
@@ -927,9 +939,9 @@ end
 -- @param Arguments A #table or any field.
 function BASE:F( Arguments )
 
-  if debug and _TraceOnOff then
-    local DebugInfoCurrent = debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = debug.getinfo( 3, "l" )
+  if BASE.Debug and _TraceOnOff then
+    local DebugInfoCurrent = BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = BASE.Debug.getinfo( 3, "l" )
   
     if _TraceLevel >= 1 then
       self:_F( Arguments, DebugInfoCurrent, DebugInfoFrom )
@@ -943,9 +955,9 @@ end
 -- @param Arguments A #table or any field.
 function BASE:F2( Arguments )
 
-  if debug and _TraceOnOff then
-    local DebugInfoCurrent = debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = debug.getinfo( 3, "l" )
+  if BASE.Debug and _TraceOnOff then
+    local DebugInfoCurrent = BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = BASE.Debug.getinfo( 3, "l" )
   
     if _TraceLevel >= 2 then
       self:_F( Arguments, DebugInfoCurrent, DebugInfoFrom )
@@ -958,9 +970,9 @@ end
 -- @param Arguments A #table or any field.
 function BASE:F3( Arguments )
 
-  if debug and _TraceOnOff then
-    local DebugInfoCurrent = debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = debug.getinfo( 3, "l" )
+  if BASE.Debug and _TraceOnOff then
+    local DebugInfoCurrent = BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = BASE.Debug.getinfo( 3, "l" )
   
     if _TraceLevel >= 3 then
       self:_F( Arguments, DebugInfoCurrent, DebugInfoFrom )
@@ -973,10 +985,10 @@ end
 -- @param Arguments A #table or any field.
 function BASE:_T( Arguments, DebugInfoCurrentParam, DebugInfoFromParam )
 
-	if debug and ( _TraceAll == true ) or ( _TraceClass[self.ClassName] or _TraceClassMethod[self.ClassName] ) then
+	if BASE.Debug and ( _TraceAll == true ) or ( _TraceClass[self.ClassName] or _TraceClassMethod[self.ClassName] ) then
 
-    local DebugInfoCurrent = DebugInfoCurrentParam and DebugInfoCurrentParam or debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = DebugInfoFromParam and DebugInfoFromParam or debug.getinfo( 3, "l" )
+    local DebugInfoCurrent = DebugInfoCurrentParam and DebugInfoCurrentParam or BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = DebugInfoFromParam and DebugInfoFromParam or BASE.Debug.getinfo( 3, "l" )
 		
 		local Function = "function"
 		if DebugInfoCurrent.name then
@@ -1002,9 +1014,9 @@ end
 -- @param Arguments A #table or any field.
 function BASE:T( Arguments )
 
-  if debug and _TraceOnOff then
-    local DebugInfoCurrent = debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = debug.getinfo( 3, "l" )
+  if BASE.Debug and _TraceOnOff then
+    local DebugInfoCurrent = BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = BASE.Debug.getinfo( 3, "l" )
   
     if _TraceLevel >= 1 then
       self:_T( Arguments, DebugInfoCurrent, DebugInfoFrom )
@@ -1018,9 +1030,9 @@ end
 -- @param Arguments A #table or any field.
 function BASE:T2( Arguments )
 
-  if debug and _TraceOnOff then
-    local DebugInfoCurrent = debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = debug.getinfo( 3, "l" )
+  if BASE.Debug and _TraceOnOff then
+    local DebugInfoCurrent = BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = BASE.Debug.getinfo( 3, "l" )
   
     if _TraceLevel >= 2 then
       self:_T( Arguments, DebugInfoCurrent, DebugInfoFrom )
@@ -1033,9 +1045,9 @@ end
 -- @param Arguments A #table or any field.
 function BASE:T3( Arguments )
 
-  if debug and _TraceOnOff then
-    local DebugInfoCurrent = debug.getinfo( 2, "nl" )
-    local DebugInfoFrom = debug.getinfo( 3, "l" )
+  if BASE.Debug and _TraceOnOff then
+    local DebugInfoCurrent = BASE.Debug.getinfo( 2, "nl" )
+    local DebugInfoFrom = BASE.Debug.getinfo( 3, "l" )
   
     if _TraceLevel >= 3 then
       self:_T( Arguments, DebugInfoCurrent, DebugInfoFrom )
@@ -1048,9 +1060,9 @@ end
 -- @param Arguments A #table or any field.
 function BASE:E( Arguments )
 
-  if debug then
-  	local DebugInfoCurrent = debug.getinfo( 2, "nl" )
-  	local DebugInfoFrom = debug.getinfo( 3, "l" )
+  if BASE.Debug then
+  	local DebugInfoCurrent = BASE.Debug.getinfo( 2, "nl" )
+  	local DebugInfoFrom = BASE.Debug.getinfo( 3, "l" )
   	
   	local Function = "function"
   	if DebugInfoCurrent.name then
@@ -1064,6 +1076,8 @@ function BASE:E( Arguments )
   	end
   
   	env.info( string.format( "%6d(%6d)/%1s:%20s%05d.%s(%s)" , LineCurrent, LineFrom, "E", self.ClassName, self.ClassID, Function, routines.utils.oneLineSerialize( Arguments ) ) )
+  else
+    env.info( string.format( "%1s:%20s%05d(%s)" , "E", self.ClassName, self.ClassID, routines.utils.oneLineSerialize( Arguments ) ) )
   end
   
 end
