@@ -516,7 +516,7 @@ RAT.version="2.0.2"
 function RAT:New(groupname, alias)
 
   -- Inherit SPAWN class.
-  self=BASE:Inherit(self, SPAWN:NewWithAlias(groupname, alias)) -- #RAT
+  local self=BASE:Inherit(self, SPAWN:NewWithAlias(groupname, alias)) -- #RAT
 
   -- Version info.
   self:F(RAT.id.."Version "..RAT.version)
@@ -3038,7 +3038,7 @@ function RAT:_OnLand(EventData)
 
         -- ATC plane landed. Take it out of the queue and set runway to free.
         if self.ATCswitch then
-          RAT:_ATCFlightLanded(SpawnGroup:GetName())
+          self:_ATCFlightLanded(SpawnGroup:GetName())
         end        
         
         if self.respawn_at_landing and not self.norespawn then
@@ -4184,7 +4184,7 @@ function RAT:_ATCClearForLanding(airport, flight)
   -- Debug message.
   local text1=string.format("ATC %s: Flight %s cleared for landing (flag=%d).", airport, flight, flagvalue)
   local text2=string.format("ATC %s: Flight %s you are cleared for landing.", airport, flight)
-  self:T( RAT.id..text1)
+  --self:T( RAT.id..text1)
   MESSAGE:New(text2, 10):ToAllIf(RAT.ATC.messages)
 end
 

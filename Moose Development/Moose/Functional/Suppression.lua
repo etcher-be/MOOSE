@@ -170,9 +170,9 @@
 -- @field #SUPPRESSION
 SUPPRESSION={
   ClassName = "SUPPRESSION",
-  debug = true,
+  debug = false,
   flare = true,
-  smoke = true,
+  smoke = false,
   DCSdesc = nil,
   Type = nil,
   IsInfantry=nil,
@@ -1067,10 +1067,10 @@ function SUPPRESSION:onEvent(event)
   local IniGroup=nil       -- Wrapper.Group#GROUP
   local IniUnitName=nil
   local IniGroupName=nil
-  local IniGroupNameDCS=nil  
+  --local IniGroupNameDCS=nil  
   if ini ~= nil then
     IniUnitName = ini:getName()
-    IniGroupNameDCS=ini:getGroup():getName()
+    --IniGroupNameDCS=ini:getGroup():getName()
     -- TODO: For event Dead this sometimes (not always) gave nill! Don't know why. So I (re-)introduced the self:_OnEventDead function.
     IniUnit=UNIT:FindByName(IniUnitName)
     if IniUnit then
@@ -1085,10 +1085,10 @@ function SUPPRESSION:onEvent(event)
   local TgtGroup=nil       -- Wrapper.Group#GROUP
   local TgtUnitName=nil
   local TgtGroupName=nil
-  local TgtGroupNameDCS=nil  
+  --local TgtGroupNameDCS=nil  
   if tgt ~= nil then
     TgtUnitName = tgt:getName()
-    TgtGroupNameDCS=tgt:getGroup():getName()
+    --TgtGroupNameDCS=tgt:getGroup():getName()
     TgtUnit=UNIT:FindByName(TgtUnitName)
     if TgtUnit then
       TgtGroup=TgtUnit:GetGroup()
