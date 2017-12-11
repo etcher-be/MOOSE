@@ -306,12 +306,12 @@ function BASE:GetParent( Child, FromClass )
     Parent = nil
   else
   
-    self:E({FromClass = FromClass})
-    self:E({Child = Child.ClassName})
+    --self:E({FromClass = FromClass})
+    --self:E({Child = Child.ClassName})
     if FromClass then
       while( Child.ClassName ~= "BASE" and Child.ClassName ~= FromClass.ClassName ) do
         Child = getParent( Child )
-        self:E({Child.ClassName})
+        --self:E({Child.ClassName})
       end
     end  
     if Child.ClassName == 'BASE' then
@@ -320,7 +320,7 @@ function BASE:GetParent( Child, FromClass )
       Parent = getParent( Child )
     end
   end
-  self:E({Parent.ClassName})
+  --self:E({Parent.ClassName})
   return Parent
 end
 
@@ -715,7 +715,7 @@ do -- Scheduling
     self.Scheduler.SchedulerObject = self.Scheduler
     
     local ScheduleID = _SCHEDULEDISPATCHER:AddSchedule( 
-      self.Scheduler, 
+      self, 
       SchedulerFunction,
       { ... },
       Start,
@@ -754,7 +754,7 @@ do -- Scheduling
     self.Scheduler.SchedulerObject = self.Scheduler
     
     local ScheduleID = _SCHEDULEDISPATCHER:AddSchedule( 
-      self.Scheduler, 
+      self, 
       SchedulerFunction,
       { ... },
       Start,
