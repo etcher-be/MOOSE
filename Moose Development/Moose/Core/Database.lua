@@ -97,7 +97,7 @@ function DATABASE:New()
   self:HandleEvent( EVENTS.DeleteCargo )
   
   -- Follow alive players and clients
-  self:HandleEvent( EVENTS.PlayerEnterUnit, self._EventOnPlayerEnterUnit )
+  self:HandleEvent( EVENTS.PlayerEnterUnit, self._EventOnPlayerEnterUnit ) -- This is not working anymore!, handling this through the birth event.
   self:HandleEvent( EVENTS.PlayerLeaveUnit, self._EventOnPlayerLeaveUnit )
   
   self:_RegisterTemplates()
@@ -137,8 +137,8 @@ function DATABASE:New()
     end
   end
   
-  self:E( "Scheduling" )
-  PlayerCheckSchedule = SCHEDULER:New( nil, CheckPlayers, { self }, 1, 1 )
+  --self:E( "Scheduling" )
+  --PlayerCheckSchedule = SCHEDULER:New( nil, CheckPlayers, { self }, 1, 1 )
   
   return self
 end
@@ -729,7 +729,21 @@ function DATABASE:_EventOnBirth( Event )
         self:AddGroup( Event.IniDCSGroupName )
       end
     end
-    --self:_EventOnPlayerEnterUnit( Event )
+    if Event.IniObjectCategory == 1 then
+      Event.IniUnit = self:FindUnit( Event.IniDCSUnitName )
+      Event.IniGroup = self:FindGroup( Event.IniDCSGroupName )
+      local PlayerName = Event.IniUnit:GetPlayerName()
+      self:E( { "PlayerName:", PlayerName } )
+      if PlayerName ~= "" then
+        self:E( { "Player Joined:", PlayerName } )
+        if not self.PLAYERS[PlayerName] then
+          self:AddPlayer( Event.IniUnitName, PlayerName )
+        end
+        local Settings = SETTINGS:Set( PlayerName )
+        Settings:SetPlayerMenu( Event.IniUnit )
+        --MENU_INDEX:Refresh( Event.IniGroup )
+      end
+    end
   end
 end
 
@@ -764,13 +778,14 @@ end
 function DATABASE:_EventOnPlayerEnterUnit( Event )
   self:F2( { Event } )
 
-  if Event.IniUnit then
+  if Event.IniDCSUnit then
     if Event.IniObjectCategory == 1 then
       self:AddUnit( Event.IniDCSUnitName )
+      Event.IniUnit = self:FindUnit( Event.IniDCSUnitName )
       self:AddGroup( Event.IniDCSGroupName )
-      local PlayerName = Event.IniUnit:GetPlayerName()
+      local PlayerName = Event.IniDCSUnit:getPlayerName()
       if not self.PLAYERS[PlayerName] then
-        self:AddPlayer( Event.IniUnitName, PlayerName )
+        self:AddPlayer( Event.IniDCSUnitName, PlayerName )
       end
       local Settings = SETTINGS:Set( PlayerName )
       Settings:SetPlayerMenu( Event.IniUnit )
@@ -789,6 +804,7 @@ function DATABASE:_EventOnPlayerLeaveUnit( Event )
     if Event.IniObjectCategory == 1 then
       local PlayerName = Event.IniUnit:GetPlayerName()
       if self.PLAYERS[PlayerName] then
+        self:E( { "Player Left:", PlayerName } )
         local Settings = SETTINGS:Set( PlayerName )
         Settings:RemovePlayerMenu( Event.IniUnit )
         self:DeletePlayer( Event.IniUnit, PlayerName )

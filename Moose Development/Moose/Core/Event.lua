@@ -886,6 +886,7 @@ function EVENT:onEvent( Event )
 
             -- So now the EventClass must be a UNIT class!!! We check if it is still "Alive".
             if EventClass:IsAlive() or
+               Event.id == EVENTS.PlayerEnterUnit or 
                Event.id == EVENTS.Crash or 
                Event.id == EVENTS.Dead then
             
@@ -935,6 +936,7 @@ function EVENT:onEvent( Event )
 
               -- So now the EventClass must be a GROUP class!!! We check if it is still "Alive".
               if EventClass:IsAlive() or
+                 Event.id == EVENTS.PlayerEnterUnit or
                  Event.id == EVENTS.Crash or
                  Event.id == EVENTS.Dead then
 
