@@ -174,7 +174,13 @@ function POSITIONABLE:GetCoordinate()
     
     local PositionableCoordinate = COORDINATE:NewFromVec3( PositionableVec3 )
     PositionableCoordinate:SetHeading( self:GetHeading() )
-    PositionableCoordinate:SetVelocity( self:GetVelocityMPS() )
+    if DCSPositionable:getCategory() ~= Object.Category.SCENERY then 
+      PositionableCoordinate:SetVelocity( self:GetVelocityMPS() )
+    else
+      --FF: Added case for scenery objects since GetVelocity did not work even though it should for scenery objects.
+      --    Temporary solution is to set the velocity to zero since scenery usually does not move.
+      PositionableCoordinate:SetVelocity( 0 ) 
+    end
   
     self:T2( PositionableCoordinate )
     return PositionableCoordinate
