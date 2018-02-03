@@ -182,8 +182,10 @@ function CLIENT:ShowBriefing()
     if self.ClientBriefing then
       Briefing = Briefing .. self.ClientBriefing
     end
-    Briefing = Briefing .. " Press [LEFT ALT]+[B] to view the complete mission briefing."
-    self:Message( Briefing, 60, "Briefing" )
+    if string.len(Briefing)>0 then
+      Briefing = Briefing .. "\nPress [LEFT ALT]+[B] to view the complete mission briefing."
+      self:Message( Briefing, 60, "Briefing" )
+    end
   end
 
   return self

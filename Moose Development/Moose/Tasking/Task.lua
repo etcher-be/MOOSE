@@ -894,8 +894,9 @@ function TASK:MenuMarkToGroup( TaskGroup )
   end
 
   local TargetCoordinate = self:GetInfo( "Coordinate" ) -- Core.Point#COORDINATE
-  local MarkText = Report:Text( ", " ) 
-  self:F( { Coordinate = TargetCoordinate, MarkText = MarkText } )
+  local MarkText = Report:Text( ", " )
+  env.info("FF") 
+  self:E( { Coordinate = TargetCoordinate, MarkText = MarkText } )
   TargetCoordinate:MarkToGroup( MarkText, TaskGroup )
   --Coordinate:MarkToAll( Briefing )
 end
@@ -1446,9 +1447,12 @@ function TASK:ReportSummary( ReportGroup )
   Report:Add( "State: <" .. self:GetState() .. ">" )
   
   if self.TaskInfo["Coordinate"] then
+    env.info("FF | coordinate exists!")
     local TaskInfoIDText = string.format( "%s: ", "Coordinate" )
     local TaskCoord = self.TaskInfo["Coordinate"].TaskInfoText -- Core.Point#COORDINATE
     Report:Add( TaskInfoIDText .. TaskCoord:ToString( ReportGroup, nil, self ) )
+  else
+    env.info("FF | coordinate does NOT exists!")
   end
   
   return Report:Text( ', ' )

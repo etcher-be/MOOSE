@@ -884,6 +884,8 @@ function MISSION:MarkTargetLocations( ReportGroup )
   local Status = "<" .. self:GetState() .. ">"
   
   Report:Add( string.format( '%s - %s - All Tasks are marked on the map. Select a Task from the Mission Menu and Join the Task!!!', Name, Status ) )
+  
+  env.info("FF Report group = "..ReportGroup:GetName())
 
   -- Determine how many tasks are remaining.
   for TaskID, Task in UTILS.spairs( self:GetTasks(), function( t, a, b ) return t[a]:ReportOrder( ReportGroup ) <  t[b]:ReportOrder( ReportGroup ) end  ) do
