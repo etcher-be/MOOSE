@@ -134,7 +134,7 @@
 -- @field #string modulation Ratio modulation. Either "FM" or "AM".
 -- @field #boolean uncontrolled If true aircraft are spawned in uncontrolled state and will only sit on their parking spots.
 -- @field #string onboardnum Sets the onboard number prefix. Same as setting "TAIL #" in the mission editor.
--- @field #number onboardnum0 (Optional) Starting value of the automatically appended numbering of aircraft within a flight. Default is zero.
+-- @field #number onboardnum0 (Optional) Starting value of the automatically appended numbering of aircraft within a flight. Default is one.
 -- @extends Core.Spawn#SPAWN
 
 ---# RAT class, extends @{Spawn#SPAWN}
@@ -356,7 +356,7 @@ RAT={
   actype=nil,               -- Aircraft type set by user. Changes the type of the template group.
   uncontrolled=false,       -- Spawn uncontrolled aircraft.
   onboardnum=nil,           -- Tail number.
-  onboardnum0=0,            -- (Optional) Starting value of the automatically appended numbering of aircraft within a flight. Default is zero.
+  onboardnum0=1,            -- (Optional) Starting value of the automatically appended numbering of aircraft within a flight. Default is one.
 }
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -444,6 +444,8 @@ RAT.ROT={
   noreaction="noreaction",
 }
 
+--- RAT ATC.
+-- @list ATC
 RAT.ATC={
   init=false,
   flight={},
@@ -468,8 +470,11 @@ RAT.MenuF10=nil
 RAT.id="RAT | "
 
 --- RAT version.
--- @field #string version
-RAT.version="2.0.4"
+-- @field #list
+RAT.version={
+  version = "2.1.0",
+  print = true,
+}
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -523,7 +528,10 @@ function RAT:New(groupname, alias)
   self=BASE:Inherit(self, SPAWN:NewWithAlias(groupname, alias)) -- #RAT
 
   -- Version info.
-  self:E(RAT.id.."Version "..RAT.version)
+  if RAT.version.print then
+    env.info(RAT.id.."Version "..RAT.version.version)
+    RAT.version.print=false
+  end
 
   -- Welcome message.
   self:F(RAT.id.."Creating new RAT object from template: "..groupname)
@@ -3965,11 +3973,7 @@ function RAT:_ModifySpawnTemplate(waypoints, livery)
         
         -- Onboard number.
         if self.onboardnum then
-          local tailnum=self.onboardnum
-          --if #SpawnTemplate.units > 1 then
-            tailnum=string.format("%s%d%02d", self.onboardnum, (self.SpawnIndex-1)%10, self.onboardnum0+UnitID)
-          --end
-          SpawnTemplate.units[UnitID]["onboard_num"] = tailnum
+          SpawnTemplate.units[UnitID]["onboard_num"] = string.format("%s%d%02d", self.onboardnum, (self.SpawnIndex-1)%10, (self.onboardnum0-1)+UnitID)
         end
         
         -- Modify coaltion and country of template.
