@@ -64,8 +64,7 @@ build_script:
   # - luarocks make rockspecs/foo-scm-0.rockspec --local
   # - cmd: echo "Hello World!"
   # check the environment
-  - cmd: set
-  - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
+  - cmd: lua "Moose Mission Setup\\Moose_Create.lua" "S" %APPVEYOR_REPO_COMMIT% "Moose Development\\Moose" "Moose Mission Setup" 
   # Update the moose documentation
   # cmd: dir "c:\lua\x64\5.1.5\LuaRocks\systree" /S
   - cmd: cd utils
