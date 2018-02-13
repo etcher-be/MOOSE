@@ -7,24 +7,25 @@ skip_tags: false
 
 environment:
   LUAROCKS_VER: 2.4.1
-  matrix:
-  - LUA_VER: 5.1.5
+  LUA_VER: 5.1.5
+#  matrix:
+#   - LUA_VER: 5.1.5
 
-matrix:
-  allow_failures:
-    - configuration: 2010
-      platform: x64
-    - configuration: 2008
-      platform: x64
-    - configuration: MinGW
-      platform: x64
+# matrix:
+#   allow_failures:
+#     - configuration: 2010
+#       platform: x64
+#     - configuration: 2008
+#       platform: x64
+#     - configuration: MinGW
+#       platform: x64
 
 
 
 # Abuse this section so we can have a matrix with different Compiler versions
 # Is there a better way? Like injecting an array in the matrix?
-configuration:
-  - 2015
+# configuration:
+#  - 2015
 
 platform:
   - x64
@@ -58,7 +59,7 @@ init:
   # - cmd: echo "%APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED%"
   
 install:
-  - cmd: choco install 7zip.commandline
+  # - cmd: choco install 7zip.commandline
   # Make compiler command line tools available
   - call .av\set_compiler_env.bat
   # Setup Lua development/build environment
@@ -70,7 +71,7 @@ install:
 
 build_script:
   - luarocks make rockspecs/foo-scm-0.rockspec --local
-  - cmd: echo "Hello World!"
+  # - cmd: echo "Hello World!"
   # check the environment
   - cmd: set
   - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
