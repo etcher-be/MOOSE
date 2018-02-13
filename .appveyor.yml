@@ -60,20 +60,13 @@ init:
 install:
   - cmd: choco install 7zip.commandline
   # Make compiler command line tools available
-  - call .appveyor\set_compiler_env.bat
+  - call .av\set_compiler_env.bat
   # Setup Lua development/build environment
-  - call .appveyor\install.bat
+  - call .av\install.bat
   # Install luasrcdiet to strip lua source code from comments etc
   - cmd: luarocks install luasrcdiet
   - cmd: luarocks install checks
   - cmd: luarocks install luadocumentor
-  
-
-cache:
-  - C:\ProgramData\chocolatey\lib
-  - C:\ProgramData\chocolatey\bin
-  - c:\lua -> appveyor.yml
-  - c:\external -> appveyor.yml
 
 build_script:
   - luarocks make rockspecs/foo-scm-0.rockspec --local
