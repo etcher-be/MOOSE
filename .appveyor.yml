@@ -8,7 +8,7 @@ skip_tags: false
 environment:
   LUAROCKS_VER: 2.4.1
   LUA_VER: 5.1.5
-  LUA=lua5.3
+  LUA: lua5.3
 #  matrix:
 #   - LUA_VER: 5.1.5
 
