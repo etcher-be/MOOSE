@@ -8,6 +8,7 @@ skip_tags: false
 environment:
   LUAROCKS_VER: 2.4.1
   LUA_VER: 5.1.5
+  LUA=lua5.3
 #  matrix:
 #   - LUA_VER: 5.1.5
 
@@ -59,7 +60,11 @@ init:
   # - cmd: echo "%APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED%"
   
 install:
-  # - cmd: choco install 7zip.commandline
+  - cmd: choco install 7zip.commandline
+  - ps: Start-FileDownload 'https://luarocks.github.io/luarocks/releases/luarocks-2.4.3-win32.zip'
+  - cmd: 7z x luarocks-2.4.3-win32.zip -y 
+  - cmd: luarocks-2.4.3-win32\install.bat
+  
   # Make compiler command line tools available
   - call .av\set_compiler_env.bat
   # Setup Lua development/build environment
