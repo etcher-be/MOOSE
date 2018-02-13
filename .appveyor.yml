@@ -44,12 +44,12 @@ init:
   # - cmd: echo "%APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED%"
   
 install:
-  - cmd: choco install 7zip.commandline
-  - ps: Start-FileDownload 'https://luarocks.github.io/luarocks/releases/luarocks-2.4.3-win32.zip'
-  - cmd: 7z x luarocks-2.4.3-win32.zip -y 
-  - cmd: cd luarocks-2.4.3-win32
-  - cmd: install.bat
-  - cmd: cd ..
+  # - cmd: choco install 7zip.commandline
+  # - ps: Start-FileDownload 'https://luarocks.github.io/luarocks/releases/luarocks-2.4.3-win32.zip'
+  # - cmd: 7z x luarocks-2.4.3-win32.zip -y 
+  # - cmd: cd luarocks-2.4.3-win32
+  # - cmd: install.bat
+  # - cmd: cd ..
   
   # Make compiler command line tools available
   - call .av\set_compiler_env.bat
