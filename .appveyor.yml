@@ -9,24 +9,6 @@ environment:
   LUAROCKS_VER: 2.4.1
   LUA_VER: 5.1.5
   LUA: lua5.3
-#  matrix:
-#   - LUA_VER: 5.1.5
-
-# matrix:
-#   allow_failures:
-#     - configuration: 2010
-#       platform: x64
-#     - configuration: 2008
-#       platform: x64
-#     - configuration: MinGW
-#       platform: x64
-
-
-
-# Abuse this section so we can have a matrix with different Compiler versions
-# Is there a better way? Like injecting an array in the matrix?
-# configuration:
-#  - 2015
 
 platform:
   - x64
@@ -63,7 +45,9 @@ install:
   - cmd: choco install 7zip.commandline
   - ps: Start-FileDownload 'https://luarocks.github.io/luarocks/releases/luarocks-2.4.3-win32.zip'
   - cmd: 7z x luarocks-2.4.3-win32.zip -y 
-  - cmd: luarocks-2.4.3-win32\install.bat
+  - cmd: cd luarocks-2.4.3-win32
+  - cmd: install.bat
+  - cmd: cd ..
   
   # Make compiler command line tools available
   - call .av\set_compiler_env.bat
