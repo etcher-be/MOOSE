@@ -70,7 +70,7 @@ install:
   - cmd: luarocks install luadocumentor
 
 build_script:
-  - luarocks make rockspecs/foo-scm-0.rockspec --local
+  # - luarocks make rockspecs/foo-scm-0.rockspec --local
   # - cmd: echo "Hello World!"
   # check the environment
   - cmd: set
