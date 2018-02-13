@@ -24,16 +24,38 @@ matrix:
 # Abuse this section so we can have a matrix with different Compiler versions
 # Is there a better way? Like injecting an array in the matrix?
 configuration:
-  - Build
+  - 2015
 
 platform:
   - x64
 
 init:
+  # If there is a newer build queued for the same PR, cancel this one.
+  # The AppVeyor 'rollout builds' option is supposed to serve the same
+  # purpose but is problematic because it tends to cancel builds pushed
+  # directly to master instead of just PR builds.
+  # credits: JuliaLang developers.
   - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
         https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
         Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
         throw "There are newer queued builds for this pull request, failing early." }
+
+  # Check that we have the expected version and architecture for Python
+#  - "python --version"
+#  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+#  - "pip --version"
+  
+  # Setup Git for push
+#  - git config --global credential.helper store
+#  - ps: Add-Content "$env:USERPROFILE\.git-credentials" "https://$($env:GH_TOKEN):x-oauth-basic@github.com`n"
+#  - "git config --global user.email %GH_MAIL%"
+#  - "git config --global user.name %APPVEYOR_ACCOUNT_NAME%"
+
+#  - cmd: echo "%PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
+#  - cmd: echo "%APPVEYOR_BUILD_WORKER_IMAGE%"
+#  - cmd: echo "%APPVEYOR_REPO_COMMIT_TIMESTAMP%"
+  # - cmd: echo "%APPVEYOR_REPO_COMMIT_MESSAGE%"
+  # - cmd: echo "%APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED%"
   
 install:
   - cmd: choco install 7zip.commandline
@@ -53,36 +75,18 @@ cache:
   - c:\lua -> appveyor.yml
   - c:\external -> appveyor.yml
 
-
-
-for:
-
-# override settings for `master` branch
--
-  branches:
-    only:
-      - master
-
-
-
-  build_script:
-    - cmd: echo "Build for master branch"
-    - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
-    - cmd: luadocumentor.bat -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
-
--
-  branches:
-    only:
-      - /Release.*/
-
-  build_script:
-	  - luarocks make rockspecs/foo-scm-0.rockspec --local
-	  - cmd: echo "Build for a release branch"
-	  - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
-	  - cmd: luasrcdiet.bat --basic --opt-emptylines "Moose Mission Setup"\Moose.lua
-	  - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
-	  - cmd: Moose_update_missions.bat missions
-
+build_script:
+  - luarocks make rockspecs/foo-scm-0.rockspec --local
+  - cmd: echo "Hello World!"
+  # check the environment
+  - cmd: set
+  - cmd: moose_create.bat %APPVEYOR_REPO_COMMIT%
+  # Update the moose documentation
+  # cmd: dir "c:\lua\x64\5.1.5\LuaRocks\systree" /S
+  - cmd: luadocumentor.bat -f doc -d "./docs/Documentation" -s "./docs/Stylesheet/stylesheet.css" "./Moose Development/Moose"
+  - cmd: luasrcdiet.bat --basic --opt-emptylines "Moose Mission Setup"\Moose.lua
+  - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
+  - cmd: Moose_update_missions.bat missions
 
 test: off
 
