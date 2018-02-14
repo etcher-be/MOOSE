@@ -45,6 +45,6 @@ artifacts:
     name: moose.lua
   - path: 'Moose Mission Setup/Moose_.lua'
     name: moose_.lua
-  - path: 'missions\*.miz'
+  - path: 'MOOSE_MISSIONS-Release\*.miz'
     name: miz
 
