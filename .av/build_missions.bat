@@ -4,6 +4,8 @@ appveyor DownloadFile https://github.com/FlightControl-Master/MOOSE_MISSIONS/arc
 
 7z x Release.zip
 
+dir
+
 For /R Release %%M IN (*.miz) do ( 
   echo "Mission: %%M"
   mkdir Temp
