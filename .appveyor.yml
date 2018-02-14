@@ -35,7 +35,7 @@ build_script:
   - cmd: luadocumentor -f doc -d docs/Documentation -s docs/Stylesheet/stylesheet.css "Moose Development/Moose"
   - cmd: luasrcdiet --basic --opt-emptylines "Moose Mission Setup\Moose.lua"
   - cmd: git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
-  - cmd: >
+  - cmd: >-
       For /R missions %%M IN (*.miz) do (
         echo "Mission: %%M"
         mkdir Temp
