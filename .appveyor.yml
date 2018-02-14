@@ -36,8 +36,9 @@ build_script:
   - cmd: luasrcdiet --basic --opt-emptylines "Moose Mission Setup\Moose.lua"
   - cmd: .av\build_missions.bat
 
-test_script:
-  - cmd: luacheck "Moose Development\Moose\moose.lua" "Moose Mission Setup\moose.lua"
+test: off
+# test_script:
+#   - cmd: luacheck "Moose Development\Moose\moose.lua" "Moose Mission Setup\moose.lua"
 
 artifacts:
   - path: 'Moose Mission Setup/Moose.lua'
