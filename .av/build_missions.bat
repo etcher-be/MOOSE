@@ -1,6 +1,10 @@
-git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
+REM git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
 
-For /R missions %%M IN (*.miz) do ( 
+appveyor DownloadFile https://github.com/FlightControl-Master/MOOSE_MISSIONS/archive/Release.zip
+
+7z x MOOSE_MISSIONS-Release.zip
+
+For /R MOOSE_MISSIONS-Release %%M IN (*.miz) do ( 
   echo "Mission: %%M"
   mkdir Temp
   cd Temp
