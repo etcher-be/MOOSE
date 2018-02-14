@@ -44,7 +44,7 @@ init:
   # - cmd: echo "%APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED%"
   
 install:
-  # - cmd: choco install 7zip.commandline
+  - cmd: choco install 7zip.commandline
   # - ps: Start-FileDownload 'https://luarocks.github.io/luarocks/releases/luarocks-2.4.3-win32.zip'
   # - cmd: 7z x luarocks-2.4.3-win32.zip -y 
   # - cmd: cd luarocks-2.4.3-win32
@@ -69,7 +69,20 @@ build_script:
   # cmd: dir "c:\lua\x64\5.1.5\LuaRocks\systree" /S
   - cmd: luadocumentor -f doc -d docs/Documentation -s docs/Stylesheet/stylesheet.css "Moose Development/Moose"
   - cmd: luasrcdiet --basic --opt-emptylines "Moose Mission Setup\Moose.lua"
-  # - git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
+  - cmd: git clone https://github.com/FlightControl-Master/MOOSE_MISSIONS.git missions
+  - cmd: >
+      For /R missions %%M IN (*.miz) do (
+        echo "Mission: %%M"
+        mkdir Temp
+        cd Temp
+        mkdir l10n
+        mkdir l10n\DEFAULT
+        copy "..\Moose Mission Setup\Moose.lua" l10n\DEFAULT
+        copy "%%~pM%%~nM.lua" l10n\DEFAULT\*.*
+        7z -bb0 u "%%M" "l10n\DEFAULT\*.lua"
+        cd ..
+        rmdir /S /Q Temp
+      )
   # - cmd: 
   # - cmd: Moose_update_missions.bat missions
 
